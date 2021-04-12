@@ -10,7 +10,7 @@ end
 ns = ceil(radius);
 nrect = 2*ns + 1;
 intSim = @(cp, np, im) exp(-((im(cp(2),cp(1)) - im(np).^2)) /...
-    (2*std(im(np))^2));
+    (2*std(im(np))^2))/(std(im(np))*(sqrt(2*pi)));
 simMask = zeros(size(img),'gpuArray');
 for cc = 1:Nc
     x = repmat((cc-ns):(cc+ns), nrect, 1);
