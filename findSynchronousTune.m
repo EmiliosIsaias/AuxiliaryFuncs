@@ -29,7 +29,8 @@ tmWin = p.Results.tmWin;
 fnOpts = {'UniformOutput', 0};
 Ncond = numel(relSpkTms);
 Ncl = size(relSpkTms(1).SpikeTimes,1);
-cplxOpts = {'BinMethod', 'integers', 'BinLimits', [1, Ncl]};
+cplxOpts = {'BinMethod', 'integers', 'BinLimits', [1, Ncl],...
+    'Normalization', 'probability'};
 Nbns = size(binSzs(:), 1);
 
 
@@ -42,6 +43,7 @@ for cbn = 1:Nbns
     hbn = cellfun(@(x) cellfun(@(y) histcounts(y, hstOpts{:}),...
         x, fnOpts{:}), spkTms_ClandTr, fnOpts{:});
     hbn = cellfun(@(x) mean(cat(1, x{:})), hbn, fnOpts{:});
+    %hbn = cellfun(@(x) cat(1, x{:}), hbn, fnOpts{:});
     auxComplex = cellfun(@(x) histcounts(x, cplxOpts{:})', hbn, fnOpts{:});
     complexityHist(:, cbn, :) = cat(3, auxComplex{:});
 end
