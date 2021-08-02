@@ -42,8 +42,8 @@ for cbn = 1:Nbns
     hstOpts = {'BinWidth', binSzs(cbn), 'BinLimits', tmWin};
     hbn = cellfun(@(x) cellfun(@(y) histcounts(y, hstOpts{:}),...
         x, fnOpts{:}), spkTms_ClandTr, fnOpts{:});
-    hbn = cellfun(@(x) mean(cat(1, x{:})), hbn, fnOpts{:});
-    %hbn = cellfun(@(x) cat(1, x{:}), hbn, fnOpts{:});
+    %hbn = cellfun(@(x) mean(cat(1, x{:})), hbn, fnOpts{:});
+    hbn = cellfun(@(x) cat(1, x{:}), hbn, fnOpts{:});
     auxComplex = cellfun(@(x) histcounts(x, cplxOpts{:})', hbn, fnOpts{:});
     complexityHist(:, cbn, :) = cat(3, auxComplex{:});
 end
