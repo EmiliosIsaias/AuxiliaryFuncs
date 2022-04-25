@@ -10,8 +10,14 @@ repU = @(x) strrep(x,'_','.');
 %%
 fsStruct1 = getFirstSpikeInfo(relativeSpkTmsStruct1, configStructure1);
 fsStruct2 = getFirstSpikeInfo(relativeSpkTmsStruct2, configStructure2);
-fsMu = cell2mat(arrayfun(@(x) [fsStruct1(x).FOStats(:,2);fsStruct2(x).FOStats(:,2)], ...
+fsMu = cell2mat(arrayfun(@(x) [fsStruct1(x).MedMeanStd(:,2);fsStruct2(x).MedMeanStd(:,2)], ...
     1:size(fsStruct1,2), fnOpts{:}));
+fsMed = cell2mat(arrayfun(@(x) [fsStruct1(x).MedMeanStd(:,1);fsStruct2(x).MedMeanStd(:,1)], ...
+    1:size(fsStruct1,2), fnOpts{:}));
+Q_13 = arrayfun(@(x) [fsStruct1(x).Quartiles(:,[1,3]); ...
+    fsStruct2(x).Quartiles(:,[1,3])], 1:size(fsStruct1,2), fnOpts{:});
+Q_13 = cat(3, Q_13{:});
+%%
 gclID2 = cellfun(@(x) ['5_' x], gclID2, fnOpts{:});
 gclID = [gclID1; gclID2];
 [pf1, pE1, pS1, fishTest1] = getResponseProbability(relativeSpkTmsStruct1, configStructure1);
