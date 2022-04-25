@@ -289,3 +289,18 @@ for cctx = 1:Nctx
     axs(2).YAxis.Visible = 'off';
     linkaxes(axs,'y')
 end
+%% Firing rates
+% Spontaneous
+rsFr = arrayfun(@(x) quantile(spFr(rclIdx(:,x)), 3), 1:2, fnOpts{:});
+% Evoked
+reFr = arrayfun(@(x) squeeze(quantile(mean(PSTHfr(rclIdx(:,x), respFlag, ...
+    x), 2),3)), 1:2, fnOpts{:});
+% Convergence evoked
+ceFr = arrayfun(@(x) quantile(mean(PSTHfr(all(rclIdx,2), respFlag, x), 2), ...
+    3), 1:2, fnOpts{:});
+% Convergence spontaneous
+csFr = quantile(spFr(all(rclIdx,2)), 3);
+%% Onset latency
+fspk = cat(3,fsStruct1.MedMeanStd); fspk = cat(1, fspk, cat(3, fsStruct2.MedMeanStd));
+onLat = arrayfun(@(x) quantile(fspk(rclIdx(:,x), 1, x),3, 1)*1e3, 1:2, ...
+    fnOpts{:});
