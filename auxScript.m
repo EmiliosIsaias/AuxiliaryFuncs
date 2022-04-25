@@ -76,8 +76,6 @@ clMp = turbo(length(p0Vec));
 thFig = figure; axs = axes('NextPlot','add', 'Parent',thFig,axOpts{:});
 rFig = figure; axs2 = axes('NextPlot','add','Parent',rFig,axOpts{:});
 set(rFig, "Colormap", turbo(length(p0Vec)))
-scatter(axs2, signMat(:,1), signMat(:,2), 50, ...
-    "MarkerEdgeAlpha", 0.8, "MarkerEdgeColor", 0.4*ones(1,3))
 c1 = 1;
 [signMat1, ~, signMatpt1] = zscoreSignificance(Counts1);
 signMat1 = cat(2,signMat1{:});
@@ -87,6 +85,8 @@ signMat2 = cat(2,signMat2{:});
 [~, mH2] = getSignificantFlags(Results2);
 pclIdx = [fishTest1.H; fishTest2.H];
 mH = [mH1; mH2]; signMat = [signMat1; signMat2];
+scatter(axs2, signMat(:,1), signMat(:,2), 50, ...
+    "MarkerEdgeAlpha", 0.8, "MarkerEdgeColor", 0.4*ones(1,3))
 for p0 = p0Vec
     tRes1 = proportionTest(signMatpt1, p0);
     tRes2 = proportionTest(signMatpt2, p0);
