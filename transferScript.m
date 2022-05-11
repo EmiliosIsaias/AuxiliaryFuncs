@@ -1,10 +1,12 @@
 fnOpts = {'UniformOutput', false};
 axOpts = {'Box','off','Color','none'};
 lgOpts = cat(2, axOpts{1:2}, {'Location','best'});
-fr = VideoReader(fullfile(behDir, "roller2021-06-23T16_16_22.avi"));
+ffle = @(x) fullfile(x.folder, x.name);
+vFiles = dir(fullfile(behDir, "roller*.avi"));
+fr = VideoReader(ffle(vFiles));
 fr = fr.FrameRate;
-rp = readRollerPositionsFile(fullfile(behDir, ...
-    "Roller_position2021-06-23T16_16_07.csv"));
+rpFiles = dir(fullfile(behDir, "Roller_position*.csv"));
+rp = readRollerPositionsFile(ffle(rpFiles));
 [vf, rollTx] = getRollerSpeed(rp, fr);
 pTms = getCSVTriggers(fullfile(behDir, "Puff.csv")) - rollTx(1);
 lTms = getCSVTriggers(fullfile(behDir, "Laser.csv")) - rollTx(1);
@@ -27,6 +29,7 @@ brWin = [1, 400]*1e-3;
 [~, Nt, Na] = size(vStack);
 stMdl = fit_poly([1, Nt], bvWin, 1); behTx = ((1:Nt)'.^[1,0]) * stMdl;
 bsFlag = behTx < 0;
+brFlag = behTx < brWin; brFlag = xor(brFlag(:,1),brFlag(:,2));
 % figure; plot(stTx, squeeze(vStack(:,:,trialFlag(:,1))))
 %%
 figureDir = fullfile(behDir, "BehFigures");
@@ -136,7 +139,7 @@ pfName = sprintf(pfPttrn, sprintf('%s ', ccnGP{:}), brWin*1e3);
 saveFigure(fig, fullfile(figureDir, pfName), 1)
 % Tests for movement
 prms = nchoosek(1:Nccond,2);
-getDistTravel = @(x) squeeze(sum(abs(vStack(:,brFlag,xdf(:,x))),2));
+getDistTravel = @(x) squeeze(sum(abs(vStack(:, brFlag, xdf(:,x))), 2));
 dstTrav = arrayfun(getDistTravel, 1:Nccond, fnOpts{:});
 [p, h, stats] = arrayfun(@(x) ranksum(dstTrav{prms(x,1)}, ...
     dstTrav{prms(x,2)}), 1:size(prms,1), fnOpts{:});
