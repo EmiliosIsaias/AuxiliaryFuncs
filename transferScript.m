@@ -23,9 +23,9 @@ trialFlag(sub2ind(size(pTms), 1:size(pTms,1), ...
 
 bvWin = [-0.25, 0.5];
 brWin = [1, 400]*1e-3;
-
+en2cm = ((2*pi)/((2^15)-1))*((14.85/2)^2)*fr;
 [~, vStack] = getStacks(false, round(pTms*fr), 'on', bvWin, fr, fr, ...
-    [], vf);
+    [], vf*en2cm);
 [~, Nt, Na] = size(vStack);
 stMdl = fit_poly([1, Nt], bvWin, 1); behTx = ((1:Nt)'.^[1,0]) * stMdl;
 bsFlag = behTx < 0;
