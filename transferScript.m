@@ -109,10 +109,11 @@ rsFigName = sprintf(rsPttrn, sprintf('%s ', consCondNames{:}), bvWin,...
     brWin*1e3, sprintf('%d ', Nex)); saveFigure(fig, fullfile(figureDir, rsFigName), 1)
 
 % Plotting median speed signals together
+q2patch = @(x) [x(:,1);x(end:-1:1,3)];
 fig = figure("Color", "w"); axs = axes("Parent", fig, "NextPlot", "add");
 arrayfun(@(x) patch(axs, behTx([1:end, end:-1:1]),...
-    mat2ptch(qSgnls{x}), 1, phOpts{:}, clMap(x,:)), 1:Nccond); hold on
-lObj = arrayfun(@(x) plot(axs, behTx, qSgnls{x}(:,1), "Color", clMap(x,:),...
+    q2patch(qSgnls{x}), 1, phOpts{:}, clMap(x,:)), 1:Nccond); hold on
+lObj = arrayfun(@(x) plot(axs, behTx, qSgnls{x}(:,2), "Color", clMap(x,:),...
     "LineWidth", 1.5, "DisplayName", consCondNames{x}), 1:Nccond);
 xlabel(axs, "Time [s]"); xlim(axs, bvWin); ylabel(axs, "Roller speed [cm/s]")
 set(axs, axOpts{:}); title(axs, "Roller speed for all conditions")
