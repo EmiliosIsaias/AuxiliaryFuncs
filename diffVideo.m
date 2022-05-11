@@ -21,7 +21,7 @@ if ~exist(foName,"file")
     while vidObj.hasFrame && frCount < Nf
         mem = memory; maxMem = mem.MemAvailableAllArrays;
         frameByte = vidObj.Height * vidObj.Width * 3;
-        possFramesInMem = round((maxMem/frameByte) * 0.73);
+        possFramesInMem = floor((maxMem/frameByte) * 0.7);
         if frCount + possFramesInMem > Nf
             possFramesInMem = Nf - frCount;
         end
