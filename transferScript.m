@@ -39,16 +39,19 @@ if ~exist(figureDir, "dir")
     end
 end
 sSig = squeeze(std(vStack(:,bsFlag,:), [], 2));
+sOtLs = squeeze(quantile(vStack(:,bsFlag,:),1/2,2));
 [~, sigOrd] = sort(sSig, "descend");
 % A bit arbitrary threshold, but enough to remove running trials
-sigTh = 2.5; excFlag = false(Na,1);
+sigTh = 2.5; medTh = 0.2;
+thrshStr = sprintf("TH s%.2f m%.2f", sigTh, medTh);
+excFlag = sSig > sigTh | abs(sOtLs) > medTh;
 % excFlag = sSig > sigTh;
 ptOpts = {"Color", 0.7*ones(1,3), "LineWidth", 0.2;...
     "Color", "k", "LineWidth",  1.5};
 spTh = {0.1:0.1:3}; % Speed threshold
 gp = zeros(Nccond, 1, 'single');
-rsPttrn = "%s roller speed VW%.2f - %.2f s RM%.2f - %.2f ms EX%d";
-pfPttrn = "%s move probability %.2f RW%.2f - %.2f ms EX%d";
+rsPttrn = "%s roller speed VW%.2f - %.2f s RM%.2f - %.2f ms EX%d %s";
+pfPttrn = "%s move probability %.2f RW%.2f - %.2f ms EX%d %s";
 rsSgnls = cell(Nccond, 1); mvFlags = cell(Nccond,1); mvpt = mvFlags;
 qSgnls = rsSgnls; mat2ptch = @(x) [x(1:end,:)*[1;1]; x(end:-1:1,:)*[1;-1]];
 getThreshCross = @(x) sum(x)/size(x,1);
@@ -61,7 +64,7 @@ for ccond = 1:Nccond
     fig = figure("Color", "w");
     Nex = sum(xor(sIdx, trialFlag(:,ccond)));
     rsFigName = sprintf(rsPttrn,consCondNames{ccond}, bvWin,...
-        brWin*1e3, Nex);
+        brWin*1e3, Nex, thrshStr);
     % Plot all trials
     plot(behTx, squeeze(vStack(:,:,sIdx)), ptOpts{1,:}); hold on;
     % Plot mean of trials
@@ -71,7 +74,7 @@ for ccond = 1:Nccond
     % S.E.M.
     rsSgnls{ccond} = [squeeze(mean(vStack(:,:,sIdx),3))',...
         squeeze(std(vStack(:,:,sIdx),1,3))'./sqrt(sum(sIdx))];
-    qSgnls{ccond} = quantile(squeeze(vStack(:,:, sIdx)), 3, 2);
+    qSgnls{ccond} = squeeze(quantile(vStack(:,:,sIdx),3,3));
     lObj = plot(behTx, rsSgnls{ccond}(:,1), ptOpts{2,:});
     lgnd = legend(lObj,string(consCondNames{ccond}));
     set(lgnd, "Box", "off", "Location", "best")
@@ -85,7 +88,7 @@ for ccond = 1:Nccond
     mvFlags{ccond} = compareMaxWithThresh(mvpt{ccond}, spTh);
     gp(ccond) = getAUC(mvFlags{ccond});
     pfName = sprintf(pfPttrn, consCondNames{ccond}, gp(ccond),...
-        brWin*1e3, Nex);
+        brWin*1e3, Nex, thrshStr);
     fig = plotThetaProgress(mvFlags(ccond), spTh,...
         string(consCondNames{ccond}));
     xlabel("Roller speed \theta [cm/s]");
@@ -103,10 +106,11 @@ lObj = arrayfun(@(x) plot(axs, behTx, rsSgnls{x}(:,1), "Color", clMap(x,:),...
 xlabel(axs, "Time [s]"); xlim(axs, bvWin); ylabel(axs, "Roller speed [cm/s]")
 set(axs, axOpts{:}); title(axs, "Roller speed for all conditions")
 lgnd = legend(axs, lObj); set(lgnd, lgOpts{:})
-rsPttrn = "Mean roller speed %s VW%.2f - %.2f s RM%.2f - %.2f ms EX%s SEM";
+rsPttrn = "Mean roller speed %s VW%.2f - %.2f s RM%.2f - %.2f ms EX%s %s SEM";
 Nex = sum(trialFlag) - sum(xdf);
 rsFigName = sprintf(rsPttrn, sprintf('%s ', consCondNames{:}), bvWin,...
-    brWin*1e3, sprintf('%d ', Nex)); saveFigure(fig, fullfile(figureDir, rsFigName), 1)
+    brWin*1e3, sprintf('%d ', Nex), thrshStr); 
+saveFigure(fig, fullfile(figureDir, rsFigName), 1)
 
 % Plotting median speed signals together
 q2patch = @(x) [x(:,1);x(end:-1:1,3)];
@@ -118,10 +122,10 @@ lObj = arrayfun(@(x) plot(axs, behTx, qSgnls{x}(:,2), "Color", clMap(x,:),...
 xlabel(axs, "Time [s]"); xlim(axs, bvWin); ylabel(axs, "Roller speed [cm/s]")
 set(axs, axOpts{:}); title(axs, "Roller speed for all conditions")
 lgnd = legend(axs, lObj); set(lgnd, lgOpts{:})
-rsPttrn = "Median roller speed %s VW%.2f - %.2f s RM%.2f - %.2f ms EX%s SEM";
+rsPttrn = "Median roller speed %s VW%.2f - %.2f s RM%.2f - %.2f ms EX%s %s SEM";
 Nex = sum(trialFlag) - sum(xdf);
 rsFigName = sprintf(rsPttrn, sprintf('%s ', consCondNames{:}), bvWin,...
-    brWin*1e3, sprintf('%d ', Nex)); 
+    brWin*1e3, sprintf('%d ', Nex), thrshStr); 
 saveFigure(fig, fullfile(figureDir, rsFigName), 1)
 
 % Plotting movement threshold crossings
@@ -135,8 +139,9 @@ lgnd = legend(axs, ccnGP); set(axs, axOpts{:})
 set(lgnd, lgOpts{:}); ylim(axs, [0,1])
 xlabel(axs, "Roller speed \theta [cm/s]"); ylabel(axs, "Trial proportion")
 title(axs, "Trial proportion crossing \theta")
-pfPttrn = "Move probability %sRW%.2f - %.2f ms";
-pfName = sprintf(pfPttrn, sprintf('%s ', ccnGP{:}), brWin*1e3);
+pfPttrn = "Move probability %sRW%.2f - %.2f ms EX%s %s";
+pfName = sprintf(pfPttrn, sprintf('%s ', ccnGP{:}), brWin*1e3, ...
+    sprintf('%d ', Nex), thrshStr);
 saveFigure(fig, fullfile(figureDir, pfName), 1)
 % Tests for movement
 prms = nchoosek(1:Nccond,2);
