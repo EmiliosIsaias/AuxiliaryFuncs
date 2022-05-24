@@ -1,151 +1,77 @@
-fnOpts = {'UniformOutput', false};
-axOpts = {'Box','off','Color','none'};
-lgOpts = cat(2, axOpts{1:2}, {'Location','best'});
-ffle = @(x) fullfile(x.folder, x.name);
-vFiles = dir(fullfile(behDir, "roller*.avi"));
-fr = VideoReader(ffle(vFiles));
-fr = fr.FrameRate;
-rpFiles = dir(fullfile(behDir, "Roller_position*.csv"));
-rp = readRollerPositionsFile(ffle(rpFiles));
-[vf, rollTx] = getRollerSpeed(rp, fr);
-pTms = getCSVTriggers(fullfile(behDir, "Puff.csv")) - rollTx(1);
-lTms = getCSVTriggers(fullfile(behDir, "Laser.csv")) - rollTx(1);
-trialID = readCSVtimeStamps(fullfile(behDir, "PL.csv"));
-trialFlag = false(size(pTms));
-
-condNames = ["Control puff", "Laser100msPuff", "Laser"];
-
-chCond = [1,2];
-Nccond = length(chCond);
-consCondNames = cellstr(condNames(chCond));
-trialFlag(sub2ind(size(pTms), 1:size(pTms,1), ...
-    trialID(any(trialID(:,1) == chCond, 2), 1)')) = true;
-
-bvWin = [-0.25, 0.5];
-brWin = [1, 400]*1e-3;
-en2cm = ((2*pi)/((2^15)-1))*((14.85/2)^2)*fr;
-[~, vStack] = getStacks(false, round(pTms*fr), 'on', bvWin, fr, fr, ...
-    [], vf*en2cm);
-[~, Nt, Na] = size(vStack);
-stMdl = fit_poly([1, Nt], bvWin, 1); behTx = ((1:Nt)'.^[1,0]) * stMdl;
-bsFlag = behTx < 0;
-brFlag = behTx < brWin; brFlag = xor(brFlag(:,1),brFlag(:,2));
-% figure; plot(stTx, squeeze(vStack(:,:,trialFlag(:,1))))
-%%
-figureDir = fullfile(behDir, "BehFigures");
-if ~exist(figureDir, "dir")
-    if ~mkdir(figureDir)
-        error("Could not create figure directory!\n")
-    end
+%% 
+rwN = 4;
+[trialSubs, chTrSbs] = equiliseTrials(delayFlags, excFlag);
+Mxrs = max(cellfun(@(x, y) max(x(y)), mvpt, chTrSbs'));
+clrMap = bwg_cm(128);
+cSb = find(contains(consCondNames,'Control'));
+clMapAux = lines(Nccond);
+if cSb ~= 1
+    clMap = zeros(Nccond, 3); clMap(cSb,:) = 0.25*ones(1,3);
+    clMap(setdiff(1:Nccond,cSb),:) = clMapAux(2:end,:);
+else
+    clMap = clMapAux;
 end
-sSig = squeeze(std(vStack(:,bsFlag,:), [], 2));
-sOtLs = squeeze(quantile(vStack(:,bsFlag,:),1/2,2));
-[~, sigOrd] = sort(sSig, "descend");
-% A bit arbitrary threshold, but enough to remove running trials
-sigTh = 2.5; medTh = 0.2;
-thrshStr = sprintf("TH s%.2f m%.2f", sigTh, medTh);
-excFlag = sSig > sigTh | abs(sOtLs) > medTh;
-% excFlag = sSig > sigTh;
-ptOpts = {"Color", 0.7*ones(1,3), "LineWidth", 0.2;...
-    "Color", "k", "LineWidth",  1.5};
-spTh = {0.1:0.1:3}; % Speed threshold
-gp = zeros(Nccond, 1, 'single');
-rsPttrn = "%s roller speed VW%.2f - %.2f s RM%.2f - %.2f ms EX%d %s";
-pfPttrn = "%s move probability %.2f RW%.2f - %.2f ms EX%d %s";
-rsSgnls = cell(Nccond, 1); mvFlags = cell(Nccond,1); mvpt = mvFlags;
-qSgnls = rsSgnls; mat2ptch = @(x) [x(1:end,:)*[1;1]; x(end:-1:1,:)*[1;-1]];
-getThreshCross = @(x) sum(x)/size(x,1);
-xdf = arrayfun(@(x) ~excFlag & trialFlag(:,x), 1:Nccond, ...
-    fnOpts{:});  xdf = cat(2, xdf{:});
-
-for ccond = 1:Nccond
-    sIdx = xdf(:,ccond);
-    % % Plot speed signals
-    fig = figure("Color", "w");
-    Nex = sum(xor(sIdx, trialFlag(:,ccond)));
-    rsFigName = sprintf(rsPttrn,consCondNames{ccond}, bvWin,...
-        brWin*1e3, Nex, thrshStr);
-    % Plot all trials
-    plot(behTx, squeeze(vStack(:,:,sIdx)), ptOpts{1,:}); hold on;
-    % Plot mean of trials
-    % Standard deviation
-    %rsSgnls{ccond} = [squeeze(mean(vStack(:,:,sIdx),3))',...
-    %squeeze(std(vStack(:,:,sIdx),1,3))'];
-    % S.E.M.
-    rsSgnls{ccond} = [squeeze(mean(vStack(:,:,sIdx),3))',...
-        squeeze(std(vStack(:,:,sIdx),1,3))'./sqrt(sum(sIdx))];
-    qSgnls{ccond} = squeeze(quantile(vStack(:,:,sIdx),3,3));
-    lObj = plot(behTx, rsSgnls{ccond}(:,1), ptOpts{2,:});
-    lgnd = legend(lObj,string(consCondNames{ccond}));
-    set(lgnd, "Box", "off", "Location", "best")
-    set(gca, axOpts{:})
-    title(['Roller speed ',consCondNames{ccond}])
-    xlabel("Time [s]"); ylabel("Roller speed [cm/s]"); xlim(bvWin)
-    saveFigure(fig, fullfile(figureDir, rsFigName), 1)
-    % Probability plots
-    mvpt{ccond} = getMaxAbsPerTrial(squeeze(vStack(:,:,sIdx)), ...
-        brWin, behTx);
-    mvFlags{ccond} = compareMaxWithThresh(mvpt{ccond}, spTh);
-    gp(ccond) = getAUC(mvFlags{ccond});
-    pfName = sprintf(pfPttrn, consCondNames{ccond}, gp(ccond),...
-        brWin*1e3, Nex, thrshStr);
-    fig = plotThetaProgress(mvFlags(ccond), spTh,...
-        string(consCondNames{ccond}));
-    xlabel("Roller speed \theta [cm/s]");
-    title(sprintf("Trial proportion crossing \\theta: %.3f", gp(ccond)))
-    saveFigure(fig, fullfile(figureDir, pfName), 1)
+behFig = figure('Color', 'w', 'Name', 'Behaviour'); 
+axs = gobjects(Nccond+1,1);
+axSbs = (0:rwN-2)';
+for cc = 1:Nccond
+    axs(cc) = subplot(rwN, Nccond, (axSbs.^[1,0])*[Nccond;cc], 'Parent', behFig);
+    imagesc(axs(cc), behTx*1e3, [], squeeze(vStack(:,:,trialSubs(:,cc))/Mxrs)')
+    xlabel(axs(cc), 'Time [ms]')
 end
-clMap = lines(Nccond);
-phOpts = {'EdgeColor', 'none', 'FaceAlpha', 0.25, 'FaceColor'};
-% Plotting mean speed signals together
-fig = figure("Color", "w"); axs = axes("Parent", fig, "NextPlot", "add");
-arrayfun(@(x) patch(axs, behTx([1:end, end:-1:1]),...
+ylabel(axs(1), 'Trials')
+axs(Nccond+1) = subplot(rwN, Nccond, 1+Nccond*(rwN - 1):Nccond*rwN);
+arrayfun(@(x) patch(axs(end), 1e3*behTx([1:end, end:-1:1]),...
     mat2ptch(rsSgnls{x}), 1, phOpts{:}, clMap(x,:)), 1:Nccond); hold on
-lObj = arrayfun(@(x) plot(axs, behTx, rsSgnls{x}(:,1), "Color", clMap(x,:),...
-    "LineWidth", 1.5, "DisplayName", consCondNames{x}), 1:Nccond);
-xlabel(axs, "Time [s]"); xlim(axs, bvWin); ylabel(axs, "Roller speed [cm/s]")
-set(axs, axOpts{:}); title(axs, "Roller speed for all conditions")
-lgnd = legend(axs, lObj); set(lgnd, lgOpts{:})
-rsPttrn = "Mean roller speed %s VW%.2f - %.2f s RM%.2f - %.2f ms EX%s %s SEM";
-Nex = sum(trialFlag) - sum(xdf);
-rsFigName = sprintf(rsPttrn, sprintf('%s ', consCondNames{:}), bvWin,...
-    brWin*1e3, sprintf('%d ', Nex), thrshStr); 
-saveFigure(fig, fullfile(figureDir, rsFigName), 1)
-
-% Plotting median speed signals together
-q2patch = @(x) [x(:,1);x(end:-1:1,3)];
-fig = figure("Color", "w"); axs = axes("Parent", fig, "NextPlot", "add");
-arrayfun(@(x) patch(axs, behTx([1:end, end:-1:1]),...
-    q2patch(qSgnls{x}), 1, phOpts{:}, clMap(x,:)), 1:Nccond); hold on
-lObj = arrayfun(@(x) plot(axs, behTx, qSgnls{x}(:,2), "Color", clMap(x,:),...
-    "LineWidth", 1.5, "DisplayName", consCondNames{x}), 1:Nccond);
-xlabel(axs, "Time [s]"); xlim(axs, bvWin); ylabel(axs, "Roller speed [cm/s]")
-set(axs, axOpts{:}); title(axs, "Roller speed for all conditions")
-lgnd = legend(axs, lObj); set(lgnd, lgOpts{:})
-rsPttrn = "Median roller speed %s VW%.2f - %.2f s RM%.2f - %.2f ms EX%s %s SEM";
-Nex = sum(trialFlag) - sum(xdf);
-rsFigName = sprintf(rsPttrn, sprintf('%s ', consCondNames{:}), bvWin,...
-    brWin*1e3, sprintf('%d ', Nex), thrshStr); 
-saveFigure(fig, fullfile(figureDir, rsFigName), 1)
-
-% Plotting movement threshold crossings
-fig = figure("Color", "w"); axs = axes("Parent", fig, "NextPlot", "add");
-mvSgnls = cellfun(getThreshCross, mvFlags, fnOpts{:});
-mvSgnls = cat(1, mvSgnls{:}); mvSgnls = mvSgnls';
-plot(axs, spTh{1}, mvSgnls);
-ccnGP = cellfun(@(x, y) [x, sprintf(' AUC%.3f',y)], consCondNames', ...
-    num2cell(gp), fnOpts{:});
-lgnd = legend(axs, ccnGP); set(axs, axOpts{:})
-set(lgnd, lgOpts{:}); ylim(axs, [0,1])
-xlabel(axs, "Roller speed \theta [cm/s]"); ylabel(axs, "Trial proportion")
-title(axs, "Trial proportion crossing \theta")
-pfPttrn = "Move probability %sRW%.2f - %.2f ms EX%s %s";
-pfName = sprintf(pfPttrn, sprintf('%s ', ccnGP{:}), brWin*1e3, ...
-    sprintf('%d ', Nex), thrshStr);
-saveFigure(fig, fullfile(figureDir, pfName), 1)
-% Tests for movement
-prms = nchoosek(1:Nccond,2);
-getDistTravel = @(x) squeeze(sum(abs(vStack(:, brFlag, xdf(:,x))), 2));
-dstTrav = arrayfun(getDistTravel, 1:Nccond, fnOpts{:});
-[p, h, stats] = arrayfun(@(x) ranksum(dstTrav{prms(x,1)}, ...
-    dstTrav{prms(x,2)}), 1:size(prms,1), fnOpts{:});
+lObj = arrayfun(@(x) plot(axs(end), 1e3*behTx, rsSgnls{x}(:,1), ...
+    "Color", clMap(x,:), "LineWidth", 1.5, "DisplayName", ...
+    consCondNames{x}), 1:Nccond);
+xlabel(axs(end), "Time [ms]"); xlim(axs(end), 1e3*bvWin); 
+ylabel(axs(end), "Roller speed [cm/s]")
+set(axs, axOpts{:}); title(axs(end), "Roller speed for all conditions")
+lgnd = legend(axs(end), lObj); set(lgnd, lgOpts{:})
+arrayfun(@(x) set(x, 'CLim', [-1,1], 'Colormap', clrMap), ...
+    axs(1:end-1))
+arrayfun(@(x, y) title(x, y{1}), axs(1:end-1), consCondNames')
+arrayfun(@(x) set(get(x, 'YAxis'), 'Visible','off'), ...
+    axs(setdiff(1:(Nccond + 1), [1, Nccond + 1])));
+cb = colorbar(axs(Nccond), axOpts{1:2}, 'Location', 'west', ...
+    'TickDirection', 'none', 'Ticks', [-0.9,0.9], 'TickLabels', ...
+    {'Backward', 'Forward'}, 'AxisLocation', 'out');
+rsPttrn = "Roller speed per trial %sVW%.2f - %.2f ms EX%s%s";
+rsptName = sprintf(rsPttrn, sprintf('%s ', consCondNames{:}), bvWin*1e3, ...
+    sprintf('%d ', Nex), thrshStr); rsptFile = fullfile(figureDir, rsptName);
+saveFigure(behFig, rsptFile, 1)
+%%
+axSbs = (0:rwN-2)';
+clrMap = rocket(128);
+fPSTH = PSTH ./ reshape(Na*binSz, 1, 1, Nccond);
+zPSTH = zscore(fPSTH, 1, [2,3]); zPopPSTH = squeeze(mean(zPSTH, 1));
+Mxe = max(zPopPSTH, [], "all"); Mne = min(zPopPSTH, [], "all");
+ephysFig = figure('Color', 'w', 'Name', 'Ephys');
+axs = gobjects(Nccond+1,1);
+for cc = 1:Nccond
+    axs(cc) = subplot(rwN, Nccond, (axSbs.^[1,0])*[Nccond;cc], 'Parent', ephysFig);
+    imagesc(axs(cc), timeLapse*1e3, [], zPSTH(:,:,cc), [Mne, Mxe])
+    xlabel(axs(cc), 'Time [ms]'); yticks(axs(cc), []);
+    title(axs(cc), consCondNames{cc}); colormap(rocket(128))
+end
+ylabel(axs(1), 'Units'); 
+axs(Nccond+1) = subplot(rwN, Nccond, 1+Nccond*(rwN - 1):Nccond*rwN, ...
+    'NextPlot', 'add');
+lObj = arrayfun(@(x) plot(axs(end), 1e3*psthTx, zPopPSTH(:,x), ...
+    "Color", clMap(x,:), "LineWidth", 1.5, ...
+    "DisplayName", consCondNames{x}), 1:Nccond);
+lgnd = legend(axs(end), lObj); set(lgnd, lgOpts{:})
+xlabel(axs(end), 'Time [ms]'); ylabel(axs(end), "Z-score")
+arrayfun(@(x) set(get(x, 'YAxis'), 'Visible','off'), ...
+    axs(setdiff(1:(Nccond + 1), [1, Nccond + 1])));
+set(axs, axOpts{:});
+cb = colorbar(axs(Nccond), axOpts{1:2}, 'Location', 'west', ...
+    'TickDirection', 'none', 'AxisLocation', 'in', ...
+    'Color', 0.85*ones(1,3)); cb.Label.String = 'Z-score';
+ephysPttrn = 'Z-score all-units PSTH %s VW%.2f - %.2f ms Ntrials%s';
+ephysName = sprintf(ephysPttrn, sprintf('%s ', consCondNames{:}), ...
+    timeLapse*1e3, sprintf(' %d', Na));
+ephysFile = fullfile(figureDir, ephysName);
+saveFigure(ephysFig, ephysFile, 1, 1);
