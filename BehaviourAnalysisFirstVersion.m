@@ -40,11 +40,12 @@ if ~exist(figureDir, "dir")
 end
 sSig = squeeze(std(vStack(:,bsFlag,:), [], 2));
 sOtLs = squeeze(quantile(vStack(:,bsFlag,:),1/2,2));
+tMed = squeeze(median(vStack,2));
 [~, sigOrd] = sort(sSig, "descend");
 % A bit arbitrary threshold, but enough to remove running trials
-sigTh = 2.5; medTh = 0.2;
-thrshStr = sprintf("TH s%.2f m%.2f", sigTh, medTh);
-excFlag = sSig > sigTh | abs(sOtLs) > medTh;
+sigTh = 2.5; sMedTh = 0.2; medTh = 1;
+thrshStr = sprintf("TH ss%.2f sm%.2f tm%.2f", sigTh, sMedTh, medTh);
+excFlag = sSig > sigTh | abs(sOtLs) > sMedTh | abs(tMed) > medTh;
 % excFlag = sSig > sigTh;
 ptOpts = {"Color", 0.7*ones(1,3), "LineWidth", 0.2;...
     "Color", "k", "LineWidth",  1.5};
@@ -143,9 +144,19 @@ pfPttrn = "Move probability %sRW%.2f - %.2f ms EX%s %s";
 pfName = sprintf(pfPttrn, sprintf('%s ', ccnGP{:}), brWin*1e3, ...
     sprintf('%d ', Nex), thrshStr);
 saveFigure(fig, fullfile(figureDir, pfName), 1)
+
+% Plotting maximum speed for all considered trials
+fig = figure; axs = axes('Parent', fig, 'NextPlot', 'add'); arrayfun(@boxchart, mvpt)
+
 % Tests for movement
 prms = nchoosek(1:Nccond,2);
 getDistTravel = @(x) squeeze(sum(abs(vStack(:, brFlag, xdf(:,x))), 2));
 dstTrav = arrayfun(getDistTravel, 1:Nccond, fnOpts{:});
 [p, h, stats] = arrayfun(@(x) ranksum(dstTrav{prms(x,1)}, ...
     dstTrav{prms(x,2)}), 1:size(prms,1), fnOpts{:});
+
+resPttrn = "Results %sVW%.2f - %.2f ms RW%.2f - %.2f ms EX%s%s.mat";
+resName = sprintf(resPttrn, sprintf('%s ',consCondNames{:}), bvWin*1e3, ...
+    brWin*1e3, sprintf('%d ', Nex), thrshStr);
+save(fullfile(behDir, resName), "gp", "dstTrav", "ccnGP", "mvpt", "xdf", ...
+    "vStack", "spTh", "sigTh", "sMedTh", "medTh", "brWin", "bvWin", "prms")
