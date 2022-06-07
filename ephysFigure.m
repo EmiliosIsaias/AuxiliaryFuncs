@@ -6,7 +6,8 @@ cbOpts = {'AxisLocation', 'in', 'Box', 'off', 'Location', 'west',...
 axOpts = {'Box', 'off', 'Color', 'none','Clipping','off'};
 brOpts = {'EdgeColor','none','FaceColor','flat'};
 lnOpts = {'LineStyle','--','Color','w'};
-repU = @(x) strrep(x,'_','.');
+dgOpts = {'EdgeColor', 'none'};
+repU = @(x) strrep(x,'_','.'); m = 1e-3; k = 1/m;
 %%
 fsStruct1 = getFirstSpikeInfo(relativeSpkTmsStruct1, configStructure1);
 fsStruct2 = getFirstSpikeInfo(relativeSpkTmsStruct2, configStructure2);
@@ -44,7 +45,26 @@ respFlag = psthTx >= responseWindow;
 respFlag = xor(respFlag(:,1), respFlag(:,2));
 sponFlag = psthTx >= spontanousWindow; 
 sponFlag = xor(sponFlag(:,1), sponFlag(:,2));
+%% ISI violations
+rpTh = [0.5, 1, 1.5, 2, 5, 10]*m;
+arpTh = 1.5*m;
+pSpkTms = cellfun(@(x, y) x./y, pSpkSubs, ...
+    num2cell([repmat(fs, size(pSpkSubs, 1) - size(spkSubs, 1), 1); ...
+    repmat(fsExp, size(spkSubs, 1), 1)]), fnOpts{:});
+pIsi = cellfun(@diff, pSpkTms, fnOpts{:});
+isiProp = cellfun(@(x) sum(x<arpTh)/(numel(x)+1), pIsi);
+% [bc, be] = prepareLogBinEdges([1e-5, 1e2], 128);
+% lisiDist = cellfun(@(x) histcounts(x, 10.^be), pIsi, fnOpts{:});
+% lisiDist = cellfun(@(x) x./diff(10.^be), lisiDist, fnOpts{:});
+% lisiDist = cellfun(@(x) x/sum(x), lisiDist, fnOpts{:});
+% arpV = cell2mat(cellfun(@(x) interp1(10.^bc, cumsum(x), rpTh), ...
+%     lisiDist, fnOpts{:}));
+% figure; imagesc(arpV*1e2, [0, 3]); xticklabels(rpTh*k)
+
+
+
 %%
+
 mP = 0;
 prpTh = 0.1:0.01:0.9;
 for cp = prpTh
@@ -128,8 +148,8 @@ oSel = 2; % Cortex selection 1- MC; 2- BC
 [zPSTH, mu, sig] = zscore(PSTH, 1, [2,3]); % Z-score for all time and both conditions
 cLims = [min(zPSTH(:)), max(zPSTH(:))];
 
-zMu = arrayfun(@(x) mean(zPSTH(rclIdx(:,x),:, x)), 1:2 ,fnOpts{:});
-zMu = cat   (1, zMu{:});
+zMu = arrayfun(@(x) mean(zPSTH(rclIdx(:,x),:, x)), 1:size(zPSTH,3),fnOpts{:});
+zMu = cat(1, zMu{:});
 zLim = round([min(zMu, [], "all"), max(zMu,[], "all")],1);
 
 axsSubs = (12*(0:4))+(1:5)';
@@ -157,23 +177,32 @@ set(get(axs(2),"XAxis"), "Visible", "off")
 
 axsSubs = 6*(1:2:10);
 axs(3) = subplot(6,12,axsSubs(:));
-barh(axs(3), 1:sum(arcIdx), -rclIdx(ordSubs(arcIdx(ordSubs)),1), "EdgeColor", "none"); 
+barh(axs(3), 1:sum(arcIdx), -rclIdx(ordSubs(arcIdx(ordSubs)),1), dgOpts{:}); 
 hold(axs(3), 'on')
-barh(axs(3), 1:sum(arcIdx), rclIdx(ordSubs(arcIdx(ordSubs)),2), "EdgeColor", "none");
+barh(axs(3), 1:sum(arcIdx), rclIdx(ordSubs(arcIdx(ordSubs)),2), dgOpts{:});
 ylim(axs(3), ylim(axs(1))); %xlabel(axs(3), "Responsive?")
 axs(3).XAxis.Visible = 'off';
 
 axsSubs = 12*(1:5);
-axs(4) = subplot(6,12,axsSubs); barh(axs(4), 1:sum(arcIdx), signMat(ordSubs(arcIdx(ordSubs)),2))
+axs(4) = subplot(6, 12, axsSubs); 
+% barh(axs(4), 1:sum(arcIdx), ...
+%     signMat(ordSubs(arcIdx(ordSubs)),2), dgOpts{:})
+barh(axs(4), isiProp(ordSubs(arcIdx(ordSubs)))*1e2, dgOpts{:});
+xl = xline(axs(4), 3, 'LineStyle', '--', 'DisplayName', '3%');
 set(axs(4), axOpts{:}); ylim(axs(4), ylim(axs(1)))
-xlabel(axs(4), "Responsivity")
+% xlabel(axs(4), "Responsivity")
+xlabel(axs(4), "ISI violation [%]")
 arrayfun(@(x) set(get(x,'YAxis'),'Visible','off'), axs(2:4));
 arrayfun(@(x) set(x, "CLim", cLims), axs([1,2]))
-axs(4).XAxis.Visible = 'off';
+title(axs(4), sprintf("ISI < %.2f ms", arpTh*k))
+text(axs(4), 3, find(isiProp(ordSubs(arcIdx(ordSubs)))*1e2<3,1,'first'), ...
+    '3%')
+axs(4).XAxis.Visible = 'on';
+axs(4).YAxis.Visible = 'off';
 
 axsSubs = 12*5+(1:5);
 axs(5) = subplot(6, 12, axsSubs(:), "NextPlot", "add");
-plt = plot(axs(5), psthTx, zMu(1,:)');
+plot(axs(5), psthTx, zMu(1,:)');
 xlim(axs(5), timeLapse); 
 xticklabels(axs(5), xticks(axs(5))*1e3); xlabel(axs(5), "Time [ms]")
 ylabel(axs(5), "Z-score");
@@ -181,8 +210,7 @@ ylim(axs(5), zLim)
 
 axsSubs = 12*5+(7:11);
 axs(6) = subplot(6,12,axsSubs(:), "NextPlot", "add");
-plt = plot(axs(6), psthTx, zMu(2,:)');
-xlim(axs(6), timeLapse); 
+plot(axs(6), psthTx, zMu(2,:)'); xlim(axs(6), timeLapse); 
 xticklabels(axs(6), xticks(axs(6))*1e3); xlabel(axs(6), "Time [ms]")
 axs(6).YAxis.Visible = 'off';
 ylim(axs(6), zLim)
@@ -192,9 +220,6 @@ axs(7) = subplot(6,12,axsSubs);
 pie(axs(7), [T-C, C], [0,1])
 
 set(axs, axOpts{:})
-
-%% Z Population PSTH
-
 
 %%
 Nctx = size(PSTH,3);
