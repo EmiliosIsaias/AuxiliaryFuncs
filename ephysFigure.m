@@ -48,18 +48,27 @@ sponFlag = xor(sponFlag(:,1), sponFlag(:,2));
 %% ISI violations
 rpTh = [0.5, 1, 1.5, 2, 5, 10]*m;
 arpTh = 1.5*m;
+[bc, be] = prepareLogBinEdges([1e-5, 1e2], 128);
+
 pSpkTms = cellfun(@(x, y) x./y, pSpkSubs, ...
     num2cell([repmat(fs, size(pSpkSubs, 1) - size(spkSubs, 1), 1); ...
     repmat(fsExp, size(spkSubs, 1), 1)]), fnOpts{:});
 pIsi = cellfun(@diff, pSpkTms, fnOpts{:});
-isiProp = cellfun(@(x) sum(x<arpTh)/(numel(x)+1), pIsi);
-% [bc, be] = prepareLogBinEdges([1e-5, 1e2], 128);
+spurSpkFlags = cellfun(@(x) x<m, pIsi, fnOpts{:});
+pSpkTmsClean = cellfun(@(x, y) x([false;~y]), pSpkTms, spurSpkFlags, fnOpts{:});
+pIsiClean = cellfun(@diff, pSpkTmsClean, fnOpts{:});
+% isiProp = cellfun(@(x) sum(x<arpTh)/(numel(x)+1), pIsi);
 % lisiDist = cellfun(@(x) histcounts(x, 10.^be), pIsi, fnOpts{:});
 % lisiDist = cellfun(@(x) x./diff(10.^be), lisiDist, fnOpts{:});
 % lisiDist = cellfun(@(x) x/sum(x), lisiDist, fnOpts{:});
 % arpV = cell2mat(cellfun(@(x) interp1(10.^bc, cumsum(x), rpTh), ...
 %     lisiDist, fnOpts{:}));
 % figure; imagesc(arpV*1e2, [0, 3]); xticklabels(rpTh*k)
+isiProp = cellfun(@(x) sum(x<arpTh)/(numel(x)+1), pIsiClean);
+lisiDist = cellfun(@(x) histcounts(x, 10.^be), pIsiClean, fnOpts{:});
+lisiDist = cellfun(@(x) x/sum(x), lisiDist, fnOpts{:});
+arpV = cell2mat(cellfun(@(x) interp1(10.^bc, cumsum(x), rpTh), ...
+    lisiDist, fnOpts{:}));
 
 
 
@@ -187,15 +196,19 @@ axsSubs = 12*(1:5);
 axs(4) = subplot(6, 12, axsSubs); 
 % barh(axs(4), 1:sum(arcIdx), ...
 %     signMat(ordSubs(arcIdx(ordSubs)),2), dgOpts{:})
-barh(axs(4), isiProp(ordSubs(arcIdx(ordSubs)))*1e2, dgOpts{:});
+% barh(axs(4), isiProp(ordSubs(arcIdx(ordSubs)))*1e2, dgOpts{:});
+bV = barh(axs(4), arpV(ordSubs(arcIdx(ordSubs)), 1:4)*1e2, dgOpts{:});
 xl = xline(axs(4), 3, 'LineStyle', '--', 'DisplayName', '3%');
 set(axs(4), axOpts{:}); ylim(axs(4), ylim(axs(1)))
 % xlabel(axs(4), "Responsivity")
+lgnd = legend(bV, string(k*rpTh)+" ms"); set(lgnd, lgOpts{:});
 xlabel(axs(4), "ISI violation [%]")
 arrayfun(@(x) set(get(x,'YAxis'),'Visible','off'), axs(2:4));
 arrayfun(@(x) set(x, "CLim", cLims), axs([1,2]))
 title(axs(4), sprintf("ISI < %.2f ms", arpTh*k))
-text(axs(4), 3, find(isiProp(ordSubs(arcIdx(ordSubs)))*1e2<3,1,'first'), ...
+% text(axs(4), 3, find(isiProp(ordSubs(arcIdx(ordSubs)))*1e2<3,1,'first'), ...
+%     '3%')
+text(axs(4), 3, find(arpV(ordSubs(arcIdx(ordSubs)),4)*1e2<3,1,'first'), ...
     '3%')
 axs(4).XAxis.Visible = 'on';
 axs(4).YAxis.Visible = 'off';
