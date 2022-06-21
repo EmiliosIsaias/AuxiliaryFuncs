@@ -74,7 +74,7 @@ pIsiClean = cellfun(@diff, pSpkTmsClean, fnOpts{:});
 % lisiDist = cellfun(@(x) x./diff(10.^be), lisiDist, fnOpts{:});
 % lisiDist = cellfun(@(x) x/sum(x), lisiDist, fnOpts{:});
 % arpV = cell2mat(cellfun(@(x) interp1(10.^bc, cumsum(x), rpTh), ...
-%     lisiDist, fnOpts{:}));
+%    lisiDist, fnOpts{:}));
 % figure; imagesc(arpV*1e2, [0, 3]); xticklabels(rpTh*k)
 isiProp = cellfun(@(x) sum(x<arpTh)/(numel(x)+1), pIsiClean);
 lisiDist = cellfun(@(x) histcounts(x, 10.^be), pIsiClean, fnOpts{:});
