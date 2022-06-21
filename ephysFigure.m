@@ -8,6 +8,18 @@ brOpts = {'EdgeColor','none','FaceColor','flat'};
 lnOpts = {'LineStyle','--','Color','w'};
 dgOpts = {'EdgeColor', 'none'};
 repU = @(x) strrep(x,'_','.'); m = 1e-3; k = 1/m;
+%% Refractory period violation cleaning
+isi1 = arrayfun(@(x) cellfun(@(y) diff(y), x.SpikeTimes, fnOpts{:}), ...
+    relativeSpkTmsStruct1, fnOpts{:});
+rpvFlag1 = cellfun(@(x) cellfun(@(y) y < m, x, fnOpts{:}), isi1, fnOpts{:});
+cleanSpkTms1 = cellfun(@(x,y) cellfun(@(u,v) u([true&numel(u), ~v]), ...
+    x, y, fnOpts{:}), {relativeSpkTmsStruct1.SpikeTimes}, rpvFlag1, ...
+    fnOpts{:}); relativeSpkTmsStruct1_clean = relativeSpkTmsStruct1;
+for ci = 1:numel(relativeSpkTmsStruct1)
+    relativeSpkTmsStruct1_clean(ci).SpikeTimes = cleanSpkTms1(ci);
+end
+
+
 %%
 fsStruct1 = getFirstSpikeInfo(relativeSpkTmsStruct1, configStructure1);
 fsStruct2 = getFirstSpikeInfo(relativeSpkTmsStruct2, configStructure2);
