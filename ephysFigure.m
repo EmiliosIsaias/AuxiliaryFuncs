@@ -201,12 +201,13 @@ axsSubs = 12*(1:5);
 axs(4) = subplot(6, 12, axsSubs); 
 % barh(axs(4), 1:sum(arcIdx), ...
 %     signMat(ordSubs(arcIdx(ordSubs)),2), dgOpts{:})
-% barh(axs(4), isiProp(ordSubs(arcIdx(ordSubs)))*1e2, dgOpts{:});
-bV = barh(axs(4), arpV(ordSubs(arcIdx(ordSubs)), 1:4)*1e2, dgOpts{:});
+bV = barh(axs(4), isiProp(ordSubs(arcIdx(ordSubs)))*1e2, dgOpts{:});
+%bV = barh(axs(4), arpV(ordSubs(arcIdx(ordSubs)), 1:4)*1e2, dgOpts{:});
 xl = xline(axs(4), 3, 'LineStyle', '--', 'DisplayName', '3%');
 set(axs(4), axOpts{:}); ylim(axs(4), ylim(axs(1)))
 % xlabel(axs(4), "Responsivity")
-lgnd = legend(bV, string(k*rpTh)+" ms"); set(lgnd, lgOpts{:});
+% lgnd = legend(bV, string(k*rpTh)+" ms"); set(lgnd, lgOpts{:});
+lgnd = legend(bV, string(k*arpTh)+" ms"); set(lgnd, lgOpts{:});
 xlabel(axs(4), "ISI violation [%]")
 arrayfun(@(x) set(get(x,'YAxis'),'Visible','off'), axs(2:4));
 arrayfun(@(x) set(x, "CLim", cLims), axs([1,2]))
