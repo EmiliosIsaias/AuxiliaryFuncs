@@ -50,7 +50,7 @@ respFlag = psthTx >= responseWindow;
 respFlag = xor(respFlag(:,1), respFlag(:,2));
 sponFlag = psthTx >= spontanousWindow; 
 sponFlag = xor(sponFlag(:,1), sponFlag(:,2));
-%% ISI violations
+%% ISI violations measurement
 rpTh = [0.5, 1, 1.5, 2, 5, 10]*m;
 arpTh = 1.5*m;
 [bc, be] = prepareLogBinEdges([1e-5, 1e2], 128);
@@ -168,7 +168,7 @@ zLim = round([min(zMu, [], "all"), max(zMu,[], "all")],1);
 
 axsSubs = (12*(0:4))+(1:5)';
 figure; axs(1) = subplot(6,12,axsSubs(:),"NextPlot","add"); 
-imagesc(axs(1), timeLapse, [], zPSTH(ordSubs(arcIdx(ordSubs)),:,1)); colormap(axs(1), hot);
+imagesc(axs(1), timeLapse, [], zPSTH(ordSubs(arcIdx(ordSubs)),:,1)); colormap(axs(1), rocket);
 xlabel(axs(1), "Time [ms]"); title(axs(1), "MC stimulation"); yticks(axs(1), 1:sum(arcIdx));
 yticklabels(axs(1), repU(gclID(ordSubs(arcIdx(ordSubs))))); ylabel(axs(1), "Units")
 cb = colorbar(axs(1), cbOpts{:}); cb.Label.String = 'Z-score';
@@ -180,7 +180,7 @@ set(get(axs(1),"XAxis"), "Visible", "off")
 
 axsSubs = (12*(0:4))+(7:11)';
 axs(2) = subplot(6,12,axsSubs(:), "NextPlot","add");
-imagesc(axs(2),timeLapse, [], zPSTH(ordSubs(arcIdx(ordSubs)),:,2)); colormap(axs(2),hot);
+imagesc(axs(2),timeLapse, [], zPSTH(ordSubs(arcIdx(ordSubs)),:,2)); colormap(axs(2),rocket);
 xlabel(axs(2), "Time [ms]"); xticklabels(axs(2), xticks(axs(2))*1e3);
 title(axs(2), "BC stimulation"); 
 plot(axs(2), repmat(responseWindow,2,1), ylim(axs(2)), lnOpts{:})
