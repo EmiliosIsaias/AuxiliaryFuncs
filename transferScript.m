@@ -1,4 +1,4 @@
-%% 
+%% Roller speed per trial
 rwN = 4;
 [trialSubs, chTrSbs] = equiliseTrials(delayFlags, excFlag);
 Mxrs = max(cellfun(@(x, y) max(x(y)), mvpt, chTrSbs'));
