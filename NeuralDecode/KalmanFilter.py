@@ -6,6 +6,7 @@ Created on Thu Sep  1 11:20:47 2022
 """
 
 import pickle
+from sklearn.model_selection import train_test_split
 
 from scipy import stats
 # from scipy.signal import convolve, windows # Plan to smooth the histograms
@@ -47,13 +48,14 @@ pos_binned[0] = vel_times[0] #Assume starting position is at [0,0]
 for i in range(pos_binned.shape[0]-1): 
     pos_binned[i+1] = pos_binned[i]+vels_binned[i]*bin_size
     
-    #We will now determine acceleration    
-    temp=np.diff(vels_binned,axis=0) 
-    #Assume acceleration at last time point is same as 2nd to last
-    acc_binned=np.concatenate((temp,temp[-1:,:]),axis=0) 
+#We will now determine acceleration    
+temp=np.diff(vels_binned,axis=0) 
+#Assume acceleration at last time point is same as 2nd to last
+acc_binned=np.concatenate((temp,temp[-1:,:]),axis=0) 
     
-    #The final output covariates include position, velocity, and acceleration
-    y_kf_o=np.concatenate((pos_binned,vels_binned,acc_binned),axis=1)
+#The final output covariates include position, velocity, and acceleration
+y_kf_o=np.concatenate((pos_binned,vels_binned,acc_binned),axis=1)
+    
     
 #The covariate is simply the matrix of firing rates for all neurons over time
 X_kf_o = neural_data
@@ -65,11 +67,13 @@ num_examples = X_kf_o.shape[0]
 
 # Kalman filter history lag = -1 means 1 bin before the output
 lags = -10
+Nlags = np.abs(lags)
 Nc = 20
 Cs = np.logspace(-1, 3, num=Nc)
 tss_it = model_selection.TimeSeriesSplit(n_splits=5)
-for lag in range(lags,0):
-
+r2_lag = np.zeros(Nlags)
+for l, lag in enumerate(range(lags,0)):
+    print("L: ", lag)
     X_kf = X_kf_o
     y_kf = y_kf_o
     
@@ -90,19 +94,34 @@ for lag in range(lags,0):
     
     r2_mat = np.zeros((Nc, np.abs(lags)))
     for y, C in enumerate(Cs):
-        r2_mean = []
+        print("C: ", C)
+        r2s = []
         for x, idxs in enumerate(tss_it.split(X_kf)):
             train, test = idxs
             # Model definition (maybe not necessary to re-instanciate)
             kf_model = KalmanFilterDecoder(C=C)
             kf_model.fit(X_kf[train,:], y_kf[train,:])
             y_test = kf_model.predict(X_kf[test,:], y_kf[test,:])
-            r2_mean.append(metrics.get_R2(y_kf[test,:], y_test))
-        r2_mean = np.array(r2_mean)
-        r2_mat[y,x]=r2_mean[1,:].mean(axis=0)
-        print('L: {}, C: {}, R2: {}'.format(lag, C, r2_mean[1,:].mean(axis=0)))
-plt.figure
-plt.imshow(r2_mat)
+            r2s.append(metrics.get_R2(y_kf[test,:], y_test))
+            #print('L: {}, C: {}, R2: {}'.format(lag, C, r2s[1,:].mean(axis=0)))
+        r2s = np.array(r2s)
+        r2_mat[y,l]=r2s[1,:].mean(axis=0)
+        
+    r2_mean = r2_mat
+    opt_C = np.argmax(r2_mean)
+    print("Max R²: {}, optimal C: {}".format(r2_mean[opt_C], Cs[opt_C]))
+    r2_lag[l] = r2_mean[opt_C]
+plt.figure(figsize=(10,5))
+plt.plot(np.arange(lags,0, 1), r2_lag)
 
-    
+
+#r2_mean = r2_mat.mean(axis=1)
+#opt_C = np.argmax(r2_mean)
+#kf_model = KalmanFilterDecoder(C=Cs[opt_c])
+#kf_model.fit(X_kf[train,:], y_)
+#y_test = kf_model.predict(X_kf[test,:], y_kf[test,:])
+#plt.figure(figsize=(10,5))
+#plt.xlabel('Constraint weight')
+#plt.ylabel('R2')
+#plt.semilogx(Cs, r2_mat.mean(axis=0))
 
