@@ -9,6 +9,7 @@ import pickle
 from sklearn.model_selection import train_test_split
 
 from scipy import stats
+from scipy.io import savemat
 # from scipy.signal import convolve, windows # Plan to smooth the histograms
 
 import pathlib as pl
@@ -72,6 +73,7 @@ Nc = 20
 Cs = np.logspace(-1, 3, num=Nc)
 tss_it = model_selection.TimeSeriesSplit(n_splits=5)
 r2_lag = np.zeros(Nlags)
+r2_mat = np.zeros((Nc, np.abs(lags)))
 for l, lag in enumerate(range(lags,0)):
     print("L: ", lag)
     X_kf = X_kf_o
@@ -92,7 +94,7 @@ for l, lag in enumerate(range(lags,0)):
 
     # ================================ Splitting =============================
     
-    r2_mat = np.zeros((Nc, np.abs(lags)))
+    
     for y, C in enumerate(Cs):
         print("C: ", C)
         r2s = []
@@ -107,12 +109,12 @@ for l, lag in enumerate(range(lags,0)):
         r2s = np.array(r2s)
         r2_mat[y,l]=r2s[1,:].mean(axis=0)
         
-    r2_mean = r2_mat
-    opt_C = np.argmax(r2_mean)
-    print("Max R²: {}, optimal C: {}".format(r2_mean[opt_C], Cs[opt_C]))
-    r2_lag[l] = r2_mean[opt_C]
-plt.figure(figsize=(10,5))
-plt.plot(np.arange(lags,0, 1), r2_lag)
+print('Debug')
+    #opt_C = np.argmax(r2_mean)
+    #print("Max R²: {}, optimal C: {}".format(r2_mean[opt_C], Cs[opt_C]))
+    #r2_lag[l] = r2_mean[opt_C]
+#plt.figure(figsize=(10,5))
+#plt.plot(np.arange(lags,0, 1), r2_lag)
 
 
 #r2_mean = r2_mat.mean(axis=1)
