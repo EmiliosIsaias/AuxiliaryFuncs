@@ -5,7 +5,7 @@ Created on Fri Sep  9 14:13:30 2022
 @author: Emilio Isaias-Camacho
 """
 
-from sklearn import linear_model, model_selection
+from sklearn import linear_model, model_selection, metrics
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,8 +29,19 @@ Yv = np.squeeze(data['is_vpm'])
 Yp = np.squeeze(data['is_pom'])
 
 
+
+# Puff and touch
 X = np.concatenate((sts.zscore(puffH, axis=1),
                     sts.zscore(touchH, axis=1)), axis=1)
+
+"""
+# Puff
+X = sts.zscore(puffH, axis=1)
+"""
+"""
+# Touch
+X = sts.zscore(touchH, axis=1)
+"""
 
 X_train, X_test, y_train, y_test = model_selection.train_test_split(
     X, Yv, 
@@ -38,9 +49,12 @@ X_train, X_test, y_train, y_test = model_selection.train_test_split(
     random_state=71)
 
 log_reg_model = linear_model.LogisticRegressionCV(
-    Cs=np.logspace(-3, 3, num=20), penalty='l2', solver='lbfgs')
+    Cs=np.logspace(-3, 3, num=100), penalty='l2', solver='lbfgs')
 
 log_reg_model.fit(X_train, y_train)
 
 tot_score, perm_scores, p = model_selection.permutation_test_score(
     log_reg_model, X, Yv)
+
+print("Total accuracy: {} | P: {} | Accuracy: {}".format(
+    tot_score,p,metrics.accuracy_score(Yv, log_reg_model.predict(X))))
