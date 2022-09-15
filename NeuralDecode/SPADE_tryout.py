@@ -70,12 +70,18 @@ import neo
 import elephant
 import viziphant
 import pathlib as pl
-
+""" 
+#Windows
 folder = pl.Path(
     r'Z:\Emilio\SuperiorColliculusExperiments\Roller' + 
     r'\Batch2_ephys\MC\GAD18\211205_C\ephys_F')
+"""
+ #Linux
+folder = pl.Path(
+    r'/mnt/sds-hd/sd19b001/Emilio/SuperiorColliculusExperiments/'+
+    r'Roller/Batch2_ephys/MC/GAD18/211205_C/ephys_F')
+ 
 folder = folder.as_posix()
-
 file_name = folder + r'/GADi18_SpkTms+vels.mat'
 
 data = io.loadmat(file_name)
@@ -108,7 +114,7 @@ spade_output = elephant.spade.spade(
 
 patterns = spade_output['patterns']
 
-viziphant.patterns.plot_patterns(spike_times, patterns)
+#viziphant.patterns.plot_patterns(spike_times, patterns)
 
 
 
