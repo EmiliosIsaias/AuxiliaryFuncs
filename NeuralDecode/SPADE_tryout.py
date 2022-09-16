@@ -68,19 +68,20 @@ import numpy as np
 import quantities as pq
 import neo
 import elephant
-import viziphant
+#import viziphant
 import pathlib as pl
-""" 
+
 #Windows
 folder = pl.Path(
     r'Z:\Emilio\SuperiorColliculusExperiments\Roller' + 
     r'\Batch2_ephys\MC\GAD18\211205_C\ephys_F')
+
 """
  #Linux
 folder = pl.Path(
     r'/mnt/sds-hd/sd19b001/Emilio/SuperiorColliculusExperiments/'+
     r'Roller/Batch2_ephys/MC/GAD18/211205_C/ephys_F')
- 
+"""
 folder = folder.as_posix()
 file_name = folder + r'/GADi18_SpkTms+vels.mat'
 
@@ -101,15 +102,15 @@ for cst, spkTms in enumerate(spike_times):
     spiketrains.append(neo.core.SpikeTrain(
         np.squeeze(spike_times[cst])*pq.s,
         t_stop=1320*pq.s))
-print("Spike train formated")
+print("Spike train formated. Starting SPADE:")
 
 spade_output = elephant.spade.spade(
     spiketrains=spiketrains,
     bin_size=1*pq.s,
     winlen=1,                   # 1 bin means synchronous patterns
     min_spikes=3,
-    n_surrogates=10,
-    dither=15*pq.ms,
+    n_surrogates=20,
+    dither=20*pq.ms,
     psr_param=[0, 0, 0])
 
 patterns = spade_output['patterns']
