@@ -70,18 +70,18 @@ import neo
 import elephant
 #import viziphant
 import pathlib as pl
-
+"""
 #Windows
 folder = pl.Path(
     r'Z:\Emilio\SuperiorColliculusExperiments\Roller' + 
     r'\Batch2_ephys\MC\GAD18\211205_C\ephys_F')
-
 """
+
  #Linux
 folder = pl.Path(
     r'/mnt/sds-hd/sd19b001/Emilio/SuperiorColliculusExperiments/'+
     r'Roller/Batch2_ephys/MC/GAD18/211205_C/ephys_F')
-"""
+
 folder = folder.as_posix()
 file_name = folder + r'/GADi18_SpkTms+vels.mat'
 
@@ -109,7 +109,7 @@ spade_output = elephant.spade.spade(
     bin_size=1*pq.s,
     winlen=1,                   # 1 bin means synchronous patterns
     min_spikes=3,
-    n_surrogates=20,
+    n_surrogates=50,
     dither=20*pq.ms,
     psr_param=[0, 0, 0])
 
