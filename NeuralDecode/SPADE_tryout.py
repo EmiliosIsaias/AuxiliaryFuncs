@@ -109,8 +109,8 @@ spade_output = elephant.spade.spade(
     bin_size=1*pq.s,
     winlen=1,                   # 1 bin means synchronous patterns
     min_spikes=3,
-    n_surrogates=50,
-    dither=20*pq.ms,
+    n_surrogates=20,
+    dither=10*pq.ms,
     psr_param=[0, 0, 0])
 
 patterns = spade_output['patterns']
