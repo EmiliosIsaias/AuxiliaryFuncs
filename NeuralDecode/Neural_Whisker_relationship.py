@@ -79,17 +79,13 @@ lw_binned = bin_output(lw, time_axis, dt, t_start, t_end)
 rw_binned = bin_output(rw, time_axis, dt, t_start, t_end)
 nose_binned = bin_output(nose, time_axis, dt, t_start, t_end)
 
-bins_before=6 #How many bins of neural data prior to the output are used for decoding
-bins_current=1 #Whether to use concurrent time bin of neural data
-bins_after=6 #How many bins of neural data after the output are used for decoding
-
-# Format for recurrent neural networks (SimpleRNN, GRU, LSTM)
-# Function to get the covariate matrix that includes spike history from previous bins
-X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
-
 # Format for Wiener Filter, Wiener Cascade, XGBoost, and Dense Neural Network
 #Put in "flat" format, so each "neuron / time" is a single feature
-X_flat = X.reshape(X.shape[0], (X.shape[1]*X.shape[2]))
+
+
+
+model_wf = WienerFilterDecoder()
+
 
 """
 # X contains the PSTH per trial of all units concatenated as if in continuous 
