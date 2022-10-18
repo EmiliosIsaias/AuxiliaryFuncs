@@ -66,7 +66,7 @@ for min_spikes in range(2, 6):
         bin_size=bin_size,
         winlen=1,                   # 1 bin means synchronous patterns
         min_spikes=min_spikes,
-        #max_spikes=None,  #if min_spikes < 4 else None,
+        max_spikes=None,  #if min_spikes < 4 else None,
         min_occ=min_occ,
         min_neu=2,
         n_surrogates=1000,
