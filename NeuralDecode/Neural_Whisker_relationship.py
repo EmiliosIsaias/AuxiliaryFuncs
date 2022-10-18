@@ -87,15 +87,16 @@ lw_mu, lw_sg, lw_z = my_zscore(lw_binned, ddof=1)
 rw_mu, rw_sg, rw_z = my_zscore(rw_binned, ddof=1)
 ns_mu, ns_sg, ns_z = my_zscore(nose_binned, ddof=1)
 
-train_pc = 0.8
-train = int(np.round(train_pc*X.shape[0]))
 time_CV = ms.TimeSeriesSplit(n_splits=10)
+train_pc = 0.8
+
+"""
+train = int(np.round(train_pc*X.shape[0]))
 rdge_rw = lm.RidgeCV(cv=time_CV, alphas=np.logspace(-5,5,11))
 rdge_rw.fit(X[:train,:], rw_z[:train])
-
 score, _, pval = ms.permutation_test_score(rdge_rw, X, rw_z, n_permutations=100, 
                                            cv=time_CV)
-
+"""
 
 
 r2_wf = np.zeros((10, 3))
@@ -130,12 +131,15 @@ lags = -10
 Nlags = np.abs(lags)
 Nc = 20
 Cs = np.logspace(-1, 3, num=Nc)
-for cout in (nose_binned, rw_binned, lw_binned):
+train_ho = int(np.round(train_pc*X.shape[0]))
+var_names = ('nose', 'rw', 'lw')
+for cc, cout in enumerate((nose_binned, rw_binned, lw_binned)):
+    print(var_names[cc])
     #We will now determine velocity
     vel_binned = np.diff(cout, axis=0)
-    vel_binned = np.concatenate(vel_binned, vel_binned[-1])
+    vel_binned = np.concatenate((vel_binned, vel_binned[-1:,:]), axis=0) 
     #We will now determine acceleration    
-    temp=np.diff(vel_binned,axis=0) 
+    temp = np.diff(vel_binned,axis=0)
     #Assume acceleration at last time point is same as 2nd to last
     acc_binned=np.concatenate((temp,temp[-1:,:]),axis=0) 
     
@@ -161,17 +165,14 @@ for cout in (nose_binned, rw_binned, lw_binned):
 # ================================ Splitting =============================
         for y, C in enumerate(Cs):
             print("C: ", C)
-            kf_model = KalmanFilterDecoder(C=C)
-            kf_model.fit(X_kf[train,:], y_kf[train,:])
-            ms.cross_validate(kf_model, X_kf, y_kf, cv=tss_it)
-            """
-            for x, idxs in enumerate(tss_it.split(X_kf)):
+            for x, idxs in enumerate(tss_it.split(X_kf[:train_ho,:])):
                 train, test = idxs
                 # Model definition (maybe not necessary to re-instanciate)
                 kf_model = KalmanFilterDecoder(C=C)
                 kf_model.fit(X_kf[train,:], y_kf[train,:])
-                y_test = kf_model.predict(X_kf[train,:])
-            """
+                y_train_hat = kf_model.predict(X_kf[train,:], y_kf[train,:])
+                r2 = get_R2(y_kf[train,:], y_train_hat)
+                print("R2: ", r2)
     print('Debug')
                         
                         
