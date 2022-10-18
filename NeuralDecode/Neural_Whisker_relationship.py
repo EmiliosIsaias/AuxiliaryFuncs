@@ -23,7 +23,7 @@ import pathlib as pl
 from Neural_Decoding.metrics import get_rho, get_R2
 
 # Import preprocessing functions
-from Neural_Decoding.preprocessing_funcs import bin_output, bin_spikes, get_spikes_with_history
+from Neural_Decoding.preprocessing_funcs import bin_output, bin_spikes
 
 #Import decoder functions
 from Neural_Decoding.decoders import WienerCascadeDecoder
@@ -32,7 +32,12 @@ from Neural_Decoding.decoders import GRUDecoder
 from Neural_Decoding.decoders import XGBoostDecoder
 from Neural_Decoding.decoders import SVRDecoder
 
-
+def my_zscore(a, axis=0, ddof=0, nan_policy='omit'):
+    a_mu = np.mean(a, axis=axis)
+    a_sig = np.std(a, axis=axis, ddof=ddof)
+    a_z = stats.zscore(a, axis=axis, ddof=ddof, nan_policy=nan_policy)
+    return a_mu, a_sig, a_z
+    
 folder=pl.Path(
     r'Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch2_ephys\MC\GAD18\211205_C')
 neu_file = r'GADi18_SpkTms+vels.mat'
@@ -81,10 +86,39 @@ nose_binned = bin_output(nose, time_axis, dt, t_start, t_end)
 
 # Format for Wiener Filter, Wiener Cascade, XGBoost, and Dense Neural Network
 #Put in "flat" format, so each "neuron / time" is a single feature
+neu_mu, neu_sg, X = my_zscore(neural_data, axis=0, ddof=1)
+lw_mu, lw_sg, lw_z = my_zscore(lw_binned, ddof=1)
+rw_mu, rw_sg, rw_z = my_zscore(rw_binned, ddof=1)
+ns_mu, ns_sg, ns_z = my_zscore(nose_binned, ddof=1)
 
+train_pc = 0.7
+train = int(np.round(train_pc*X.shape[0]))
+time_CV = ms.TimeSeriesSplit(n_splits=10)
+rdge_ns = lm.RidgeCV(cv=time_CV, alphas=np.logspace(-3,3,num=7))
+rdge_ns.fit(X[:train,:], ns_z[:train])
 
+score, _, pval = ms.permutation_test_score(rdge_ns, X, ns_z, n_permutations=500, 
+                                           cv=time_CV)
 
-model_wf = WienerFilterDecoder()
+r2_wf = np.zeros((10, 3))
+for cit, tt in enumerate(time_CV.split(nose_binned)):
+    train, test = tt
+    wf_nose = lm.LinearRegression()
+    wf_lw = lm.LinearRegression()
+    wf_rw = lm.LinearRegression()
+    
+    wf_nose.fit(X[train,:], ns_z[train])
+    wf_lw.fit(X[train,:], lw_z[train])
+    wf_rw.fit(X[train,:], rw_z[train])
+    
+    r2_wf[cit, 0] = get_R2(ns_z[test], wf_nose.predict(X[test,:]))
+    r2_wf[cit, 1] = get_R2(lw_z[test], wf_lw.predict(X[test,:]))
+    r2_wf[cit, 2] = get_R2(rw_z[test], wf_rw.predict(X[test,:]))
+    
+    
+    
+    
+
 
 
 """
