@@ -26,11 +26,7 @@ from Neural_Decoding.metrics import get_rho, get_R2
 from Neural_Decoding.preprocessing_funcs import bin_output, bin_spikes
 
 #Import decoder functions
-from Neural_Decoding.decoders import WienerCascadeDecoder
-from Neural_Decoding.decoders import WienerFilterDecoder
-from Neural_Decoding.decoders import GRUDecoder
-from Neural_Decoding.decoders import XGBoostDecoder
-from Neural_Decoding.decoders import SVRDecoder
+from Neural_Decoding.decoders import KalmanFilterDecoder
 
 def my_zscore(a, axis=0, ddof=0, nan_policy='omit'):
     a_mu = np.mean(a, axis=axis)
@@ -91,14 +87,16 @@ lw_mu, lw_sg, lw_z = my_zscore(lw_binned, ddof=1)
 rw_mu, rw_sg, rw_z = my_zscore(rw_binned, ddof=1)
 ns_mu, ns_sg, ns_z = my_zscore(nose_binned, ddof=1)
 
-train_pc = 0.7
+train_pc = 0.8
 train = int(np.round(train_pc*X.shape[0]))
 time_CV = ms.TimeSeriesSplit(n_splits=10)
-rdge_ns = lm.RidgeCV(cv=time_CV, alphas=np.logspace(-3,3,num=7))
-rdge_ns.fit(X[:train,:], ns_z[:train])
+rdge_rw = lm.RidgeCV(cv=time_CV, alphas=np.logspace(-5,5,11))
+rdge_rw.fit(X[:train,:], rw_z[:train])
 
-score, _, pval = ms.permutation_test_score(rdge_ns, X, ns_z, n_permutations=500, 
+score, _, pval = ms.permutation_test_score(rdge_rw, X, rw_z, n_permutations=100, 
                                            cv=time_CV)
+
+
 
 r2_wf = np.zeros((10, 3))
 for cit, tt in enumerate(time_CV.split(nose_binned)):
@@ -116,11 +114,68 @@ for cit, tt in enumerate(time_CV.split(nose_binned)):
     r2_wf[cit, 2] = get_R2(rw_z[test], wf_rw.predict(X[test,:]))
     
     
+# Kalman Filter
+# ======================= Preprocessing =======================================
+# For the Kalman filter, we use the position, velocity, and acceleration as
+# outputs. Ultimately, we are only concerned with the goodness of fit of 
+# velocity (for this dataset) but using them all as covariates helps 
+# performance
+
+tss_it = ms.TimeSeriesSplit(n_splits=5)
+#The covariate is simply the matrix of firing rates for all neurons over time
+X_kf_o = X
+num_examples = X_kf_o.shape[0]
+# Kalman filter history lag = -1 means 1 bin before the output
+lags = -10
+Nlags = np.abs(lags)
+Nc = 20
+Cs = np.logspace(-1, 3, num=Nc)
+for cout in (nose_binned, rw_binned, lw_binned):
+    #We will now determine velocity
+    vel_binned = np.diff(cout, axis=0)
+    vel_binned = np.concatenate(vel_binned, vel_binned[-1])
+    #We will now determine acceleration    
+    temp=np.diff(vel_binned,axis=0) 
+    #Assume acceleration at last time point is same as 2nd to last
+    acc_binned=np.concatenate((temp,temp[-1:,:]),axis=0) 
     
+    #The final output covariates include position, velocity, and acceleration
+    y_kf_o = np.concatenate((cout,vel_binned,acc_binned),axis=1)
     
-
-
-
+    for l, lag in enumerate(range(lags,0)):
+        print("L: ", lag)
+        X_kf = X_kf_o
+        y_kf = y_kf_o
+            
+        #Re-align data to take lag into account
+        if lag<0:
+            y_kf=y_kf[-lag:,:]
+            X_kf=X_kf[0:num_examples+lag,:]
+        if lag>0:
+            y_kf=y_kf[0:num_examples-lag,:]
+            X_kf=X_kf[lag:num_examples,:]
+        
+        vel_mean = y_kf.mean(axis=0)
+        y_kf -= vel_mean
+                
+# ================================ Splitting =============================
+        for y, C in enumerate(Cs):
+            print("C: ", C)
+            kf_model = KalmanFilterDecoder(C=C)
+            kf_model.fit(X_kf[train,:], y_kf[train,:])
+            ms.cross_validate(kf_model, X_kf, y_kf, cv=tss_it)
+            """
+            for x, idxs in enumerate(tss_it.split(X_kf)):
+                train, test = idxs
+                # Model definition (maybe not necessary to re-instanciate)
+                kf_model = KalmanFilterDecoder(C=C)
+                kf_model.fit(X_kf[train,:], y_kf[train,:])
+                y_test = kf_model.predict(X_kf[train,:])
+            """
+    print('Debug')
+                        
+                        
+                        
 """
 # X contains the PSTH per trial of all units concatenated as if in continuous 
 # time
