@@ -133,6 +133,7 @@ Nc = 20
 Cs = np.logspace(-1, 3, num=Nc)
 train_ho = int(np.round(train_pc*X.shape[0]))
 var_names = ('nose', 'rw', 'lw')
+results = np.zeros((Nc,Nlags,3))
 for cc, cout in enumerate((nose_binned, rw_binned, lw_binned)):
     print(var_names[cc])
     #We will now determine velocity
@@ -161,18 +162,20 @@ for cc, cout in enumerate((nose_binned, rw_binned, lw_binned)):
         
         vel_mean = y_kf.mean(axis=0)
         y_kf -= vel_mean
-                
+        
 # ================================ Splitting =============================
         for y, C in enumerate(Cs):
             print("C: ", C)
+            r2 = np.zeros(5)
             for x, idxs in enumerate(tss_it.split(X_kf[:train_ho,:])):
                 train, test = idxs
                 # Model definition (maybe not necessary to re-instanciate)
                 kf_model = KalmanFilterDecoder(C=C)
                 kf_model.fit(X_kf[train,:], y_kf[train,:])
-                y_train_hat = kf_model.predict(X_kf[train,:], y_kf[train,:])
-                r2 = get_R2(y_kf[train,:], y_train_hat)
-                print("R2: ", r2)
+                y_test_hat = kf_model.predict(X_kf[test,:], y_kf[test,:])
+                r2[x] = get_R2(y_kf[test,:], y_test_hat)
+            print("Mean R2:", r2.mean())
+            results[y, l, cc] = r2.mean()
     print('Debug')
                         
                         
