@@ -134,7 +134,7 @@ Cs = np.logspace(-3, 3, num=Nc)
 train_ho = int(np.round(train_pc*X.shape[0]))
 var_names = ('nose', 'rw', 'lw')
 results = np.zeros((Nc,Nlags,3))
-for cc, cout in enumerate((nose_binned, rw_binned, lw_binned)):
+for cc, cout in enumerate((ns_z, rw_z, lw_z)):
     print(var_names[cc])
     #We will now determine velocity
     vel_binned = np.diff(cout, axis=0)
