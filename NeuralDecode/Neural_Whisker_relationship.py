@@ -133,7 +133,7 @@ Nc = 10
 Cs = np.logspace(-3, 3, num=Nc)
 train_ho = int(np.round(train_pc*X.shape[0]))
 var_names = ('nose', 'rw', 'lw')
-results = np.zeros((Nc,Nlags,3))
+results = np.zeros((Nc,Nlags+1,3))
 for cc, cout in enumerate((ns_z, rw_z, lw_z)):
     print(var_names[cc])
     #We will now determine velocity
@@ -165,8 +165,8 @@ for cc, cout in enumerate((ns_z, rw_z, lw_z)):
         
 # ================================ Splitting =============================
         for y, C in enumerate(Cs):
-            print("C: ", C)
             r2 = np.zeros(5)
+            print("C: {}".format(C))
             for x, idxs in enumerate(tss_it.split(X_kf[:train_ho,:])):
                 train, test = idxs
                 # Model definition (maybe not necessary to re-instanciate)
@@ -174,9 +174,8 @@ for cc, cout in enumerate((ns_z, rw_z, lw_z)):
                 kf_model.fit(X_kf[train,:], y_kf[train,:])
                 y_test_hat = kf_model.predict(X_kf[test,:], y_kf[test,:])
                 r2[x] = get_R2(y_kf[test,:], y_test_hat)[0]
-            print("Mean R2:", r2.mean())
+            print("Mean R2 {}:".format(r2.mean()))
             results[y, l, cc] = r2.mean()
-    print('Debug')
                         
                         
                         
