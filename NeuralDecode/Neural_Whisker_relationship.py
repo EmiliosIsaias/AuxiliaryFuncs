@@ -20,7 +20,7 @@ from scipy import io, stats
 import pathlib as pl
 
 #Import metrics
-from Neural_Decoding.metrics import get_rho, get_R2
+from Neural_Decoding.metrics import get_R2
 
 # Import preprocessing functions
 from Neural_Decoding.preprocessing_funcs import bin_output, bin_spikes
@@ -173,7 +173,7 @@ for cc, cout in enumerate((nose_binned, rw_binned, lw_binned)):
                 kf_model = KalmanFilterDecoder(C=C)
                 kf_model.fit(X_kf[train,:], y_kf[train,:])
                 y_test_hat = kf_model.predict(X_kf[test,:], y_kf[test,:])
-                r2[x] = get_R2(y_kf[test,:], y_test_hat)
+                r2[x] = get_R2(y_kf[test,:], y_test_hat)[0]
             print("Mean R2:", r2.mean())
             results[y, l, cc] = r2.mean()
     print('Debug')
