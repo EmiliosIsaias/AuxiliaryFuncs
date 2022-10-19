@@ -129,8 +129,8 @@ num_examples = X_kf_o.shape[0]
 # Kalman filter history lag = -1 means 1 bin before the output
 lags = -10
 Nlags = np.abs(lags)
-Nc = 20
-Cs = np.logspace(-1, 3, num=Nc)
+Nc = 10
+Cs = np.logspace(-3, 3, num=Nc)
 train_ho = int(np.round(train_pc*X.shape[0]))
 var_names = ('nose', 'rw', 'lw')
 results = np.zeros((Nc,Nlags,3))
@@ -147,7 +147,7 @@ for cc, cout in enumerate((nose_binned, rw_binned, lw_binned)):
     #The final output covariates include position, velocity, and acceleration
     y_kf_o = np.concatenate((cout,vel_binned,acc_binned),axis=1)
     
-    for l, lag in enumerate(range(lags,0)):
+    for l, lag in enumerate(range(lags,1)):
         print("L: ", lag)
         X_kf = X_kf_o
         y_kf = y_kf_o
