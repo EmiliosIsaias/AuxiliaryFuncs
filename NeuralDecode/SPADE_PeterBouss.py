@@ -13,6 +13,7 @@ import neo
 import elephant
 #import viziphant
 import pathlib as pl
+from mpi4py import MPI
 
 #Windows
 folder = pl.Path(
@@ -50,15 +51,20 @@ print("Spike train formatted. Starting SPADE:")
 
 n_spikes = [len(spiketrain) for spiketrain in spiketrains]
 
-bin_size = 5e-3 * pq.s
+bin_size = 0.005 * pq.s
 
 firing_rate_two_std = (np.mean(n_spikes) + 2 * np.std(n_spikes))/spiketrains[0].t_stop
 firing_probability_two_std = (firing_rate_two_std * bin_size).simplified.item()
 
 n_bins = int(spiketrains[0].t_stop/bin_size)
 
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+print(size, 'number vp')
+
 patterns = []
-for min_spikes in range(2, 6):
+for min_spikes in range(2, 7):
     min_occ = math.ceil(firing_probability_two_std**min_spikes * n_bins)
     print(f'{min_spikes=}', f'{min_occ=}')
     spade_output = elephant.spade.spade(
@@ -66,12 +72,17 @@ for min_spikes in range(2, 6):
         bin_size=bin_size,
         winlen=1,                   # 1 bin means synchronous patterns
         min_spikes=min_spikes,
-        max_spikes=None,  #if min_spikes < 4 else None,
         min_occ=min_occ,
-        min_neu=2,
-        n_surrogates=1000,
-        dither=15e-3*pq.s,
-        psr_param=[0,0,3],
-        spectrum='3d#')
-    patterns.append(spade_output['patterns'])
+        min_neu=min_occ,
+        n_surr=100,
+        dither=15*pq.ms)
+    patterns.extend(spade_output['patterns'])
     print(f'Patterns found for {min_spikes} spikes: {len(spade_output["patterns"])}')
+
+"""
+patterns = elephant.spade.spade(
+    spiketrains=spiketrains, binsize=1*pq.ms, winlen=1, min_spikes=3,
+    n_surr=100, dither=5*pq.ms,
+    psr_param=[0,0,0],
+    output_format='patterns')['patterns']
+"""
