@@ -51,7 +51,7 @@ print("Spike train formatted. Starting SPADE:")
 
 n_spikes = [len(spiketrain) for spiketrain in spiketrains]
 
-bin_size = 0.005 * pq.s
+bin_size = 0.0025 * pq.s
 
 firing_rate_two_std = (np.mean(n_spikes) + 2 * np.std(n_spikes))/spiketrains[0].t_stop
 firing_probability_two_std = (firing_rate_two_std * bin_size).simplified.item()
@@ -64,7 +64,7 @@ size = comm.Get_size()
 print(size, 'number vp')
 
 patterns = []
-for min_spikes in range(2, 7):
+for min_spikes in range(2, 8):
     min_occ = math.ceil(firing_probability_two_std**min_spikes * n_bins)
     print(f'{min_spikes=}', f'{min_occ=}')
     spade_output = elephant.spade.spade(
