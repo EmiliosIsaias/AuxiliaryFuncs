@@ -1,6 +1,6 @@
 function saveFigure(figSave,absBaseFilePath, vectorFlag, ovrWriteFlag)
 if ~exist('vectorFlag','var')
-    vectorFlag = 1;
+    vectorFlag = true;
 end
 if ~exist('ovrWriteFlag','var')
     ovrWriteFlag = false;
