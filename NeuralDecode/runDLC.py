@@ -10,7 +10,7 @@ import pathlib as pl
 config_path = pl.Path(r"E:\DLC\AwakenSC-EIC-2021-07-20\config.yaml")
 config_path = config_path.as_posix()
 
-batch_path = pl.Path(r"Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\WTg64\221111_C+PTX_1900\Behaviour")
+batch_path = pl.Path(r"Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\WTg65\221114_C_2370\Behaviour")
 videos_path = list(batch_path.glob('**/*.avi'))
 videos_path = [v.as_posix() for v in videos_path]
 
