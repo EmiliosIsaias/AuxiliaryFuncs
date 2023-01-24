@@ -59,11 +59,11 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.15):
         X, Yv, test_size=test_size)
     
     log_reg_model = linear_model.LogisticRegressionCV(
-        Cs=np.logspace(-3, 3, num=300), penalty='l2', solver='lbfgs', 
+        Cs=np.logspace(-3, 3, num=50), penalty='l2', solver='lbfgs', 
         n_jobs=-1)
     
     log_reg_model.fit(X_train, y_train)
-    
+    print("Chosen C:{}".format(log_reg_model.C_))
     tot_score, perm_scores, p = model_selection.permutation_test_score(
         log_reg_model, X, Yv, n_permutations=500, verbose=True, n_jobs=-1)
     
