@@ -65,7 +65,7 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.15):
     log_reg_model.fit(X_train, y_train)
     print("Chosen C:{}".format(log_reg_model.C_))
     tot_score, perm_scores, p = model_selection.permutation_test_score(
-        log_reg_model, X, Yv, n_permutations=500, verbose=True, n_jobs=-1)
+        log_reg_model, X, Yv, n_permutations=300, verbose=True, n_jobs=-1)
     
     print("Total accuracy: {} | P: {} | Accuracy: {}".format(
         tot_score,p,metrics.accuracy_score(Yv, log_reg_model.predict(X))))
