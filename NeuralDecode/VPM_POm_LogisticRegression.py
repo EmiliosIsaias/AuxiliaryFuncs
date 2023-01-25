@@ -54,7 +54,7 @@ title = "Touch"
 legStrs = (("Puff", "Touch"), "Puff", "Touch")
 title = ("Puff + Touch","Puff","Touch")
 
-def logReg(X, Yv, title_string, leg_string, test_size=0.15):
+def logReg(X, Yv, title_string, leg_string, test_size=0.3):
     X_train, X_test, y_train, y_test = model_selection.train_test_split(
         X, Yv, test_size=test_size)
     
@@ -62,13 +62,18 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.15):
         Cs=np.logspace(-3, 3, num=50), penalty='l2', solver='lbfgs', 
         n_jobs=-1)
     
-    log_reg_model.fit(X_train, y_train)
-    print("Chosen C:{}".format(log_reg_model.C_))
+    #log_reg_model.fit(X_train, y_train)
+    #print("Chosen C:{}".format(log_reg_model.C_))
     tot_score, perm_scores, p = model_selection.permutation_test_score(
-        log_reg_model, X, Yv, n_permutations=300, verbose=True, n_jobs=-1)
+        log_reg_model, X_train, y_train, n_permutations=256, verbose=True, n_jobs=-1,
+        scoring='accuracy')
     
-    print("Total accuracy: {} | P: {} | Accuracy: {}".format(
-        tot_score,p,metrics.accuracy_score(Yv, log_reg_model.predict(X))))
+    log_reg_model.fit(X_train, y_train)
+    
+    print("Model accuracy: {} | Mean score: {} | P: {} | Precision: {}".format(
+        metrics.accuracy_score(y_test, log_reg_model.predict(X_test)), 
+        perm_scores.mean(), p, 
+        metrics.precision_score(y_test, log_reg_model.predict(X_test))))
     
     # Plotting and saving results
     psth_tx = np.arange(-24.5, 75)
@@ -79,11 +84,22 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.15):
     plt.plot(psth_tx, coefs.transpose(), label=leg_string)
     plt.legend()
     plt.xlabel("Time [ms]"); plt.ylabel("Coefficient magnitude")
+    
+    
+    fig, ax = plt.subplots()
+    
+    ax.hist(perm_scores, bins=20, density=True)
+    ax.axvline(tot_score, ls="--", color="r")
+    score_label = f"Score on original\ndata: {perm_scores:.2f}\n(p-value: {p:.3f})"
+    ax.text(0.7, 10, score_label, fontsize=12)
+    ax.set_xlabel("Accuracy score")
+    _ = ax.set_ylabel("Probability")
 
 for cx, X in enumerate((np.concatenate((sts.zscore(puffH, axis=1),
                     sts.zscore(touchH, axis=1)), axis=1),
                         sts.zscore(puffH, axis=1),
                         sts.zscore(touchH, axis=1))):
+    print("Using {}".format(title[cx]))
     logReg(X, Yv, title[cx], legStrs[cx])
 
         
