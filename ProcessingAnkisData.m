@@ -47,3 +47,31 @@ for cf = barFlds'
         [mice(mc).Sessions(sc).RollMovProb; outStr(4).MovProb];
     close all
 end
+
+%% Plotting data
+piFig = figure("Name","Puff intensity vs Movement", "Color","w");
+ax = axes("Parent",piFig,"NextPlot","add");
+clrMap = lines(size(mice,1)); x = []; y = x; scObj = gobjects(size(mice));
+jittNoise = makedist("Normal","mu",0,"sigma",0.025);
+for mc = 1:size(mice,1)
+    for sc = 1:size(mice(mc).Sessions, 1)
+        x = [x; mice(mc).Sessions(sc).Intensities]; 
+        y = [y; mice(mc).Sessions(sc).RollMovProb];
+        scObj(mc) = scatter(ax, ...
+            random(jittNoise,size(mice(mc).Sessions(sc).Intensities)) + ...
+            mice(mc).Sessions(sc).Intensities, ...
+            random(jittNoise,size(mice(mc).Sessions(sc).Intensities))*0+...
+            mice(mc).Sessions(sc).RollMovProb, ".", ...
+            "SizeData", 108, "MarkerEdgeColor", clrMap(mc,:));
+        if mc == 1 && sc == 1
+            hold on
+        end
+    end
+end
+xlabel("Puff intensity [bar]"); ylabel("Movement probability");
+set(ax, "Box", "off", "Color", "none");
+[mdl, S, mu] = polyfit(x, y, 1);
+lObj = plot(ax, [0;3],([0;3].^[0,1])*mdl', "k");
+lgObj = legend([scObj; lObj], ...
+    cat(1, arrayfun(@(x) x.Name, mice, "UniformOutput",false), 'Trend'));
+set(lgObj, "Box", "off", "Location", "best", "NumColumnsMode", "auto")
