@@ -54,26 +54,24 @@ title = "Touch"
 legStrs = (("Puff", "Touch"), "Puff", "Touch")
 title = ("Puff + Touch","Puff","Touch")
 
-def logReg(X, Yv, title_string, leg_string, test_size=0.3):
+def logReg(X, Yv, title_string, leg_string, test_size=0.25):
     X_train, X_test, y_train, y_test = model_selection.train_test_split(
-        X, Yv, test_size=test_size)
+        X, Yv, test_size=test_size, random_state=0)
     
     log_reg_model = linear_model.LogisticRegressionCV(
         Cs=np.logspace(-3, 3, num=50), penalty='l2', solver='lbfgs', 
-        n_jobs=-1)
+        n_jobs=-1).fit(X_train, y_train)
     
-    #log_reg_model.fit(X_train, y_train)
-    #print("Chosen C:{}".format(log_reg_model.C_))
+    print("Chosen C:{}".format(log_reg_model.C_))
     tot_score, perm_scores, p = model_selection.permutation_test_score(
-        log_reg_model, X_train, y_train, n_permutations=256, verbose=True, n_jobs=-1,
-        scoring='accuracy')
+        log_reg_model, X, Yv, n_permutations=256, verbose=True, n_jobs=-1,
+        scoring='accuracy', cv)
     
-    log_reg_model.fit(X_train, y_train)
     
     print("Model accuracy: {} | Mean score: {} | P: {} | Precision: {}".format(
         metrics.accuracy_score(y_test, log_reg_model.predict(X_test)), 
         perm_scores.mean(), p, 
-        metrics.precision_score(y_test, log_reg_model.predict(X_test))))
+        metrics.precision_score(y_test, log_reg_model.predict(X_test)))
     
     # Plotting and saving results
     psth_tx = np.arange(-24.5, 75)
