@@ -98,12 +98,16 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
     print(Yv)
     print(log_reg_model.predict(X))
     print(metrics.accuracy_score(Yv, log_reg_model.predict(X)))
+    return log_reg_model
 
 for cx, X in enumerate((np.concatenate((sts.zscore(puffH, axis=1),
                     sts.zscore(touchH, axis=1)), axis=1),
                         sts.zscore(puffH, axis=1),
                         sts.zscore(touchH, axis=1))):
     print("Using {} ({}x{})".format(title[cx], X.shape[0],X.shape[1]))
-    #logReg(X, Yv, title[cx], legStrs[cx])
-
-        
+    lrm = logReg(X, Yv, title[cx], legStrs[cx])
+    if cx == 1:
+        y_pred = lrm.predict(X)
+        d2s = {"True_Labels":Yv, "Predicted_Lables":y_pred}
+        io.savemat(data_path.as_posix() + pl.os.sep + 
+                   file_name.split('.')[0] + 'with_p+t_pred.mat', d2s)
