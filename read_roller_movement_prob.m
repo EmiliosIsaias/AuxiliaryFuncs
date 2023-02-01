@@ -72,6 +72,8 @@ for ct = 1:Nty
     plot(cax, mdPts{ct}, 'k', plOpts{1}, 4); scatter(cax, 1:Nc(ct), ...
         mdPts{ct}, 72, clrMps(1:Nc(ct),:,ct), sctrOpts{:}, 'flat'); 
     xticks(cax, 1:Nc(ct)); xticklabels(cax, condNamesCell{ct,:})
+    ylabel(cax, "Movement probability"); 
+    title(cax, sprintf("%s movement probability", mouseTypePoss(ct)))
     % Overwriting figures
     saveFigure(figs(ct), fg2fn(sprintf(fgPttrn, mouseTypePoss(ct), Nc(ct))), ...
         true, true)
