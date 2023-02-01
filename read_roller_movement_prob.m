@@ -9,9 +9,10 @@ mouseTypePoss = ["ChR2"; "eOPN3"]; mtRows = [3;2];
 
 mouseType = arrayfun(@(x) arrayfun(@(y) findStr(x.folder, y), ...
     mouseTypePoss), summFiles, 'UniformOutput', false);
-mouseType = cat(2, mouseType{:}); oldCmt = false(Nty,1);
+mouseType = cat(2, mouseType{:});
 
-Nty = size(mouseTypePoss, 1); Nx = sum(mouseType, 2);
+Nty = size(mouseTypePoss, 1); Nx = sum(mouseType, 2); 
+oldCmt = false(Nty,1);
 outMat = arrayfun(@(ct) zeros(Nx(ct), mtRows(ct)), 1:Nty, fnOpts{:});
 condNamesCell = cell(Nty,1);
 cts = ones(Nty, 1); lc = 0; cnc = 1;
