@@ -74,7 +74,7 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
         tot_score, p, 
         metrics.precision_score(y_test, log_reg_model.predict(X_test))))
     
-    # Plotting and saving results
+    # Plotting results
     psth_tx = np.arange(-24.5, 75)
     coefs = log_reg_model.coef_
     if coefs.shape[1] > 100:
@@ -106,7 +106,8 @@ for cx, X in enumerate((np.concatenate((sts.zscore(puffH, axis=1),
                         sts.zscore(touchH, axis=1))):
     print("Using {} ({}x{})".format(title[cx], X.shape[0],X.shape[1]))
     lrm = logReg(X, Yv, title[cx], legStrs[cx])
-    if cx == 1:
+    if cx == 0:
+        print("Saving...")
         y_pred = lrm.predict(X)
         d2s = {"True_Labels":Yv, "Predicted_Lables":y_pred}
         io.savemat(data_path.as_posix() + pl.os.sep + 
