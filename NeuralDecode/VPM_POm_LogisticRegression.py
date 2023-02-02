@@ -8,7 +8,7 @@ Created on Fri Sep  9 14:13:30 2022
 from sklearn import linear_model, model_selection, metrics
 
 import matplotlib.pyplot as plt
-import matplotlib.figure as Fig
+#import matplotlib.figure as Fig
 import numpy as np
 import scipy.stats as sts
 from scipy import io
@@ -54,21 +54,25 @@ title = "Touch"
 legStrs = (("Puff", "Touch"), "Puff", "Touch")
 title = ("Puff + Touch","Puff","Touch")
 
-def logReg(X, Yv, title_string, leg_string, test_size=0.15):
+def logReg(X, Yv, title_string, leg_string, test_size=0.25):
     X_train, X_test, y_train, y_test = model_selection.train_test_split(
-        X, Yv, test_size=test_size)
+        X, Yv, test_size=test_size, shuffle=True, stratify=Yv, 
+        random_state=0)
     
     log_reg_model = linear_model.LogisticRegressionCV(
-        Cs=np.logspace(-3, 3, num=300), penalty='l2', solver='lbfgs', 
-        n_jobs=-1)
-    
-    log_reg_model.fit(X_train, y_train)
-    
+        Cs=np.logspace(-3, 3, num=50), penalty='l2', solver='lbfgs', 
+        n_jobs=-1).fit(X_train, y_train)
+        
+    print("Chosen C:{}".format(log_reg_model.C_))
     tot_score, perm_scores, p = model_selection.permutation_test_score(
-        log_reg_model, X, Yv, n_permutations=500, verbose=True, n_jobs=-1)
+        log_reg_model, X_train, y_train, n_permutations=256, verbose=True, 
+        n_jobs=-1, scoring='accuracy')
     
-    print("Total accuracy: {} | P: {} | Accuracy: {}".format(
-        tot_score,p,metrics.accuracy_score(Yv, log_reg_model.predict(X))))
+    
+    print("Model accuracy: {} | Mean score: {} | P: {} | Precision: {}".format(
+        metrics.accuracy_score(y_test, log_reg_model.predict(X_test)), 
+        tot_score, p, 
+        metrics.precision_score(y_test, log_reg_model.predict(X_test))))
     
     # Plotting and saving results
     psth_tx = np.arange(-24.5, 75)
@@ -78,12 +82,32 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.15):
     plt.figure()
     plt.plot(psth_tx, coefs.transpose(), label=leg_string)
     plt.legend()
-    plt.xlabel("Time [ms]"); plt.ylabel("Coefficient magnitude")
+    plt.xlabel("Time [ms]")
+    plt.ylabel("Coefficient magnitude")
+    
+    
+    fig, ax = plt.subplots()
+    
+    ax.hist(perm_scores, bins=20, density=True)
+    ax.axvline(tot_score, ls="--", color="r")
+    score_label = "Score on original\ndata: {:.2f}\n(p-value: {:.3f})".format(
+        tot_score, p)
+    ax.text(0.7, 10, score_label, fontsize=12)
+    ax.set_xlabel("Accuracy score")
+    _ = ax.set_ylabel("Probability")
+    print(Yv)
+    print(log_reg_model.predict(X))
+    print(metrics.accuracy_score(Yv, log_reg_model.predict(X)))
+    return log_reg_model
 
 for cx, X in enumerate((np.concatenate((sts.zscore(puffH, axis=1),
                     sts.zscore(touchH, axis=1)), axis=1),
                         sts.zscore(puffH, axis=1),
                         sts.zscore(touchH, axis=1))):
-    logReg(X, Yv, title[cx], legStrs[cx])
-
-        
+    print("Using {} ({}x{})".format(title[cx], X.shape[0],X.shape[1]))
+    lrm = logReg(X, Yv, title[cx], legStrs[cx])
+    if cx == 1:
+        y_pred = lrm.predict(X)
+        d2s = {"True_Labels":Yv, "Predicted_Lables":y_pred}
+        io.savemat(data_path.as_posix() + pl.os.sep + 
+                   file_name.split('.')[0] + 'with_p+t_pred.mat', d2s)
