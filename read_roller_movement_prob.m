@@ -8,7 +8,7 @@ summFiles = dir(fullfile(parentDir, "*","*","*","Behaviour/Simple summary.mat"))
 mouseTypePoss = ["ChR2"; "eOPN3"]; mtRows = [3;2];
 
 mouseType = arrayfun(@(x) arrayfun(@(y) findStr(x.folder, y), ...
-    mouseTypePoss), summFiles, 'UniformOutput', false);
+    mouseTypePoss), summFiles, fnOpts{:});
 mouseType = cat(2, mouseType{:});
 
 Nty = size(mouseTypePoss, 1); Nx = sum(mouseType, 2); 
