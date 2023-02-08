@@ -51,6 +51,7 @@ end
 %% Plotting data
 piFig = figure("Name","Puff intensity vs Movement", "Color","w");
 ax = axes("Parent",piFig,"NextPlot","add");
+fnOpts = {'UniformOutput', false};
 clrMap = lines(size(mice,1)); x = []; y = x; scObj = gobjects(size(mice));
 jittNoise = makedist("Normal","mu",0,"sigma",0.025);
 for mc = 1:size(mice,1)
