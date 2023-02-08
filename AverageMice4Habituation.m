@@ -26,7 +26,7 @@ ax = axes('Parent', hf, axOpts{:});
 scObj = cellfun(@(x,y,n) scatter(ax, x+random(jittNoise, size(x,1), 1), y', [], ...
     'filled', 'DisplayName',n), xu, muVals, miceNames); 
 lObj = plot(mu_Mdl, 'predfun'); set(lObj, 'Color', 'k'); 
-lObj(1).DisplayName = 'Trend';
+lObj(1).DisplayName = 'Trend'; lObj(2).DisplayName = 'Confidence bounds';
 lgObj = legend([scObj; lObj(1:2)]); set(lgObj, lgOpts{:})
 xlabel(ax, 'Puff intensity [bar]'); ylabel(ax, 'Movement probability')
 title(ax, 'Mice movement depending on puff intensity')
@@ -44,7 +44,7 @@ ebObj = cellfun(@(x,y,n,c) errorbar(x+random(jittNoise, size(x,1), 1), ...
     y(:,2), y(:,1), y(:,3), lnOpts{:} , n, 'MarkerFaceColor', c), xu, ...
     bxPlt, miceNames, mat2cell(clrMap,ones(1,size(clrMap,1)),3));
 lObj = plot(qr_Mdl, 'predfun'); set(lObj, 'Color', 'k'); 
-lObj(1).DisplayName = 'Trend';
+lObj(1).DisplayName = 'Trend'; lObj(2).DisplayName = 'Confidence bounds';
 lgObj = legend([ebObj; lObj(1:2)]); set(lgObj, lgOpts{:})
 xlabel(ax, 'Puff intensity [bar]'); ylabel(ax, 'Movement probability')
 title(ax, 'Mice movement depending on puff intensity')
