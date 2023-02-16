@@ -1,12 +1,13 @@
 % Processing Anki's data
 %#ok<*AGROW,*SAGROW> 
-dataPttrn = ...
-    "Z:\Emilio\SuperiorColliculusExperiments\" + ...
-    "Roller\Batch*_beh\WT*\*\*bar*";
+% dataPttrn = ...
+%     "Z:\Emilio\SuperiorColliculusExperiments\" + ...
+%     "Roller\Batch*_beh\WT*\*\*bar*";
+dataPttrn = "Z:\Emilio\SuperiorColliculusExperiments\Roller\"+...
+    "Batch13_beh\WT5\230214\*bar";
 barFlds = dir(dataPttrn);
 fn = @(x) fullfile(x.folder, x.name);
 
-% TODO: Get the mouse, date and intensity ordered in a structure array.
 oldSess = ""; oldMouse = "";
 mice = [];
 % Mice (mc) and session (sc) counters
@@ -38,13 +39,14 @@ for cf = barFlds'
             'showPlots', false);
     catch ME
         dbstop in ProcessingAnkisData.m at 39
-        fprintf(1, "Som ething went wrong with %s\n", fn(cf));
+        fprintf(1, "Something went wrong with %s\n", fn(cf));
         continue
     end
     mice(mc).Sessions(sc).Intensities = ...
         [mice(mc).Sessions(sc).Intensities; puffInt];
     mice(mc).Sessions(sc).RollMovProb = ...
-        [mice(mc).Sessions(sc).RollMovProb; outStr(4).MovProb];
+        [mice(mc).Sessions(sc).RollMovProb; ...
+        outStr.Results(4).MovProbability];
     close all
 end
 
