@@ -7,8 +7,9 @@ figDir = "C:\Users\neuro\seadrive_root\Emilio U\Shared with groups\"+ ...
     "GDrive GrohLab\Projects\00 SC\SC Behaviour\Figures\"+ ...
     "Figure 1\Matlab figures";
 % Grouping the movement probability per intensity
+miceSelection = [1:3,5];
 mmp = arrayfun(@(m) [cat(1, m.Sessions.Intensities), ...
-    cat(1, m.Sessions.RollMovProb)], mice, fnOpts{:});
+    cat(1, m.Sessions.RollMovProb)], mice(miceSelection), fnOpts{:});
 [xu,~,rm] = cellfun(@(x) unique(x(:,1)), mmp, fnOpts{:});
 muFlags = cellfun(@(m, u) m(:,1) == u', mmp, xu, fnOpts{:});
 % Mean
@@ -19,10 +20,16 @@ bxPlt = cellfun(@(m, f) arrayfun(@(c) quantile(m(f(:,c),2),3), ...
     1:size(f,2), fnOpts{:}), mmp, muFlags, fnOpts{:});
 bxPlt = cellfun(@(x) cat(1, x{:}), bxPlt, fnOpts{:});
 
+x = arrayfun(@(m) arrayfun(@(s) s.Intensities, m.Sessions, fnOpts{:}), ...
+    mice(miceSelection), fnOpts{:}); 
+while iscell(x); x = cat(1, x{:}); end
+y = arrayfun(@(m) arrayfun(@(s) s.RollMovProb, m.Sessions, fnOpts{:}), ...
+    mice(miceSelection), fnOpts{:});
+while iscell(y); y = cat(1, y{:}); end
 %% Average plot
 xmu = cat(1, xu{:}); ymu = cat(2, muVals{:})';
 [mu_Mdl, muGOF] = fit(xmu, ymu, 'poly1');
-miceNames = cat(1, arrayfun(@(x) x.Name, mice, fnOpts{:}));
+miceNames = cat(1, arrayfun(@(x) x.Name, mice(miceSelection), fnOpts{:}));
 
 fig = figure('Name', 'Mean habituation', 'Color', 'w');
 ax = axes('Parent', fig, axOpts{:});
@@ -75,8 +82,11 @@ erObj = errorbar(ax, intCntr, probHist(:,2), diff(probHist(:,[1,2]),1,2), ...
 lObj = plot(bn_Mdl, 'predfun'); set(lObj, 'Color','k')
 legend('off')
 xlabel(ax, 'Puff intensity [bar]'); ylabel(ax, 'Movement probability')
-title(ax, 'Mice movement depending on puff intensity')
+title(ax, sprintf('Mice movement depending on puff intensity ( %s)', ...
+    sprintf("%d ", miceSelection)))
+%%
 saveFigure(fig, fullfile(figDir, ...
-    sprintf("Puff intensity %.2f binned dependency", intBinSz)), true, true);
-pause;
+    sprintf("Puff intensity %.2f binned dependency %smice", intBinSz, ...
+    sprintf("%d ", miceSelection))), true, true);
+%pause;
 delete(fig); clearvars fig ax *Obj
