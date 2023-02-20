@@ -54,6 +54,7 @@ end
 piFig = figure("Name","Puff intensity vs Movement", "Color","w");
 ax = axes("Parent",piFig,"NextPlot","add");
 fnOpts = {'UniformOutput', false};
+lgOpts = {'Box', 'off', 'Location', 'best', 'NumColumnsMode', 'auto'};
 clrMap = lines(size(mice,1)); x = []; y = x; scObj = gobjects(size(mice));
 jittNoise = makedist("Normal","mu",0,"sigma",0.025);
 for mc = 1:size(mice,1)
@@ -66,11 +67,15 @@ for mc = 1:size(mice,1)
             random(jittNoise,size(mice(mc).Sessions(sc).Intensities))*0+...
             mice(mc).Sessions(sc).RollMovProb, ".", ...
             "SizeData", 108, "MarkerEdgeColor", clrMap(mc,:));
-        if mc == 1 && sc == 1
-            hold on
-        end
     end
+    xlabel("Puff intensity [bar]"); ylabel("Movement probability");
+    lgObj = legend(scObj(mc), mice(mc).Name); set(lgObj, lgOpts{:})
+    axis(ax, [-0.5, 3.5, 0, 0.7])
+    saveFigure(piFig, fullfile(figDir, sprintf("%s puff vs prob", ...
+        mice(mc).Name)), true, true)
+    delete(get(ax, "Children"))
 end
+%%
 xlabel("Puff intensity [bar]"); ylabel("Movement probability");
 set(ax, "Box", "off", "Color", "none");
 [mdl, S, mu] = polyfit(x, y, 1);
