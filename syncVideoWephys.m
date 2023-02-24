@@ -16,23 +16,29 @@ getNameFromVid = @(x) string(fullfile(x.Path, x.Name));
 %% Searching for videos and their time axis
 vidPaths = search4This('*.avi');
 frmIDPaths = search4This('FrameID*.csv');
-Nv = numel(vidPaths); Nfi = numel(frmIDPaths);
-if Nv ~= Nfi
+trigPaths = search4This('TriggerSignals*.bin');
+Nv = numel(vidPaths); Nfi = numel(frmIDPaths); Nt = numel(trigPaths);
+if Nv ~= Nfi || Nv ~= Nt
     fprintf(1, "No full correspondance in video and frame ID paths!\n")
     fprintf(1, "Cannot continue.\n")
     return
 end
 vPaths = arrayfun(getFullPath, vidPaths);
 vidObj = arrayfun(@VideoReader, vPaths, fnOpts{:});
+fr = cellfun(@(x) x.FrameRate, vidObj);
+tPaths = arrayfun(getFullPath, trigPaths);
 fiPaths = arrayfun(getFullPath, frmIDPaths);
 vidTx = arrayfun(@(x) readtable(x, "Delimiter", ","), fiPaths, fnOpts{:});
 vidTx = cellfun(@(x) x.Var2/1e9, vidTx, fnOpts{:});
+ephTx = arrayfun(@(x) readTriggerFile(x), tPaths, fnOpts{:});
+
+%% Searching for laser
 for cv = 1:Nv
     %dt = getDates(vPaths(cv), 'roller');
     %foName = fullfile(dataDir, "VideoMovements" + string(dt));
     if vidObj{cv}.hasFrame
         if verbose; fprintf(1, "Getting number of frames... "); end
-        Nf = vidObj{cv}.NumFrames; fr = vidObj{cv}.FrameRate;
+        Nf = vidObj{cv}.NumFrames; 
         if verbose; fprintf(1, "Done!\n"); end
         frameByte = vidObj{cv}.Height * vidObj{cv}.Width * 3;
         frCount = 0; auxFrame = [];
@@ -43,12 +49,12 @@ for cv = 1:Nv
                 possFramesInMem = Nf - frCount;
             end
             fprintf(1, 'Reading %d/%d frames...\n', frCount + possFramesInMem, Nf)
-            frames = vidObj{cv}.read(frCount + [1, possFramesInMem]);
-            frames(:,:,[2,3],:) = [];
-            frames = squeeze(frames);
-            frames = cat(3, auxFrame, frames);
-            auxFrame = frames(:,:,end);
-            frCount = frCount + possFramesInMem;
+            %frames = vidObj{cv}.read(frCount + [1, possFramesInMem]);
+            %frames(:,:,[2,3],:) = [];
+            %frames = squeeze(frames);
+            %frames = cat(3, auxFrame, frames);
+            %auxFrame = frames(:,:,end);
+            %frCount = frCount + possFramesInMem;
         end
     else
         fprintf(1, "Video %s has no frames!\n", vidObj{cv}.Name)
@@ -93,4 +99,10 @@ if ~exist(foName,"file")
     save(foName, 'fr', 'sPx')
 else
     fprintf(1, 'Video movement file exists!\nNo file nor output created\n')
+end
+end
+function [trig] = readTriggerFile(tfName)
+fID = fopen(tfName,'r'); trig = fread(fID, [2,Inf], 'uint16=>int32');
+[~] = fclose(fID); trig = int16(trig - median(trig, 2));
+trig(1,:) = -trig(1,:);
 end
