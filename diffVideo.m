@@ -37,7 +37,7 @@ if ~exist(foName,"file")
         frCount = frCount + possFramesInMem;
     end
     sPx = smudMeanPx;
-    save(foName, 'fr', "sPx")
+    save(foName, 'fr', 'sPx')
 else
     fprintf(1, 'Video movement file exists!\nNo file nor output created\n')
 end
