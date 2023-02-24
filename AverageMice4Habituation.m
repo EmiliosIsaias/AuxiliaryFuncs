@@ -7,7 +7,7 @@ figDir = "C:\Users\neuro\seadrive_root\Emilio U\Shared with groups\"+ ...
     "GDrive GrohLab\Projects\00 SC\SC Behaviour\Figures\"+ ...
     "Figure 1\Matlab figures";
 % Grouping the movement probability per intensity
-miceSelection = [1:3,5];
+miceSelection = 1:size(mice,1);
 mmp = arrayfun(@(m) [cat(1, m.Sessions.Intensities), ...
     cat(1, m.Sessions.RollMovProb)], mice(miceSelection), fnOpts{:});
 [xu,~,rm] = cellfun(@(x) unique(x(:,1)), mmp, fnOpts{:});
@@ -40,7 +40,7 @@ lObj(1).DisplayName = 'Trend'; lObj(2).DisplayName = 'Confidence bounds';
 lgObj = legend([scObj; lObj(1:2)]); set(lgObj, lgOpts{:})
 xlabel(ax, 'Puff intensity [bar]'); ylabel(ax, 'Movement probability')
 title(ax, 'Mice movement depending on puff intensity')
-saveFigure(fig, fullfile(figDir, "Puff intensity mean dependency"), true, true);
+saveFigure(fig, fullfile(figDir, "Puff intensity mean dependency"), true);
 pause;
 delete(fig); clearvars fig ax *Obj
 
@@ -59,7 +59,7 @@ lObj(1).DisplayName = 'Trend'; lObj(2).DisplayName = 'Confidence bounds';
 lgObj = legend([ebObj; lObj(1:2)]); set(lgObj, lgOpts{:})
 xlabel(ax, 'Puff intensity [bar]'); ylabel(ax, 'Movement probability')
 title(ax, 'Mice movement depending on puff intensity')
-saveFigure(fig, fullfile(figDir, "Puff intensity quartile dependency"), true, true);
+saveFigure(fig, fullfile(figDir, "Puff intensity quartile dependency"), true);
 pause;
 delete(fig); clearvars fig ax *Obj
 
@@ -87,6 +87,6 @@ title(ax, sprintf('Mice movement depending on puff intensity ( %s)', ...
 %%
 saveFigure(fig, fullfile(figDir, ...
     sprintf("Puff intensity %.2f binned dependency %smice", intBinSz, ...
-    sprintf("%d ", miceSelection))), true, true);
+    sprintf("%d ", miceSelection))), true);
 %pause;
 delete(fig); clearvars fig ax *Obj
