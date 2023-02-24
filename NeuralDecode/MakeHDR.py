@@ -25,7 +25,7 @@ alignMTB.process(img_list, img_list)
 merge_mertens = cv.createMergeMertens()
 res_mertens = merge_mertens.process(img_list)
 
-res_mertens_8bit = np.clip(res_mertens*255, 0, 255).astype('uint8')
+res_mertens_8bit = np.clip(res_mertens*255, 0, 255).astype('uint24')
 plt.imshow(res_mertens_8bit)
 
 out_name = imgs_nm[0].partition(".")
