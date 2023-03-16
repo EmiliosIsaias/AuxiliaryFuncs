@@ -40,7 +40,7 @@ for cf = barFlds'
         outStr = analyseBehaviour(fn(cf), 'verbose', false,...
             'showPlots', false);
     catch ME
-        dbstop in ProcessingAnkisData.m at 39
+        %dbstop in ProcessingAnkisData.m at 39
         fprintf(1, "Something went wrong with %s\n", fn(cf));
         continue
     end
