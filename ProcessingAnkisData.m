@@ -75,7 +75,7 @@ xlabel("Puff intensity [bar]"); ylabel("Movement probability");
 set(ax, "Box", "off", "Color", "none");
 %[mdl, ~, ~] = polyfit(x, y, 1);
 mdl = fit_poly(x, y, 1);
-lObj = plot(ax, [0;3],([0;3].^[0,1])*mdl, "k");
+lObj = plot(ax, [0;3], ([0;3].^[0,1])*mdl, "k");
 lgObj = legend([scObj; lObj], ...
     cat(1, arrayfun(@(x) x.Name, mice, "UniformOutput",false), 'Trend'));
 set(lgObj, "Box", "off", "Location", "best", "NumColumnsMode", "auto")
