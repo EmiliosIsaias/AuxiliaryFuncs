@@ -1,12 +1,16 @@
 %%
+pk_loc = cellfun(@(bs, m) getWaveformCriticalPoints(bs, fr), behStack, fnOpts{:});
+pk_loc = cellfun(@(b) cellfun(@(t) t+bvWin(1), b, fnOpts{:}), pk_loc, fnOpts{:});
 pk_rloc = cellfun(@(bs, m) getWaveformCriticalPoints(bs(brFlag,:), fr), behStack, fnOpts{:});
 pk_rloc = cellfun(@(b) cellfun(@(t) t+brWin(1), b, fnOpts{:}), pk_rloc, fnOpts{:});
 pk_sloc = cellfun(@(bs, m) getWaveformCriticalPoints(bs(bsFlag,:), fr), behStack, fnOpts{:});
-pk_sloc = cellfun(@(b) cellfun(@(t) t+bsWin(1), b, fnOpts{:}), pk_sloc, fnOpts{:});
+pk_sloc = cellfun(@(b) cellfun(@(t) t+max(bvWin(1),bsWin(1)), b, fnOpts{:}), pk_sloc, fnOpts{:});
+%%
 for cbs = 1:Nbs
     for ctr = 1:Ntr
-        figure; plot(behTx, behStack{cbs}(:,ctr)); hold on; 
+        figure; plot(behTx, behStack{cbs}(:,ctr), 'k'); 
         title(behNames(cbs)+" trial "+string(ctr))
+        hold on; 
         scatter(pk_rloc{cbs}{ctr,1}, interp1(behTx, behStack{cbs}(:,ctr), ...
             pk_rloc{cbs}{ctr,1}, "cubic"), 'ro')
         scatter(pk_rloc{cbs}{ctr,2}, interp1(behTx, behStack{cbs}(:,ctr), ...
@@ -15,6 +19,10 @@ for cbs = 1:Nbs
             pk_sloc{cbs}{ctr,1}, "cubic"), 'go')
         scatter(pk_sloc{cbs}{ctr,2}, interp1(behTx, behStack{cbs}(:,ctr), ...
             pk_sloc{cbs}{ctr,2}, "cubic"), 'g.')
+        scatter(pk_loc{cbs}{ctr,1}, interp1(behTx, behStack{cbs}(:,ctr), ...
+            pk_loc{cbs}{ctr,1}, "cubic"), 10, 'ko')
+        scatter(pk_loc{cbs}{ctr,2}, interp1(behTx, behStack{cbs}(:,ctr), ...
+            pk_loc{cbs}{ctr,2}, "cubic"), 'k.')
         xline(0, 'k:')
     end
 end
