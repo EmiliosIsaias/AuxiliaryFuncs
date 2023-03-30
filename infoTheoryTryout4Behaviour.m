@@ -5,6 +5,94 @@ pk_rloc = cellfun(@(bs, m) getWaveformCriticalPoints(bs(brFlag,:), fr), behStack
 pk_rloc = cellfun(@(b) cellfun(@(t) t+brWin(1), b, fnOpts{:}), pk_rloc, fnOpts{:});
 pk_sloc = cellfun(@(bs, m) getWaveformCriticalPoints(bs(bsFlag,:), fr), behStack, fnOpts{:});
 pk_sloc = cellfun(@(b) cellfun(@(t) t+max(bvWin(1),bsWin(1)), b, fnOpts{:}), pk_sloc, fnOpts{:});
+pvpt = cellfun(@(bs, pl, m) arrayfun(@(tr) interp1(behTx, bs(:,tr), ...
+    pl{tr,1}, "cubic"), trigSubs, fnOpts{:}), behStack, pk_loc, fnOpts{:});
+right_side_flag = cellfun(@(pk) cellfun(@(tr) tr > 0, pk(:,1), ...
+    fnOpts{:}), pk_loc, fnOpts{:});
+%%
+myRng = @(x) range(x, "all");
+mvRng = cellfun(myRng, behStack);
+bxOpts = {'Notch', 'on', 'MarkerStyle', 'none', 'BoxWidth', 0.25, ...
+    'BoxFaceColor'}; box_sep = 0.15;
+fgOpts = {'Color', 'w', 'NextPlot', 'add'};
+bxFigs = gobjects(Nbs,1);
+jDist = makedist('Normal', 'mu', 0, 'sigma', 1/32);
+pdFlag = false(Ntr, Nbs); pmFlag = pdFlag; mvFlag = pdFlag;
+axs = gobjects(2,1);
+for cbs = 1:Nbs
+    bxFigs(cbs) = figure("Name", behNames(cbs), fgOpts{:}); 
+    axs(1) = subplot(10,1,1:8, "Parent", bxFigs(cbs));
+    hold(axs(1), "on")
+    for ctr = trigSubs(:)'
+        if ~isempty(right_side_flag{cbs}{ctr}) && ...
+                sum(right_side_flag{cbs}{ctr}) > 1
+            sLoc = ctr+zeros(sum(~right_side_flag{cbs}{ctr}),1)-box_sep;
+            sVal = pvpt{cbs}{ctr}(~right_side_flag{cbs}{ctr});
+            rLoc = ctr+zeros(sum(right_side_flag{cbs}{ctr}),1)+box_sep;
+            rVal = pvpt{cbs}{ctr}(right_side_flag{cbs}{ctr});
+            if ~isempty(sVal) && ~isempty(rVal)
+                if numel(sVal) > 1 && numel(rVal) > 1
+                    pdFlag(cbs, ctr) = ansaribradley(sVal, rVal);
+                end
+                pmFlag(cbs, ctr) = ranksum(sVal, rVal);
+            end
+            
+            boxchart(axs(1), sLoc, sVal, bxOpts{:}, 'g')
+            boxchart(axs(1), rLoc, rVal, bxOpts{:}, 'r')
+            scatter(axs(1), sLoc+random(jDist,size(sLoc)), sVal,'g.')
+            scatter(axs(1), rLoc+random(jDist,size(rLoc)), rVal,'r.')
+        end
+    end
+    mvFlag(:, cbs) = pdFlag(:,cbs) | pmFlag(:,cbs);
+    axs(2) = subplot(10,1,9:10); stem(axs(2), mvFlag(:,cbs))
+    xticks(axs, trigSubs); xticklabels(axs, trigSubs)
+    linkaxes(axs, 'x')
+    figure; hold on; arrayfun(@(tr) patch([behTx; NaN], ...
+        [behStack{cbs}(:,tr) - sponMed{cbs}(tr); NaN], ...
+        [repmat(tr,Nbt,1);NaN], [ones(Nbt,1);nan], ...
+        'EdgeColor', 'r', 'EdgeAlpha', 0.5), find(mvFlag(:,cbs)))
+    arrayfun(@(tr) patch([behTx; NaN], ...
+        [behStack{cbs}(:,tr) - sponMed{cbs}(tr); NaN], ...
+        [repmat(tr,Nbt,1);NaN], [ones(Nbt,1);nan], ...
+        'EdgeColor', 'k', 'EdgeAlpha', 0.3), find(~mvFlag(:,cbs)))
+    text(repmat(behTx(1),1,Ntr), zeros(Ntr,1), 1:Ntr, string((1:Ntr)'), ...
+        'HorizontalAlignment','right')
+    %{
+    temp_x = behStack{cbs}(bsFlag | brFlag,:);
+    figure; ; boxplot(temp_x(:), bxGrup(:), bxOpts{:});
+    title(behNames(cbs)); hold on; scatter(2:2:2*Ntr,mvpt{cbs},'rx');
+    xticks(2:2:2*Ntr); xticklabels(1:Ntr)
+    xsFlag(:, cbs) = isWhiskOutlier(mvpt{cbs}, sponQs{cbs}, sponIqr{cbs});
+    xrFlag(:, cbs) = isWhiskOutlier(mvpt{cbs}, respQs{cbs}, respIqr{cbs});
+    ssFlag(:, cbs) = ansaribradley(behStack{cbs}(bsFlag,:)-sponMed{cbs}, ...
+        behStack{cbs}(brFlag,:)-median(behStack{cbs}(brFlag,:),1));
+    qr_mi(:, cbs) = getMI(sponIqr{cbs}, respIqr{cbs});
+    mxs_mi(:, cbs) = getMI(sponMed{cbs}(:), mvpt{cbs});
+    mxr_mi(:, cbs) = getMI(respMed{cbs}(:), mvpt{cbs});
+    %zst(:, cbs) = xwFlag(:,cbs) & ssFlag(:,cbs);
+    zst(:, cbs) = ...
+        (((msFlag(:,cbs) | ssFlag(:,cbs)) & abs(qr_mi(:, cbs)) > 0.1) | ... State change
+        ((xsFlag(:,cbs) & xrFlag(:, cbs)) & abs(mxs_mi(:, cbs)) > 0.1)) & ... Short peak
+        cellfun(@(x) ~isempty(x), pk_rloc{cbs}(:,1));    %
+    subplot(10,1,9:10); stem(2:2:2*Ntr, abs(zst(:, cbs)))
+    xticks(2:2:2*Ntr); xticklabels(1:Ntr); linkaxes(get(gcf, 'Children'), 'x')
+    figure; hold on; arrayfun(@(tr) patch([behTx; NaN], ...
+        [behStack{cbs}(:,tr) - sponMed{cbs}(tr); NaN], ...
+        [repmat(tr,Nbt,1);NaN], [ones(Nbt,1);nan], ...
+        'EdgeColor', 'r', 'EdgeAlpha', 0.5), find(zst(:,cbs)))
+    arrayfun(@(tr) patch([behTx; NaN], ...
+        [behStack{cbs}(:,tr) - sponMed{cbs}(tr); NaN], ...
+        [repmat(tr,Nbt,1);NaN], [ones(Nbt,1);nan], ...
+        'EdgeColor', 'k', 'EdgeAlpha', 0.3), find(~zst(:,cbs)))
+    text(repmat(behTx(1),1,Ntr), zeros(Ntr,1), 1:Ntr, string((1:Ntr)'), ...
+        'HorizontalAlignment','right')
+    % xline(0,'k:')
+    patch([0,0,0,0], [min(ylim),min(ylim),max(ylim),max(ylim)], ...
+        [0, Ntr, Ntr, 0], [1,1,1,1], 'EdgeColor', 'none', ...
+        'FaceAlpha', 0.2, 'FaceColor', 'k')
+    end
+    %}
+end
 %%
 for cbs = 1:Nbs
     for ctr = 1:Ntr
@@ -58,12 +146,15 @@ allZ_bs = cellfun(@(bs) zscore(bs, 0, 1), behStack, fnOpts{:});
 %% Z-score measurements
 % Z-score w.r.t.
 jDist = makedist('Normal', 'mu', 0, 'sigma', 1/8);
+
+%{
 [mvpt, max_time] = cellfun(@(bs) getMaxAbsPerTrial(bs, brWin, behTx), behStack, ...
     fnOpts{:});
 mvpt_tz = cellfun(@(bs) getMaxAbsPerTrial(bs, brWin, behTx), sponZ_bs, ...
     fnOpts{:});
 mvpt_az = cellfun(@(bs) getMaxAbsPerTrial(bs, brWin, behTx), allZ_bs, ...
     fnOpts{:});
+%}
 figure; boxchart([max_time{:}], 'MarkerStyle', 'none');
 hold on; scatter(repmat(1:Nbs, Ntr, 1) + random(jDist,[Ntr, Nbs]), ...
     [max_time{:}], 'kx')
