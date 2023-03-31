@@ -1,4 +1,36 @@
 %%
+axOpts = {'Box', 'off', 'Color', 'none'};
+% Normality assumption
+nDist = makedist('Normal', "mu", 0, "sigma", 1);
+alph = 1 - [0.2, 0.1 , 5e-2, 1e-3];
+signTh = arrayfun(@(z) fminbnd(@(y) ...
+    norm(integral(@(x) pdf(nDist, x), -y, y) - z, 2), -6, 6), alph);
+zeroDiv = @(dv) 1./ (dv.*(dv~=0) + 1.*(dv==0));
+myzs = @(x, mu, st, c) (c.*(x - mu)) .* zeroDiv(st);
+isWhiskOutlier = @(x, Qs, Qr) (Qs(1,:) - 1.5*Qr) > x(:)' |...
+    (Qs(2,:) + 1.5*Qr) < x(:)';
+getMI = @(a, b) (b - a) .* zeroDiv(a + b);
+
+sponMu = cellfun(@(bs) mean(bs(bsFlag,:), 1, "omitnan"), behStack, fnOpts{:});
+sponSig = cellfun(@(bs) std(bs(bsFlag,:), 0, 1, "omitnan"), behStack, fnOpts{:});
+
+respSig = cellfun(@(bs) std(bs(brFlag,:), 0, 1, "omitnan"), behStack, fnOpts{:});
+
+sponQs = cellfun(@(bs) quantile(bs(bsFlag,:), [1,3]/4), behStack, fnOpts{:});
+sponMed = cellfun(@(bs) median(bs(bsFlag,:), 1, "omitnan"), behStack, fnOpts{:});
+sponIqr = cellfun(@(qs) diff(qs, 1, 1), sponQs, fnOpts{:});
+
+cellfun(@(bs, m) max(abs(bs(brFlag,:) - m)), behStack, sponMed, fnOpts{:});
+
+respQs = cellfun(@(bs) quantile(bs(brFlag,:), [1,3]/4), behStack, fnOpts{:});
+respMed = cellfun(@(bs) median(bs(brFlag,:), 1, "omitnan"), behStack, fnOpts{:});
+respIqr = cellfun(@(bs) iqr(bs(brFlag,:), 1), behStack, fnOpts{:});
+
+sponZ_bs = cellfun(@(x, xm, xs) myzs(x, xm, xs, 1), behStack, ...
+    sponMu, sponSig, fnOpts{:});
+allZ_bs = cellfun(@(bs) zscore(bs, 0, 1), behStack, fnOpts{:});
+
+%%
 pk_loc = cellfun(@(bs, m) getWaveformCriticalPoints(bs, fr), behStack, fnOpts{:});
 pk_loc = cellfun(@(b) cellfun(@(t) t+bvWin(1), b, fnOpts{:}), pk_loc, fnOpts{:});
 pk_rloc = cellfun(@(bs, m) getWaveformCriticalPoints(bs(brFlag,:), fr), behStack, fnOpts{:});
@@ -7,8 +39,19 @@ pk_sloc = cellfun(@(bs, m) getWaveformCriticalPoints(bs(bsFlag,:), fr), behStack
 pk_sloc = cellfun(@(b) cellfun(@(t) t+max(bvWin(1),bsWin(1)), b, fnOpts{:}), pk_sloc, fnOpts{:});
 pvpt = cellfun(@(bs, pl, m) arrayfun(@(tr) interp1(behTx, bs(:,tr), ...
     pl{tr,1}, "cubic"), trigSubs, fnOpts{:}), behStack, pk_loc, fnOpts{:});
+tend_mdl = cellfun(@(bs) arrayfun(@(tr) fit_poly(behTx, bs(:,tr), 1), ...
+    trigSubs, fnOpts{:}), behStack, fnOpts{:});
 right_side_flag = cellfun(@(pk) cellfun(@(tr) tr > 0, pk(:,1), ...
     fnOpts{:}), pk_loc, fnOpts{:});
+frstPk = cellfun(@(b) cellfun(@(t) t(find(t>0.01, 1, "first")), b(:,1), ...
+    fnOpts{:}), pk_loc, fnOpts{:}); 
+frstPk_all = cellfun(@(b) cat(1, b{:}), frstPk, fnOpts{:});
+[~, trOrd] = cellfun(@(b) sort(b), frstPk_all, fnOpts{:});
+figure('Color', 'w'); hold on; 
+arrayfun(@(b) boxchart(b+zeros(size(frstPk_all{b})), frstPk_all{b}, ...
+    bxOpts{:}, 'k'), 1:Nbs)
+arrayfun(@(t) scatter(t + zeros(size(frstPk_all{t})) + ...
+    random(jDist, size(frstPk_all{t})), frstPk_all{t}, 'k.'), 1:Nbs)
 %%
 myRng = @(x) range(x, "all");
 mvRng = cellfun(myRng, behStack);
@@ -18,7 +61,8 @@ fgOpts = {'Color', 'w', 'NextPlot', 'add'};
 bxFigs = gobjects(Nbs,1);
 jDist = makedist('Normal', 'mu', 0, 'sigma', 1/32);
 pdFlag = false(Ntr, Nbs); pmFlag = pdFlag; mvFlag = pdFlag;
-axs = gobjects(2,1);
+pk_dist = cell(Ntr, Nbs); rosFlag = pk_dist; startleFlag = pdFlag; froFlag = pdFlag;
+axs = gobjects(2,1); rTime = cell(Nbs, 1);
 for cbs = 1:Nbs
     bxFigs(cbs) = figure("Name", behNames(cbs), fgOpts{:}); 
     axs(1) = subplot(10,1,1:8, "Parent", bxFigs(cbs));
@@ -27,27 +71,36 @@ for cbs = 1:Nbs
         if ~isempty(right_side_flag{cbs}{ctr}) && ...
                 sum(right_side_flag{cbs}{ctr}) > 1
             sLoc = ctr+zeros(sum(~right_side_flag{cbs}{ctr}),1)-box_sep;
-            sVal = pvpt{cbs}{ctr}(~right_side_flag{cbs}{ctr});
+            sVal = pvpt{cbs}{ctr}(~right_side_flag{cbs}{ctr});% - ...
+                %(pk_loc{cbs}{ctr,1}(~right_side_flag{cbs}{ctr}).^[1,0])*...
+                %tend_mdl{cbs}{ctr};
             rLoc = ctr+zeros(sum(right_side_flag{cbs}{ctr}),1)+box_sep;
-            rVal = pvpt{cbs}{ctr}(right_side_flag{cbs}{ctr});
+            rVal = pvpt{cbs}{ctr}(right_side_flag{cbs}{ctr});% - ...
+                %(pk_loc{cbs}{ctr,1}(right_side_flag{cbs}{ctr}).^[1,0])*...
+                %tend_mdl{cbs}{ctr};
+            rTime = pk_loc{cbs}{ctr,1}(right_side_flag{cbs}{ctr});
             if ~isempty(sVal) && ~isempty(rVal)
                 if numel(sVal) > 1 && numel(rVal) > 1
-                    pdFlag(cbs, ctr) = ansaribradley(sVal, rVal);
+                    pdFlag(ctr, cbs) = ansaribradley(sVal-median(sVal), ...
+                        rVal-median(rVal));
                 end
-                pmFlag(cbs, ctr) = ranksum(sVal, rVal);
+                [~, pmFlag(ctr, cbs)] = ranksum(sVal, rVal);
+                % pk_dist{ctr, cbs} = distmatrix(sVal, rVal);
+                sIqr = iqr(sVal); sQs = quantile(sVal,[1,3]/4);
+                rosFlag{ctr, cbs} = isWhiskOutlier(rVal, sQs(:), sIqr);
+                froFlag(ctr, cbs) = any(rosFlag{ctr,cbs}(find(rTime>0.01,2,"first")));
             end
-            
             boxchart(axs(1), sLoc, sVal, bxOpts{:}, 'g')
             boxchart(axs(1), rLoc, rVal, bxOpts{:}, 'r')
             scatter(axs(1), sLoc+random(jDist,size(sLoc)), sVal,'g.')
-            scatter(axs(1), rLoc+random(jDist,size(rLoc)), rVal,'r.')
+            scatter(axs(1), rLoc+random(jDist,size(rLoc)), rVal,'r.')    
         end
     end
-    mvFlag(:, cbs) = pdFlag(:,cbs) | pmFlag(:,cbs);
+    mvFlag(:, cbs) = pdFlag(:,cbs) | pmFlag(:,cbs) | froFlag(:,cbs);
     axs(2) = subplot(10,1,9:10); stem(axs(2), mvFlag(:,cbs))
-    xticks(axs, trigSubs); xticklabels(axs, trigSubs)
+    xticks(axs, trigSubs); xticklabels(axs, trigSubs); set(axs, axOpts{:})
     linkaxes(axs, 'x')
-    figure; hold on; arrayfun(@(tr) patch([behTx; NaN], ...
+    figure('Color', 'w'); hold on; arrayfun(@(tr) patch([behTx; NaN], ...
         [behStack{cbs}(:,tr) - sponMed{cbs}(tr); NaN], ...
         [repmat(tr,Nbt,1);NaN], [ones(Nbt,1);nan], ...
         'EdgeColor', 'r', 'EdgeAlpha', 0.5), find(mvFlag(:,cbs)))
@@ -57,6 +110,9 @@ for cbs = 1:Nbs
         'EdgeColor', 'k', 'EdgeAlpha', 0.3), find(~mvFlag(:,cbs)))
     text(repmat(behTx(1),1,Ntr), zeros(Ntr,1), 1:Ntr, string((1:Ntr)'), ...
         'HorizontalAlignment','right')
+    patch([0,0,0,0], [min(ylim), min(ylim), max(ylim), max(ylim)], ...
+        [0, Ntr, Ntr, 0], [1,1,1,1], 'EdgeColor', 'none', ...
+        'FaceAlpha', 0.2, 'FaceColor', 'k')
     %{
     temp_x = behStack{cbs}(bsFlag | brFlag,:);
     figure; ; boxplot(temp_x(:), bxGrup(:), bxOpts{:});
@@ -93,6 +149,7 @@ for cbs = 1:Nbs
     end
     %}
 end
+
 %%
 for cbs = 1:Nbs
     for ctr = 1:Ntr
@@ -114,33 +171,7 @@ for cbs = 1:Nbs
         xline(0, 'k:')
     end
 end
-%%
-% Normality assumption
-nDist = makedist('Normal', "mu", 0, "sigma", 1);
-alph = 1 - [0.2, 0.1 , 5e-2, 1e-3];
-signTh = arrayfun(@(z) fminbnd(@(y) ...
-    norm(integral(@(x) pdf(nDist, x), -y, y) - z, 2), -6, 6), alph);
-zeroDiv = @(dv) 1./ (dv.*(dv~=0) + 1.*(dv==0));
-myzs = @(x, mu, st, c) (c.*(x - mu)) .* zeroDiv(st);
 
-sponMu = cellfun(@(bs) mean(bs(bsFlag,:), 1, "omitnan"), behStack, fnOpts{:});
-sponSig = cellfun(@(bs) std(bs(bsFlag,:), 0, 1, "omitnan"), behStack, fnOpts{:});
-
-respSig = cellfun(@(bs) std(bs(brFlag,:), 0, 1, "omitnan"), behStack, fnOpts{:});
-
-sponQs = cellfun(@(bs) quantile(bs(bsFlag,:), [1,3]/4), behStack, fnOpts{:});
-sponMed = cellfun(@(bs) median(bs(bsFlag,:), 1, "omitnan"), behStack, fnOpts{:});
-sponIqr = cellfun(@(qs) diff(qs, 1, 1), sponQs, fnOpts{:});
-
-cellfun(@(bs, m) max(abs(bs(brFlag,:) - m)), behStack, sponMed, fnOpts{:});
-
-respQs = cellfun(@(bs) quantile(bs(brFlag,:), [1,3]/4), behStack, fnOpts{:});
-respMed = cellfun(@(bs) median(bs(brFlag,:), 1, "omitnan"), behStack, fnOpts{:});
-respIqr = cellfun(@(bs) iqr(bs(brFlag,:), 1), behStack, fnOpts{:});
-
-sponZ_bs = cellfun(@(x, xm, xs) myzs(x, xm, xs, 1), behStack, ...
-    sponMu, sponSig, fnOpts{:});
-allZ_bs = cellfun(@(bs) zscore(bs, 0, 1), behStack, fnOpts{:});
 
 
 %% Z-score measurements
@@ -160,9 +191,7 @@ hold on; scatter(repmat(1:Nbs, Ntr, 1) + random(jDist,[Ntr, Nbs]), ...
     [max_time{:}], 'kx')
 % Whisker outlier: is the point ssmaller than Q1 - 1.5*IQR or greater than
 % Q3 + 1.5*IQR?
-isWhiskOutlier = @(x, Qs, Qr) ...
-    (Qs(1,:) - 1.5*Qr) > x(:)' |...
-    (Qs(2,:) + 1.5*Qr) < x(:)'; getMI = @(a, b) (b - a) .* zeroDiv(a + b);
+
 
 bxGrup = reshape(1:2*Ntr,2,[]);
 bxGrup = [repmat(bxGrup(1,:),sum(bsFlag), 1); repmat(bxGrup(2,:),sum(brFlag), 1)];
