@@ -85,10 +85,13 @@ for cbs = 1:Nbs
                         rVal-median(rVal));
                 end
                 [~, pmFlag(ctr, cbs)] = ranksum(sVal, rVal);
-                % pk_dist{ctr, cbs} = distmatrix(sVal, rVal);
+                pk_dist{ctr, cbs} = distmatrix(sVal, rVal);
                 sIqr = iqr(sVal); sQs = quantile(sVal,[1,3]/4);
                 rosFlag{ctr, cbs} = isWhiskOutlier(rVal, sQs(:), sIqr);
-                froFlag(ctr, cbs) = any(rosFlag{ctr,cbs}(find(rTime>0.01,2,"first")));
+                frPkSubs = find(rTime>0.01,2,"first");
+                % Is outlier at least a 10th of the signal range?
+                % pk_dist{ctr, cbs}
+                froFlag(ctr, cbs) = any(rosFlag{ctr,cbs}(frPkSubs));
             end
             boxchart(axs(1), sLoc, sVal, bxOpts{:}, 'g')
             boxchart(axs(1), rLoc, rVal, bxOpts{:}, 'r')
