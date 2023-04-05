@@ -1,5 +1,11 @@
 %%
 axOpts = {'Box', 'off', 'Color', 'none'};
+bxOpts = {'Notch', 'on', 'MarkerStyle', 'none', 'BoxWidth', 0.25, ...
+    'BoxFaceColor'}; box_sep = 0.15;
+myRng = @(x) range(x, "all");
+mvRng = cellfun(myRng, behStack);
+fgOpts = {'Color', 'w', 'NextPlot', 'add'};
+jDist = makedist('Normal', 'mu', 0, 'sigma', 1/32);
 % Normality assumption
 nDist = makedist('Normal', "mu", 0, "sigma", 1);
 alph = 1 - [0.2, 0.1 , 5e-2, 1e-3];
@@ -19,8 +25,6 @@ respSig = cellfun(@(bs) std(bs(brFlag,:), 0, 1, "omitnan"), behStack, fnOpts{:})
 sponQs = cellfun(@(bs) quantile(bs(bsFlag,:), [1,3]/4), behStack, fnOpts{:});
 sponMed = cellfun(@(bs) median(bs(bsFlag,:), 1, "omitnan"), behStack, fnOpts{:});
 sponIqr = cellfun(@(qs) diff(qs, 1, 1), sponQs, fnOpts{:});
-
-cellfun(@(bs, m) max(abs(bs(brFlag,:) - m)), behStack, sponMed, fnOpts{:});
 
 respQs = cellfun(@(bs) quantile(bs(brFlag,:), [1,3]/4), behStack, fnOpts{:});
 respMed = cellfun(@(bs) median(bs(brFlag,:), 1, "omitnan"), behStack, fnOpts{:});
@@ -44,27 +48,22 @@ tend_mdl = cellfun(@(bs) arrayfun(@(tr) fit_poly(behTx, bs(:,tr), 1), ...
 right_side_flag = cellfun(@(pk) cellfun(@(tr) tr > 0, pk(:,1), ...
     fnOpts{:}), pk_loc, fnOpts{:});
 frstPk = cellfun(@(b) cellfun(@(t) t(find(t>0.01, 1, "first")), b(:,1), ...
-    fnOpts{:}), pk_loc, fnOpts{:}); 
+    fnOpts{:}), pk_loc, fnOpts{:});
 frstPk_all = cellfun(@(b) cat(1, b{:}), frstPk, fnOpts{:});
 [~, trOrd] = cellfun(@(b) sort(b), frstPk_all, fnOpts{:});
-figure('Color', 'w'); hold on; 
+figure('Color', 'w'); hold on;
 arrayfun(@(b) boxchart(b+zeros(size(frstPk_all{b})), frstPk_all{b}, ...
     bxOpts{:}, 'k'), 1:Nbs)
 arrayfun(@(t) scatter(t + zeros(size(frstPk_all{t})) + ...
     random(jDist, size(frstPk_all{t})), frstPk_all{t}, 'k.'), 1:Nbs)
 %%
-myRng = @(x) range(x, "all");
-mvRng = cellfun(myRng, behStack);
-bxOpts = {'Notch', 'on', 'MarkerStyle', 'none', 'BoxWidth', 0.25, ...
-    'BoxFaceColor'}; box_sep = 0.15;
-fgOpts = {'Color', 'w', 'NextPlot', 'add'};
 bxFigs = gobjects(Nbs,1);
-jDist = makedist('Normal', 'mu', 0, 'sigma', 1/32);
 pdFlag = false(Ntr, Nbs); pmFlag = pdFlag; mvFlag = pdFlag;
-pk_dist = cell(Ntr, Nbs); rosFlag = pk_dist; startleFlag = pdFlag; froFlag = pdFlag;
+pk_dist = cell(Ntr, Nbs); rosFlag = pk_dist; startleFlag = pdFlag;
+froFlag = pdFlag; rgFlag = true(size(froFlag));
 axs = gobjects(2,1); rTime = cell(Nbs, 1);
 for cbs = 1:Nbs
-    bxFigs(cbs) = figure("Name", behNames(cbs), fgOpts{:}); 
+    bxFigs(cbs) = figure("Name", behNames(cbs), fgOpts{:});
     axs(1) = subplot(10,1,1:8, "Parent", bxFigs(cbs));
     hold(axs(1), "on")
     for ctr = trigSubs(:)'
@@ -72,34 +71,40 @@ for cbs = 1:Nbs
                 sum(right_side_flag{cbs}{ctr}) > 1
             sLoc = ctr+zeros(sum(~right_side_flag{cbs}{ctr}),1)-box_sep;
             sVal = pvpt{cbs}{ctr}(~right_side_flag{cbs}{ctr});% - ...
-                %(pk_loc{cbs}{ctr,1}(~right_side_flag{cbs}{ctr}).^[1,0])*...
-                %tend_mdl{cbs}{ctr};
+            %(pk_loc{cbs}{ctr,1}(~right_side_flag{cbs}{ctr}).^[1,0])*...
+            %tend_mdl{cbs}{ctr};
             rLoc = ctr+zeros(sum(right_side_flag{cbs}{ctr}),1)+box_sep;
             rVal = pvpt{cbs}{ctr}(right_side_flag{cbs}{ctr});% - ...
-                %(pk_loc{cbs}{ctr,1}(right_side_flag{cbs}{ctr}).^[1,0])*...
-                %tend_mdl{cbs}{ctr};
+            %(pk_loc{cbs}{ctr,1}(right_side_flag{cbs}{ctr}).^[1,0])*...
+            %tend_mdl{cbs}{ctr};
             rTime = pk_loc{cbs}{ctr,1}(right_side_flag{cbs}{ctr});
             if ~isempty(sVal) && ~isempty(rVal)
+                [~, pmFlag(ctr, cbs)] = ranksum(sVal, rVal);
+                sIqr = iqr(sVal); sQs = quantile(sVal,[1,3]/4);
+                rosFlag{ctr, cbs} = isWhiskOutlier(rVal, sQs(:), sIqr);
+                frPkSubs = find(rTime>0.01,3,"first");
+                froFlag(ctr, cbs) = any(rosFlag{ctr,cbs}(frPkSubs));
+                pk_dist{ctr, cbs} = distmatrix(sVal, rVal);
                 if numel(sVal) > 1 && numel(rVal) > 1
                     pdFlag(ctr, cbs) = ansaribradley(sVal-median(sVal), ...
                         rVal-median(rVal));
+                    if froFlag(ctr, cbs)
+                        % Is outlier at least a 10th of the signal range?
+                        rgFlag(ctr, cbs) = mean(abs((cumsum(any((...
+                            pk_dist{ctr, cbs}(:, frPkSubs) > (mvRng(cbs)/10)), ...
+                            2)).^[1,0]) * fit_poly([0, size(sVal,1)], [0,1], 1))) ...
+                            > 0.5;
+                    end
                 end
-                [~, pmFlag(ctr, cbs)] = ranksum(sVal, rVal);
-                pk_dist{ctr, cbs} = distmatrix(sVal, rVal);
-                sIqr = iqr(sVal); sQs = quantile(sVal,[1,3]/4);
-                rosFlag{ctr, cbs} = isWhiskOutlier(rVal, sQs(:), sIqr);
-                frPkSubs = find(rTime>0.01,2,"first");
-                % Is outlier at least a 10th of the signal range?
-                % pk_dist{ctr, cbs}
-                froFlag(ctr, cbs) = any(rosFlag{ctr,cbs}(frPkSubs));
             end
             boxchart(axs(1), sLoc, sVal, bxOpts{:}, 'g')
             boxchart(axs(1), rLoc, rVal, bxOpts{:}, 'r')
             scatter(axs(1), sLoc+random(jDist,size(sLoc)), sVal,'g.')
-            scatter(axs(1), rLoc+random(jDist,size(rLoc)), rVal,'r.')    
+            scatter(axs(1), rLoc+random(jDist,size(rLoc)), rVal,'r.')
         end
     end
-    mvFlag(:, cbs) = pdFlag(:,cbs) | pmFlag(:,cbs) | froFlag(:,cbs);
+    mvFlag(:, cbs) = (pdFlag(:,cbs) | pmFlag(:,cbs) | froFlag(:,cbs)) & ...
+        rgFlag(:, cbs);
     axs(2) = subplot(10,1,9:10); stem(axs(2), mvFlag(:,cbs))
     xticks(axs, trigSubs); xticklabels(axs, trigSubs); set(axs, axOpts{:})
     linkaxes(axs, 'x')
@@ -156,9 +161,9 @@ end
 %%
 for cbs = 1:Nbs
     for ctr = 1:Ntr
-        figure; plot(behTx, behStack{cbs}(:,ctr), 'k'); 
+        figure; plot(behTx, behStack{cbs}(:,ctr), 'k');
         title(behNames(cbs)+" trial "+string(ctr))
-        hold on; 
+        hold on;
         scatter(pk_rloc{cbs}{ctr,1}, interp1(behTx, behStack{cbs}(:,ctr), ...
             pk_rloc{cbs}{ctr,1}, "cubic"), 'ro')
         scatter(pk_rloc{cbs}{ctr,2}, interp1(behTx, behStack{cbs}(:,ctr), ...
