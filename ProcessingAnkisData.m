@@ -6,7 +6,7 @@
 % dataPttrn = "Z:\Emilio\SuperiorColliculusExperiments\Roller\"+...
 %     "Batch13_beh\WT*\*\*bar*";
 dataPttrn = "Z:\Emilio\SuperiorColliculusExperiments\Roller\" + ...
-    "Batch13_beh\WT3\230222\*bar";
+    "Batch13_beh\WT*\23*\*bar*";
 barFlds = dir(dataPttrn);
 fn = @(x) fullfile(x.folder, x.name);
 
@@ -29,26 +29,35 @@ for cf = barFlds'
         oldSess = currSess;
         if ~isfield(mice, 'Sessions')
             mice(mc).Sessions =...
-                struct('Date',currSess,'Intensities',[],'RollMovProb',[]);
+                struct('Date',currSess,'Intensities',[],'BehIndex',[]);
         else
             mice(mc).Sessions = [mice(mc).Sessions; ...
-                struct('Date',currSess,'Intensities',[],'RollMovProb',[])];
+                struct('Date',currSess,'Intensities',[],'BehIndex',[])];
         end
         sc = sc + 1;
     end
     try
-        outStr = analyseBehaviour(fn(cf), 'verbose', false,...
+        [outStr, behFigDir] = analyseBehaviour(fn(cf), 'verbose', false,...
             'showPlots', false);
     catch ME
         %dbstop in ProcessingAnkisData.m at 39
         fprintf(1, "Something went wrong with %s\n", fn(cf));
         continue
     end
+    consCondNames = arrayfun(@(c) string(c.ConditionName), outStr);
+    biFigPttrn = "BehIndex%s";
+    biFigPttrn = sprintf(biFigPttrn, sprintf(" %s (%%.3f)", consCondNames));
+    [pAreas, ~, behAreaFig] = createBehaviourIndex(outStr);
+    outStr = arrayfun(@(bs, ba) setfield(bs,'BehIndex', ba), outStr, pAreas);
+    set(behAreaFig, 'UserData', outStr)
+
+    biFN = sprintf(biFigPttrn, pAreas);
+    saveFigure(behAreaFig, fullfile(behFigDir, biFN), true);
     mice(mc).Sessions(sc).Intensities = ...
         [mice(mc).Sessions(sc).Intensities; puffInt];
-    mice(mc).Sessions(sc).RollMovProb = ...
-        [mice(mc).Sessions(sc).RollMovProb; ...
-        outStr.Results(4).MovProbability];
+    mice(mc).Sessions(sc).BehIndex = ...
+        [mice(mc).Sessions(sc).BehIndex; ...
+        outStr.BehIndex];
     close('all')
 end
 
