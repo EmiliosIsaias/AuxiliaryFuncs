@@ -6,7 +6,7 @@
 % dataPttrn = "Z:\Emilio\SuperiorColliculusExperiments\Roller\"+...
 %     "Batch13_beh\WT*\*\*bar*";
 dataPttrn = "Z:\Emilio\SuperiorColliculusExperiments\Roller\" + ...
-    "Batch13_beh\WT*\23*\*bar*";
+    "Batch13_beh\WT*\2303*\*bar*";
 barFlds = dir(dataPttrn);
 fn = @(x) fullfile(x.folder, x.name);
 
@@ -62,6 +62,7 @@ for cf = barFlds'
 end
 
 %% Plotting data all together
+
 piFig = figure("Name","Puff intensity vs Movement", "Color","w");
 ax = axes("Parent",piFig,"NextPlot","add");
 fnOpts = {'UniformOutput', false};
@@ -71,13 +72,14 @@ jittNoise = makedist("Normal","mu",0,"sigma",0.025);
 for mc = 1:size(mice,1)
     for sc = 1:size(mice(mc).Sessions, 1)
         x = [x; mice(mc).Sessions(sc).Intensities]; 
-        y = [y; mice(mc).Sessions(sc).RollMovProb];
+        y = [y; mice(mc).Sessions(sc).BehIndex];
         scObj(mc) = scatter(ax, ...
             random(jittNoise,size(mice(mc).Sessions(sc).Intensities)) + ...
             mice(mc).Sessions(sc).Intensities, ...
             random(jittNoise,size(mice(mc).Sessions(sc).Intensities))*0+...
-            mice(mc).Sessions(sc).RollMovProb, ".", ...
-            "SizeData", 108, "MarkerEdgeColor", clrMap(mc,:));
+            mice(mc).Sessions(sc).BehIndex, ".", ...
+            "SizeData", 160, "MarkerEdgeColor", clrMap(mc,:), ...
+            "MarkerEdgeAlpha", 0.5);
     end
 end
 xlabel("Puff intensity [bar]"); ylabel("Movement probability");
@@ -89,18 +91,20 @@ lgObj = legend([scObj; lObj], ...
     cat(1, arrayfun(@(x) x.Name, mice, "UniformOutput",false), 'Trend'));
 set(lgObj, "Box", "off", "Location", "best", "NumColumnsMode", "auto")
 %% Plotting data. One by one
+figDir = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch13_beh";
 piFig = figure("Name","Puff intensity vs Movement", "Color","w");
 clrMap = lines(size(mice,1)); x = []; y = x; scObj = gobjects(size(mice));
 jittNoise = makedist("Normal","mu",0,"sigma",0.025);
+ax = axes("Parent",piFig,"NextPlot","add");
 for mc = 1:size(mice,1)
     for sc = 1:size(mice(mc).Sessions, 1)
         x = [x; mice(mc).Sessions(sc).Intensities]; 
-        y = [y; mice(mc).Sessions(sc).RollMovProb];
+        y = [y; mice(mc).Sessions(sc).BehIndex];
         scObj(mc) = scatter(ax, ...
             random(jittNoise,size(mice(mc).Sessions(sc).Intensities)) + ...
             mice(mc).Sessions(sc).Intensities, ...
             random(jittNoise,size(mice(mc).Sessions(sc).Intensities))*0+...
-            mice(mc).Sessions(sc).RollMovProb, ".", ...
+            mice(mc).Sessions(sc).BehIndex, ".", ...
             "SizeData", 108, "MarkerEdgeColor", clrMap(mc,:));
     end
     xlabel("Puff intensity [bar]"); ylabel("Movement probability");
