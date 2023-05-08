@@ -44,6 +44,6 @@ if all(~foundDirFlag)
     end
 else
     % Found it! Return the path from all instances.
-    foundDir = string(expandName(childDirs(foundDirFlag)));
+    foundDir = arrayfun(@(x) string(expandName(x)), childDirs(foundDirFlag));
 end
 end
