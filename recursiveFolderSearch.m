@@ -1,4 +1,4 @@
-function [foundDir] = recursiveFolderSearch(seedPath, targetFolder)
+function [foundDir] = recursiveFolderSearch(seedPath, targetString, varargin)
 %RECURSIVEFOLDERSEARCH looks for the given folder (targetFolder) in all
 %subfolders from the seed folder (seedPath) and returns the full path of
 %the searched folder. It returns the first folder found in the subfolders
@@ -14,12 +14,19 @@ pointFlag = arrayfun(@(x) any(strcmpi(x.name, {'.','..'})), childDirs);
 fileFlag = reshape([childDirs.isdir], [], 1);
 childDirs(pointFlag | ~fileFlag) = [];
 childNames = arrayfun(@(x) string(x.name), childDirs);
-foundDirFlag = strcmp(childNames, targetFolder);
+switch sType
+    case 'string'
+        foundDirFlag = strcmp(childNames, targetString);
+    case 'expression'
+        foundDirFlag = cellfun(@(x) ~isempty(x), ...
+            (regexp(childNames, targetString, 'match')));
+end
 cf = 0; Ncf = numel(childDirs);
 if all(~foundDirFlag)
     % Didn't find the folder. Keep looking in subfolders
     while Ncf > 0 && cf < Ncf && isempty(foundDir)
-        foundDir = recursiveFolderSearch(expandName(childDirs(cf+1)), targetFolder);
+        foundDir = recursiveFolderSearch(expandName(childDirs(cf+1)), ...
+            targetString, 'SearchType', sType);
         cf = cf + 1;
     end
 else
