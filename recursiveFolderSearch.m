@@ -6,6 +6,19 @@ function [foundDir] = recursiveFolderSearch(seedPath, targetString, varargin)
 
 % Emilio Isaias-Camacho @ GrohLab 2023
 %%
+p = inputParser;
+istxt = @(x) ischar(x) | isstring(x);
+isfolder = @(x) istxt(x) & exist(x, 'dir');
+addRequired(p, 'seedPath', isfolder)
+addRequired(p, 'targetString', istxt)
+addParameter(p, 'SearchType', 'string', istxt)
+
+parse(p, seedPath, targetString, varargin{:})
+
+seedPath = p.Results.seedPath;
+targetString = p.Results.targetString;
+sType = p.Results.SearchType;
+
 foundDir = [];
 childDirs = dir(seedPath);
 expandName = @(x) fullfile(x.folder,x.name);
