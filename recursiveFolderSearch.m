@@ -27,23 +27,25 @@ pointFlag = arrayfun(@(x) any(strcmpi(x.name, {'.','..'})), childDirs);
 fileFlag = reshape([childDirs.isdir], [], 1);
 childDirs(pointFlag | ~fileFlag) = [];
 childNames = arrayfun(@(x) string(x.name), childDirs);
-switch sType
-    case 'string'
-        foundDirFlag = strcmp(childNames, targetString);
-    case 'expression'
-        foundDirFlag = cellfun(@(x) ~isempty(x), ...
-            (regexp(childNames, targetString, 'match')));
-end
-cf = 0; Ncf = numel(childDirs);
-if all(~foundDirFlag)
-    % Didn't find the folder. Keep looking in subfolders
-    while Ncf > 0 && cf < Ncf && isempty(foundDir)
-        foundDir = recursiveFolderSearch(expandName(childDirs(cf+1)), ...
-            targetString, 'SearchType', sType);
-        cf = cf + 1;
+if ~isempty(childNames)
+    switch sType
+        case 'string'
+            foundDirFlag = strcmp(childNames, targetString);
+        case 'expression'
+            foundDirFlag = cellfun(@(x) ~isempty(x), ...
+                (regexp(childNames, targetString, 'match')));
     end
-else
-    % Found it! Return the path from all instances.
-    foundDir = arrayfun(@(x) string(expandName(x)), childDirs(foundDirFlag));
+    cf = 0; Ncf = numel(childDirs);
+    if all(~foundDirFlag)
+        % Didn't find the folder. Keep looking in subfolders
+        while Ncf > 0 && cf < Ncf && isempty(foundDir)
+            foundDir = recursiveFolderSearch(expandName(childDirs(cf+1)), ...
+                targetString, 'SearchType', sType);
+            cf = cf + 1;
+        end
+    else
+        % Found it! Return the path from all instances.
+        foundDir = arrayfun(@(x) string(expandName(x)), childDirs(foundDirFlag));
+    end
 end
 end
