@@ -10,10 +10,10 @@ import numpy as np
 import pathlib as pl
 import matplotlib.pyplot as plt
 
-imgs_dir = pl.Path(r"H:\2022\Mexico\\")
-pSub = 134
-rng = 2
-imgs_nm = ["/_MG_0{}.png".format(x) for x in range(pSub,pSub+rng)]
+imgs_dir = pl.Path(r"C:\Users\jefe_\06-Heidelberg, Schwarzwald")
+pSub = 620
+rng = 5
+imgs_nm = ["/_MG_1{}.png".format(x) for x in range(pSub,pSub+rng)]
 #imgs_nm = ["/_MG_9209.png","/_MG_9210.png","/_MG_9211.png"]
 imgs_fn = [imgs_dir.as_posix() + im for im in imgs_nm]
 
