@@ -6,7 +6,7 @@ sumCol = sum(contingencyTbl, 1);
 sumRow = sum(contingencyTbl, 2);
 expectedVal = (sumRow * sumCol)./total;
 chiVals = ((contingencyTbl - expectedVal).^2)./expectedVal;
-chiVal = sum(chiVals, "all");
+chiVal = sum(chiVals, "all", "omitnan");
 df = prod(size(contingencyTbl)-1);
-p = chi2pdf(chiVal, df);
+p = chi2cdf(chiVal, df, 'upper');
 end
