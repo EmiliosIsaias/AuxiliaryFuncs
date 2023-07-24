@@ -38,3 +38,4 @@ movProp_perSess = cellfun(@(ms) arrayfun(@(bp) ...
     mBehRes, fnOpts{:});
 movProp_perSess = cellfun(@(mps) cat(3, mps{:}), movProp_perSess, fnOpts{:});
 
+[mBehRes{1}(:).NTrials]
