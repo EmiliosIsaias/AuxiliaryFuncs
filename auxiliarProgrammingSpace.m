@@ -30,7 +30,7 @@ BIscale = arrayfun(@(cc) BIscale(pairedStim(:,cc), cc), 1:Nccond, ...
 fnOpts = {'UniformOutput', false};
 getChildFolder = @(x) fullfile(x.folder, x.name);
 miceDir = dir(fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch14_ephys.MC", "*\WT*"));
-expDirs = arrayfun(@(d) dir(fullfile(getChildFolder(d), '23*')), miceDir, "UniformOutput", false);
+expDirs = arrayfun(@(d) dir(fullfile(getChildFolder(d), '23*')), miceDir, fnOpts{:});
 for cm = 1:numel(expDirs)
     mBehRes = analyseBehaviour_allSessions(expDirs{cm});
     consCondNames = cellfun(@(ms) {ms(:).ConditionName}, mBehRes, fnOpts{:});
@@ -39,7 +39,7 @@ for cm = 1:numel(expDirs)
         mBehRes, fnOpts{:});
     movProp_perSess = cellfun(@(mps) cat(3, mps{:}), movProp_perSess, fnOpts{:});
     mvCnt = cellfun(@(x) squeeze(sum(x, 1)), movProp_perSess, fnOpts{:});
-
+    
     Ntc = cellfun(@(mc) [mc(:).NTrials], mBehRes, fnOpts{:});
 
     mvCnt2 = cellfun(@(cnt) cnt([1,2],:), mvCnt, fnOpts{:});
@@ -49,14 +49,17 @@ for cm = 1:numel(expDirs)
     Ntc2 = cat(1, Ntc2{:});
 
     mouseMovProp = sum(mvCnt2,3)./sum(Ntc2)';
-    %%
+
+   
+    behSigName = {'Stimulated whiskers','Non-stimulated whiskers', ...
+        'Nose', 'Roller speed'};
     tmpBehRes = [];
-    behSigName = {'Stimulated whiskers','Non-stimulated whiskers', 'Nose', 'Roller speed'};
     for cc = 1:2
         tmpBehRes = [tmpBehRes, struct('ConditionName', consCondNames{1}{cc}, ...
             'Results', struct('BehSigName',[],'MovProbability',0))];
         for cbs = 1:4
-            auxStruct = struct('BehSigName', behSigName{cbs}, 'MovProbability', mouseMovProp(cc, cbs));
+            auxStruct = struct('BehSigName', behSigName{cbs}, ...
+                'MovProbability', mouseMovProp(cc, cbs));
             tmpBehRes(cc).Results(cbs) = auxStruct;
         end
     end
