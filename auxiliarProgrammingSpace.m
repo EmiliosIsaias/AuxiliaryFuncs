@@ -29,9 +29,12 @@ BIscale = arrayfun(@(cc) BIscale(pairedStim(:,cc), cc), 1:Nccond, ...
 %%
 fnOpts = {'UniformOutput', false};
 getChildFolder = @(x) fullfile(x.folder, x.name);
-miceDir = dir(fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch14_ephys.MC", "*\WT*"));
-expDirs = arrayfun(@(d) dir(fullfile(getChildFolder(d), '23*')), miceDir, fnOpts{:});
+miceDir = dir(fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC", "*\WT*"));
+expDirs = arrayfun(@(d) dir(fullfile(getChildFolder(d), '*')), miceDir, fnOpts{:});
+miceBI = cell(numel(expDirs),1);
 for cm = 1:numel(expDirs)
+    expDirs{cm} = expDirs{cm}([expDirs{cm}.isdir]' & ...
+        ~arrayfun(@(x) string(x.name)=="." | string(x.name)=="..", expDirs{cm}));
     asBehRes = analyseBehaviour_allSessions(expDirs{cm});
     consCondNames = cellfun(@(ms) {ms(:).ConditionName}, asBehRes, fnOpts{:});
     movProp_perSess = cellfun(@(ms) arrayfun(@(bp) ...
@@ -40,7 +43,7 @@ for cm = 1:numel(expDirs)
     movProp_perSess = cellfun(@(mps) cat(3, mps{:}), movProp_perSess, fnOpts{:});
     mvCnt = cellfun(@(x) squeeze(sum(x, 1)), movProp_perSess, fnOpts{:});
     
-    lsrFlag = cellfun(@(ccn) regexp(ccn, 'Delay 0.1\d+ s'), consCondNames, fnOpts{:});
+    lsrFlag = cellfun(@(ccn) regexp(ccn, 'Delay 0.\d+ s'), consCondNames, fnOpts{:});
     lsrFlag = cellfun(@(lf) cellfun(@(y) ~isempty(y), lf), lsrFlag, fnOpts{:});
     lsrSub = cellfun(@(ccn) find(ccn, 1, "first"), lsrFlag);
 
@@ -76,4 +79,6 @@ for cm = 1:numel(expDirs)
     biFN = sprintf(biFigPttrn, pAreas);
     saveFigure(polyFig, fullfile(expDirs{cm}(1).folder, biFN), true, true);
     save(fullfile(expDirs{cm}(1).folder, 'AllSessions.mat'), 'asBehRes', 'msBehRes')
+    miceBI{cm} = msBehRes;
+    close all
 end
