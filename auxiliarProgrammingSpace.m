@@ -32,43 +32,48 @@ getChildFolder = @(x) fullfile(x.folder, x.name);
 miceDir = dir(fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch14_ephys.MC", "*\WT*"));
 expDirs = arrayfun(@(d) dir(fullfile(getChildFolder(d), '23*')), miceDir, fnOpts{:});
 for cm = 1:numel(expDirs)
-    mBehRes = analyseBehaviour_allSessions(expDirs{cm});
-    consCondNames = cellfun(@(ms) {ms(:).ConditionName}, mBehRes, fnOpts{:});
+    asBehRes = analyseBehaviour_allSessions(expDirs{cm});
+    consCondNames = cellfun(@(ms) {ms(:).ConditionName}, asBehRes, fnOpts{:});
     movProp_perSess = cellfun(@(ms) arrayfun(@(bp) ...
         ms(1).Results(bp).MovStrucure.MovmentFlags, 1:4, fnOpts{:}), ...
-        mBehRes, fnOpts{:});
+        asBehRes, fnOpts{:});
     movProp_perSess = cellfun(@(mps) cat(3, mps{:}), movProp_perSess, fnOpts{:});
     mvCnt = cellfun(@(x) squeeze(sum(x, 1)), movProp_perSess, fnOpts{:});
     
-    Ntc = cellfun(@(mc) [mc(:).NTrials], mBehRes, fnOpts{:});
+    lsrFlag = cellfun(@(ccn) regexp(ccn, 'Delay 0.1\d+ s'), consCondNames, fnOpts{:});
+    lsrFlag = cellfun(@(lf) cellfun(@(y) ~isempty(y), lf), lsrFlag, fnOpts{:});
+    lsrSub = cellfun(@(ccn) find(ccn, 1, "first"), lsrFlag);
 
-    mvCnt2 = cellfun(@(cnt) cnt([1,2],:), mvCnt, fnOpts{:});
+    Ntc = cellfun(@(mc) [mc(:).NTrials], asBehRes, fnOpts{:});
+    condSubs = [ones(numel(lsrSub),1), lsrSub];
+    mvCnt2 = arrayfun(@(cnt) mvCnt{cnt}(condSubs(cnt,:),:), ...
+        (1:numel(mvCnt))', fnOpts{:});
     mvCnt2 = cat(3, mvCnt2{:});
 
-    Ntc2 = cellfun(@(tot) tot([1,2]), Ntc, fnOpts{:});
-    Ntc2 = cat(1, Ntc2{:});
+    Ntc2 = arrayfun(@(tot) Ntc{tot}(condSubs(tot,:)), (1:numel(Ntc))', ...
+        fnOpts{:});  Ntc2 = cat(1, Ntc2{:});
 
     mouseMovProp = sum(mvCnt2,3)./sum(Ntc2)';
 
    
     behSigName = {'Stimulated whiskers','Non-stimulated whiskers', ...
         'Nose', 'Roller speed'};
-    tmpBehRes = [];
+    msBehRes = [];
     for cc = 1:2
-        tmpBehRes = [tmpBehRes, struct('ConditionName', consCondNames{1}{cc}, ...
+        msBehRes = [msBehRes, struct('ConditionName', consCondNames{1}{cc}, ...
             'Results', struct('BehSigName',[],'MovProbability',0))];
         for cbs = 1:4
             auxStruct = struct('BehSigName', behSigName{cbs}, ...
                 'MovProbability', mouseMovProp(cc, cbs));
-            tmpBehRes(cc).Results(cbs) = auxStruct;
+            msBehRes(cc).Results(cbs) = auxStruct;
         end
     end
-    [pAreas, ~, polyFig] = createBehaviourIndex(tmpBehRes);
+    [pAreas, ~, polyFig] = createBehaviourIndex(msBehRes);
     biFigPttrn = sprintf("%s BehIndex%%s", miceDir(cm).name);
-    biFigPttrn = sprintf(biFigPttrn, sprintf(" %s (%%.3f)", consCondNames{cm}{[1,2]}));
-    tmpBehRes = arrayfun(@(bs, ba) setfield(bs,'BehIndex', ba), tmpBehRes, pAreas);
-    set(polyFig, 'UserData', {tmpBehRes, mBehRes})
+    biFigPttrn = sprintf(biFigPttrn, sprintf(" %s (%%.3f)", consCondNames{1}{condSubs(1,:)}));
+    msBehRes = arrayfun(@(bs, ba) setfield(bs,'BehIndex', ba), msBehRes, pAreas);
+    set(polyFig, 'UserData', {msBehRes, asBehRes})
     biFN = sprintf(biFigPttrn, pAreas);
     saveFigure(polyFig, fullfile(expDirs{cm}(1).folder, biFN), true, true);
-    save(fullfile(expDirs{cm}(1).folder, 'AllSessions.mat'), 'mBehRes', 'tmpBehRes')
+    save(fullfile(expDirs{cm}(1).folder, 'AllSessions.mat'), 'asBehRes', 'msBehRes')
 end
