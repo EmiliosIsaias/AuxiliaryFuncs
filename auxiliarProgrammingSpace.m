@@ -45,7 +45,14 @@ for cm = 1:numel(expDirs)
     
     lsrFlag = cellfun(@(ccn) regexp(ccn, 'Delay 0.\d+ s'), consCondNames, fnOpts{:});
     lsrFlag = cellfun(@(lf) cellfun(@(y) ~isempty(y), lf), lsrFlag, fnOpts{:});
-    lsrSub = cellfun(@(ccn) find(ccn, 1, "first"), lsrFlag);
+    lsrEmpt = cellfun(@(x) all(~x), lsrFlag);
+    lsrSub = cellfun(@(ccn) find(ccn, 1, "first"), lsrFlag(~lsrEmpt));
+    if any(lsrEmpt)
+        fprintf(1, "No laser for:\n")
+        fprintf(1, "%s\n", expDirs{cm}(lsrEmpt).name)
+        asBehRes(lsrEmpt) = []; movProp_perSess(lsrEmpt) = []; 
+        mvCnt(lsrEmpt) = [];
+    end
 
     Ntc = cellfun(@(mc) [mc(:).NTrials], asBehRes, fnOpts{:});
     condSubs = [ones(numel(lsrSub),1), lsrSub];
@@ -60,8 +67,7 @@ for cm = 1:numel(expDirs)
 
    
     behSigName = {'Stimulated whiskers','Non-stimulated whiskers', ...
-        'Nose', 'Roller speed'};
-    msBehRes = [];
+        'Nose', 'Roller speed'}; msBehRes = [];
     for cc = 1:2
         msBehRes = [msBehRes, struct('ConditionName', consCondNames{1}{cc}, ...
             'Results', struct('BehSigName',[],'MovProbability',0))];
