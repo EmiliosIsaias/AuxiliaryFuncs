@@ -7,22 +7,73 @@ mdata <- R.matlab::readMat(
 
 td2 <- list( vpm = mdata$is.vpm[,1], 
             PF =  matrix( standardize( mdata$Puff.PSTH ) , nrow = 28 ) ,
-            TC =  matrix( standardize( mdata$Touch.PSTH ) , nrow = 28 )  
-            )
+            TC =  matrix( standardize( mdata$Touch.PSTH ) , nrow = 28 )  )
 
-mth.binom <- quap(  
-  alist(    
-    vpm ~ dbinom(1, p),    
-    logit(p) <- a,    
-    a ~ dnorm(0,3)  
+mth.binom <- quap(
+  alist(
+    vpm ~ dbinom(1, p),
+    logit(p) <- a,
+    a ~ dnorm(0,3)
     ), data = td2 )
 
 mth.p <- quap(
   alist(
-    vpm ~ dbinom(1, p),    
-    logit(p) <- a + sapply( 1:28, function(i) sum(PF[i,] * b) ),
-    a ~ dnorm(0, 3),
-    b ~ dnorm(0, 5)
+    vpm ~ dbinom(1, p),
+    logit(p) <- A + PF %*% B,
+    A ~ dnorm(0, 3),
+    B ~ dnorm(0, 5) ),
+  data = td2,   
+  start = list( B = rnorm(ncol(td2$PF), 0, 5) ) )
+
+mth.t <- quap(
+  alist(
+    vpm ~ dbinom(1, p),
+    logit(p) <- A + TC %*% w,
+    A ~ dnorm(0.57, 0.3),
+    w ~ dnorm(0, 15) ), 
+  data = td2,
+  start = list( w = rep(0, ncol(td2$PF) ) ) )
+
+mth.pt <- quap(
+  alist(
+    vpm ~ dbinom(1, p),
+    logit(p) <- A + PF %*% B + TC %*% W,
+    A ~ dnorm(0, 3),
+    B ~ dnorm(0, 5),
+    W ~ dnorm(0, 5) ), 
+  data = td2,   
+  start = list( B = rep(0, ncol(td2$PF) ),
+                W = rep(0, ncol(td2$TC) ) ) )
+
+mth.pt.u <- ulam(
+  alist(
+    vpm ~ dbinom(1, p),
+    logit(p) <- A + PF %*% B + TC %*% W,
+    A ~ dnorm(0, 3),
+    B ~ dnorm(0, 5),
+    W ~ dnorm(0, 5) ), 
+  data = td2,   
+  start = list( B = rep(0, ncol(td2$PF) ),
+                W = rep(0, ncol(td2$TC) ) ), 
+  chains = 4, 
+  cores = 4)
+
+N <- 1e4
+post.pt <- extract.samples(mth.pt, n = N)
+pred.pt <- mean(post.pt$A) + td2$PF %*% apply(post.pt$B, 2, mean) + td2$TC %*% apply(post.pt$W, 2, mean)
+pred.pt.post <- sapply(1:N, function(i) post.pt$A[i] + td2$PF %*% post.pt$B[i,] + td2$TC %*% post.pt$W[i,])
+
+vpm.pred.mu <- apply(pred.pt.post.p, 1, mean)
+vpm.pred.PI <- apply(pred.pt.post.p, 1, PI, prob = 0.1)
+
+plot(NULL, )
+
+mth.p <- quap(
+  alist(
+    vpm ~ dbinom(1, p),
+    logit(p) <- A + PF %*% B ,
+    A ~ dnorm(0, 3),
+    B ~ dnorm(0, 5)
   ), data = td2 )
 
 mth.p <- quap(
