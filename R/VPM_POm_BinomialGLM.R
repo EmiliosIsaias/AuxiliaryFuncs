@@ -15,7 +15,7 @@ mth.binom <- quap(
     vpm ~ dbinom(1, p),    
     logit(p) <- a,    
     a ~ dnorm(0,3)  
-    ), data = d2 )
+    ), data = td2 )
 
 mth.p <- quap(
   alist(
@@ -23,7 +23,7 @@ mth.p <- quap(
     logit(p) <- a + sapply( 1:28, function(i) sum(PF[i,] * b) ),
     a ~ dnorm(0, 3),
     b ~ dnorm(0, 5)
-  ), data = d2 )
+  ), data = td2 )
 
 mth.p <- quap(
   alist(
@@ -31,7 +31,7 @@ mth.p <- quap(
     logit(p) <- a + sapply( 1:100, function(i) sum(PF[i,] * b) ),
     a ~ dnorm(0, 3),
     b ~ dnorm(0, 5)
-  ), data = d2 )
+  ), data = td2 )
 
 ## R code 4.72
 data(cherry_blossoms)
