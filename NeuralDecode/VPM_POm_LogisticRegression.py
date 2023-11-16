@@ -16,6 +16,7 @@ import pathlib as pl
 
 data_path = pl.Path(r"E:\Database")
 file_name = "vpm_pom_cluster_data_for_Emilio.mat"
+file_name = "vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
 file_path = data_path.as_posix() + pl.os.sep + file_name
 data = io.loadmat(file_path)
 
@@ -29,6 +30,7 @@ print(variable_names)
 bC = data['Bins_PSTH']
 puffH = data['Puff_PSTH']
 touchH = data['Touch_PSTH']
+psthTx = data['Bins_PSTH']
 Yv = np.squeeze(data['is_vpm'])
 Yp = np.squeeze(data['is_pom'])
 
@@ -55,12 +57,13 @@ legStrs = (("Puff", "Touch"), "Puff", "Touch")
 title = ("Puff + Touch","Puff","Touch")
 
 def logReg(X, Yv, title_string, leg_string, test_size=0.25):
+    
     X_train, X_test, y_train, y_test = model_selection.train_test_split(
         X, Yv, test_size=test_size, shuffle=True, stratify=Yv, 
         random_state=0)
     
     log_reg_model = linear_model.LogisticRegressionCV(
-        Cs=np.logspace(-3, 3, num=50), penalty='l2', solver='lbfgs', 
+        Cs=np.logspace(-3, 2, num=50), penalty='l2', solver='lbfgs', 
         n_jobs=-1).fit(X_train, y_train)
         
     print("Chosen C:{}".format(log_reg_model.C_))
@@ -100,10 +103,12 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
     print(metrics.accuracy_score(Yv, log_reg_model.predict(X)))
     return log_reg_model
 
-for cx, X in enumerate((np.concatenate((sts.zscore(puffH, axis=1),
-                    sts.zscore(touchH, axis=1)), axis=1),
-                        sts.zscore(puffH, axis=1),
-                        sts.zscore(touchH, axis=1))):
+# for cx, X in enumerate((np.concatenate((sts.zscore(puffH, ddof=1, axis=0),
+#                     sts.zscore(touchH, ddof=1, axis=0)), axis=1),
+#                         sts.zscore(puffH, ddof=1, axis=0),
+#                         sts.zscore(touchH, ddof=1, axis=0))):
+for cx, X in enumerate((sts.zscore(np.concatenate((puffH, touchH), axis=1), ddof=1),
+                        sts.zscore(puffH, ddof=1), sts.zscore(touchH, ddof=1))):
     print("Using {} ({}x{})".format(title[cx], X.shape[0],X.shape[1]))
     lrm = logReg(X, Yv, title[cx], legStrs[cx])
     if cx == 0:
