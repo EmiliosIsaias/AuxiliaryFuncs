@@ -60,7 +60,10 @@ mth.pt.u <- ulam(
 
 N <- 1e4
 post.pt <- extract.samples(mth.pt, n = N)
-pred.pt <- mean(post.pt$A) + td2$PF %*% apply(post.pt$B, 2, mean) + td2$TC %*% apply(post.pt$W, 2, mean)
+pred.pt <- inv_logit( 
+  mean(post.pt$A) + 
+    td2$PF %*% apply(post.pt$B, 2, mean) + 
+    td2$TC %*% apply(post.pt$W, 2, mean) )
 pred.pt.post <- sapply(1:N, function(i) post.pt$A[i] + td2$PF %*% post.pt$B[i,] + td2$TC %*% post.pt$W[i,])
 
 vpm.pred.mu <- apply(pred.pt.post.p, 1, mean)
