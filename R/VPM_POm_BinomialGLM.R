@@ -64,12 +64,31 @@ pred.pt <- inv_logit(
   mean(post.pt$A) + 
     td2$PF %*% apply(post.pt$B, 2, mean) + 
     td2$TC %*% apply(post.pt$W, 2, mean) )
-pred.pt.post <- sapply(1:N, function(i) post.pt$A[i] + td2$PF %*% post.pt$B[i,] + td2$TC %*% post.pt$W[i,])
+pred.pt.post <- sapply(1:N, 
+                       function(i) 
+                         post.pt$A[i] + 
+                         td2$PF %*% post.pt$B[i,] + 
+                         td2$TC %*% post.pt$W[i,] )
+pred.pt.post.p <- inv_logit(pred.pt.post)
 
+vpm.pred.md <- apply(pred.pt.post.p, 1, median)
 vpm.pred.mu <- apply(pred.pt.post.p, 1, mean)
-vpm.pred.PI <- apply(pred.pt.post.p, 1, PI, prob = 0.1)
-
-plot(NULL, )
+library(devEMF)
+emf(
+  file = "C:\\Users\\neuro\\seadrive_root\\Emilio U\\My Libraries\\My Library\\VPM-POm spatial correlation\\VPM likelihood.emf",
+  emfPlus = TRUE,
+  bg = "transparent",
+  fg = "black",
+  emfPlusRaster = TRUE
+  )
+plot(NULL, xlim = c(0,29), ylim = c(-0.1, 1.1), ylab="VPM likelihood", 
+     xlab="Cell index")
+lines(1:28, vpm.pred.md, lwd=2, type = "l", col="black")
+for (i in c(0.75,0.5,0.25,0.1,0.05)) {
+  shade(apply(pred.pt.post.p, 1, PI, prob = i), 1:28, col = col.alpha("black", 0.3))
+}
+lines(1:28, vpm.pred.mu, lwd=3, type="l", col=rangi2)
+dev.off()
 
 mth.p <- quap(
   alist(

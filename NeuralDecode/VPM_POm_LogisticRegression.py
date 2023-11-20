@@ -14,9 +14,9 @@ import scipy.stats as sts
 from scipy import io
 import pathlib as pl
 
-data_path = pl.Path(r"E:\Database")
+data_path = pl.Path(r"C:\Users\neuro\seadrive_root\Emilio U\My Libraries\My Library\VPM-POm spatial correlation")
 file_name = "vpm_pom_cluster_data_for_Emilio.mat"
-file_name = "vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
+# file_name = "vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
 file_path = data_path.as_posix() + pl.os.sep + file_name
 data = io.loadmat(file_path)
 
@@ -68,7 +68,7 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
         
     print("Chosen C:{}".format(log_reg_model.C_))
     tot_score, perm_scores, p = model_selection.permutation_test_score(
-        log_reg_model, X_train, y_train, n_permutations=256, verbose=True, 
+        log_reg_model, X_train, y_train, n_permutations=128, verbose=True, 
         n_jobs=-1, scoring='accuracy')
     
     
@@ -91,7 +91,7 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
     
     fig, ax = plt.subplots()
     
-    ax.hist(perm_scores, bins=20, density=True)
+    ax.hist(perm_scores, bins=8, density=True)
     ax.axvline(tot_score, ls="--", color="r")
     score_label = "Score on original\ndata: {:.2f}\n(p-value: {:.3f})".format(
         tot_score, p)
@@ -105,10 +105,10 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
 
 # for cx, X in enumerate((np.concatenate((sts.zscore(puffH, ddof=1, axis=0),
 #                     sts.zscore(touchH, ddof=1, axis=0)), axis=1),
-#                         sts.zscore(puffH, ddof=1, axis=0),
-#                         sts.zscore(touchH, ddof=1, axis=0))):
-for cx, X in enumerate((sts.zscore(np.concatenate((puffH, touchH), axis=1), ddof=1),
-                        sts.zscore(puffH, ddof=1), sts.zscore(touchH, ddof=1))):
+#                         sts.zscore(puffH, ddof=0, axis=0),
+#                         sts.zscore(touchH, ddof=0, axis=0))):
+for cx, X in enumerate((sts.zscore(np.concatenate((puffH, touchH), axis=1), ddof=1, axis=1),
+                        sts.zscore(puffH, ddof=1, axis=1), sts.zscore(touchH, ddof=1, axis=1))):
     print("Using {} ({}x{})".format(title[cx], X.shape[0],X.shape[1]))
     lrm = logReg(X, Yv, title[cx], legStrs[cx])
     if cx == 0:
