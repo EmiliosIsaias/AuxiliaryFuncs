@@ -113,8 +113,10 @@ def normMax(a):
 # for cx, X in enumerate((sts.zscore(np.concatenate((puffH, touchH), axis=1), ddof=1),
 #                         sts.zscore(puffH, ddof=1), sts.zscore(touchH, ddof=1))):
 
-for cx, X in enumerate( ( np.concatenate( (normMax(puffH), normMax(touchH) ), axis=1),
-                        normMax(puffH), normMax(touchH) ) ):
+for cx, X in enumerate( (
+        np.concatenate( (normMax(puffH), normMax(touchH) ), axis=1), 
+        normMax(puffH), 
+        normMax(touchH) ) ):
     print("Using {} ({}x{})".format(title[cx], X.shape[0],X.shape[1]))
     lrm = logReg(X, Yv, title[cx], legStrs[cx])
     if cx == 0:
