@@ -15,8 +15,8 @@ from scipy import io
 import pathlib as pl
 
 data_path = pl.Path(r"C:\Users\neuro\seadrive_root\Emilio U\My Libraries\My Library\VPM-POm spatial correlation")
-file_name = "vpm_pom_cluster_data_for_Emilio.mat"
-# file_name = "vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
+# file_name = "vpm_pom_cluster_data_for_Emilio.mat"
+file_name = "vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
 file_path = data_path.as_posix() + pl.os.sep + file_name
 data = io.loadmat(file_path)
 
@@ -103,12 +103,18 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
     print(metrics.accuracy_score(Yv, log_reg_model.predict(X)))
     return log_reg_model
 
-# for cx, X in enumerate((np.concatenate((sts.zscore(puffH, ddof=1, axis=0),
-#                     sts.zscore(touchH, ddof=1, axis=0)), axis=1),
-#                         sts.zscore(puffH, ddof=0, axis=0),
-#                         sts.zscore(touchH, ddof=0, axis=0))):
-for cx, X in enumerate((sts.zscore(np.concatenate((puffH, touchH), axis=1), ddof=1, axis=1),
-                        sts.zscore(puffH, ddof=1, axis=1), sts.zscore(touchH, ddof=1, axis=1))):
+def normMax(a):
+    return a / np.reshape( np.max( a, axis=1), (np.shape(a)[0],1) )
+
+# for cx, X in enumerate((np.concatenate((sts.zscore(puffH, ddof=1),
+#                     sts.zscore(touchH, ddof=1)), axis=1),
+#                         sts.zscore(puffH, ddof=1),
+#                         sts.zscore(touchH, ddof=1))):
+# for cx, X in enumerate((sts.zscore(np.concatenate((puffH, touchH), axis=1), ddof=1),
+#                         sts.zscore(puffH, ddof=1), sts.zscore(touchH, ddof=1))):
+
+for cx, X in enumerate( ( np.concatenate( (normMax(puffH), normMax(touchH) ), axis=1),
+                        normMax(puffH), normMax(touchH) ) ):
     print("Using {} ({}x{})".format(title[cx], X.shape[0],X.shape[1]))
     lrm = logReg(X, Yv, title[cx], legStrs[cx])
     if cx == 0:
