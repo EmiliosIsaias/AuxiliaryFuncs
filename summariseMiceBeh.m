@@ -11,6 +11,7 @@ snglFlag = arrayfun(@(m) arrayfun(@(s) string(s.Type) == "single", ...
 
 for cm = 1:Nm
     Ns = numel(miceStruct(cm).Sessions);
+    cellfun(@(s) s.Conditions, behTable{cm}, fnOpts{:})
     if all(snglFlag{cm})
         
     else
