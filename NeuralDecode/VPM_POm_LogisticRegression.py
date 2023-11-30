@@ -68,7 +68,7 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
         
     print("Chosen C:{}".format(log_reg_model.C_))
     tot_score, perm_scores, p = model_selection.permutation_test_score(
-        log_reg_model, X_train, y_train, n_permutations=128, verbose=True, 
+        log_reg_model, X_train, y_train, n_permutations=256, verbose=True, 
         n_jobs=-1, scoring='accuracy')
     
     
@@ -113,8 +113,9 @@ def normMax(a):
 # for cx, X in enumerate((sts.zscore(np.concatenate((puffH, touchH), axis=1), ddof=1),
 #                         sts.zscore(puffH, ddof=1), sts.zscore(touchH, ddof=1))):
 
-for cx, X in enumerate( (
-        np.concatenate( (normMax(puffH), normMax(touchH) ), axis=1), 
+
+for cx, X in enumerate( ( np.concatenate( 
+        ( normMax(puffH), normMax(touchH) ), axis=1),
         normMax(puffH), 
         normMax(touchH) ) ):
     print("Using {} ({}x{})".format(title[cx], X.shape[0],X.shape[1]))

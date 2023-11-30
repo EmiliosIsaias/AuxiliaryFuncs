@@ -14,8 +14,10 @@ mdata2 <- R.matlab::readMat(
 #             TC =  matrix( standardize( mdata$Touch.PSTH ) , nrow = nrow(mdata$Touch.PSTH) )  )
 
 td <- list( vpm = mdata$is.vpm[,1],
-            PF =  mdata$Puff.PSTH / sapply(1:nrow(mdata$Puff.PSTH), function(i) max(mdata$Puff.PSTH[i,] ) ) ,
-            TC =  mdata$Touch.PSTH / sapply(1:nrow(mdata$Touch.PSTH), function(i) max(mdata$Touch.PSTH[i,] ) ) )
+            PF =  mdata$Puff.PSTH / sapply(1:nrow(mdata$Puff.PSTH), 
+                                           function(i) max( mdata$Puff.PSTH[i,] ) ) ,
+            TC =  mdata$Touch.PSTH / sapply(1:nrow(mdata$Touch.PSTH), 
+                                            function(i) max( mdata$Touch.PSTH[i,] ) ) )
 
 
 td2 <- list( vpm = mdata2$is.vpm[,1],
@@ -84,26 +86,26 @@ mth.pt.u <- ulam(
 N <- 1e5
 post.pt <- extract.samples(mth.pt, n = N)
 pred.pt <- inv_logit( 
-    mean(post.pta$A) +
-    td2$PF %*% apply(post.pt$B, 2, mean) + 
-    td2$TC %*% apply(post.pt$W, 2, mean) )
+    mean(post.pt$A) +
+    td$PF %*% apply(post.pt$B, 2, mean) + 
+    td$TC %*% apply(post.pt$W, 2, mean) )
 pred.pt.post <- sapply(1:N, 
                        function(i) 
                          post.pt$A[i] + 
-                         td2$PF %*% post.pt$B[i,] + 
-                         td2$TC %*% post.pt$W[i,] )
+                         td$PF %*% post.pt$B[i,] + 
+                         td$TC %*% post.pt$W[i,] )
 pred.pt.post.p <- inv_logit(pred.pt.post)
 
 vpm.pred.md <- apply(pred.pt.post.p, 1, median)
 vpm.pred.mu <- apply(pred.pt.post.p, 1, mean)
-# library(devEMF)
-# emf(
-#   file = "C:\\Users\\neuro\\seadrive_root\\Emilio U\\My Libraries\\My Library\\VPM-POm spatial correlation\\VPM likelihood1.emf",
-#   emfPlus = TRUE,
-#   bg = "transparent",
-#   fg = "black",
-#   emfPlusRaster = TRUE
-#   )
+library(devEMF)
+emf(
+  file = "C:\\Users\\neuro\\seadrive_root\\Emilio U\\My Libraries\\My Library\\VPM-POm spatial correlation\\VPM likelihood1.emf",
+  emfPlus = TRUE,
+  bg = "transparent",
+  fg = "black",
+  emfPlusRaster = TRUE
+  )
 plot(NULL, xlim = c(0,length(vpm.pred.mu)+1), ylim = c(-0.1, 1.1), ylab="VPM likelihood", 
      xlab="Cell index")
 lines(1:length(vpm.pred.mu), vpm.pred.md, lwd=2, type = "l", col="black")
@@ -113,7 +115,7 @@ for (i in c(0.75,0.5,0.25,0.1,0.05)) {
         col = col.alpha("black", 0.3))
 }
 lines(1:length(vpm.pred.mu), vpm.pred.mu, lwd=3, type="l", col=rangi2)
-# dev.off()
+dev.off()
 
 mth.p <- quap(
   alist(
