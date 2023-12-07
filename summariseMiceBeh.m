@@ -52,6 +52,7 @@ dels = arrayfun(@(x) textscan(x, 'Delay %.3f s'), uallCondNames_aux);
 ctrlCond = contains(uallCondNames_aux, 'control', 'IgnoreCase', true);
 [udels, ~, udSubs] = uniquetol([dels{:}], 0.1 / max([dels{:}]));
 udSubs2 = nan(size(dels)); udSubs2(~cellfun(@isempty, dels)) = udSubs;
+udSubs2(ctrlCond) = 0;
 
 condMembership = [allCondNames_aux, acnSubs, udSubs2(acnSubs)];
 % Assuming the same frequency for all
@@ -73,31 +74,36 @@ xmice = struct('ExperimentalGroup', {expTypes{:}}, ...
 cidx = 1;
 for ce = 1:numel(expTypes)
     % Experimental group
-    etpcIdx = pairedStimSubs(acnSubs(cidx:idxTh(find(expTypeMbrshp==ce, ...
-        1,'last'))),:);
+    cx = find(expTypeMbrshp == ce, 1,'last');
+    exIdx = acnSubs(cidx:idxTh(cx));
+    etpcIdx = pairedStimSubs(exIdx,:);
+    condType = dfSubs(exIdx);
+    
+
+    cidx = idxTh(cx) + 1;
 end
-%%
-idxTh = cumsum(cellfun(@sum, Ncpspm));
-mscSubs = zeros(sum(cellfun(@sum,Ncpspm)), 4, "single");
-xmice = struct('ExperimentalGroup', {expTypes{:}}, ...
-    'DataTable', [], ...
-    'MiceNames',[], ...
-    'SessionDate', []);
-cidx = 1;
-for cm = 1:Nm
-    % Mouse
-    for cs = 1:Nspm(cm)
-        % Session
-        pairedStimSubs(acnSubs(cidx:idxTh(find(expTypeMbrshp==1,1,'last'))),:)
-        udSubs2(acnSubs(cidx:idxTh(cm)))
-        dfSubs(acnSubs(cidx:idxTh(cm)))
-        allCondNames_aux(cidx:idxTh(cm))
-        for cc = 1:Ncpspm{cm}(cs)
-            % Condition
-            
-            mscSubs(idx,:) = [expTypeMbrshp(cm), cm, cs, cc];
-            idx = idx + 1;
-        end
-    end
-end
+% %%
+% idxTh = cumsum(cellfun(@sum, Ncpspm));
+% mscSubs = zeros(sum(cellfun(@sum,Ncpspm)), 4, "single");
+% xmice = struct('ExperimentalGroup', {expTypes{:}}, ...
+%     'DataTable', [], ...
+%     'MiceNames',[], ...
+%     'SessionDate', []);
+% cidx = 1;
+% for cm = 1:Nm
+%     % Mouse
+%     for cs = 1:Nspm(cm)
+%         % Session
+%         pairedStimSubs(acnSubs(cidx:idxTh(find(expTypeMbrshp==1,1,'last'))),:)
+%         udSubs2(acnSubs(cidx:idxTh(cm)))
+%         dfSubs(acnSubs(cidx:idxTh(cm)))
+%         allCondNames_aux(cidx:idxTh(cm))
+%         for cc = 1:Ncpspm{cm}(cs)
+%             % Condition
+%             
+%             mscSubs(idx,:) = [expTypeMbrshp(cm), cm, cs, cc];
+%             idx = idx + 1;
+%         end
+%     end
+% end
 end
