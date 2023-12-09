@@ -66,7 +66,7 @@ dfSubs(isnan(udSubs2)) = NaN; % delAndFrq(any(isnan(delAndFrq),2),:) = [];
 condMembership = [allCondNames_aux, acnSubs, udSubs2(acnSubs), single(frqs(acnSubs))];
 
 sessNames = cell(Nm, 1);
-
+condNames = cell(numel(expTypes), 1);
 miceNames = cat(1, miceStruct.Name);
 miceMats = cell(Nm, 1);
 idxTh = cumsum(cellfun(@sum, Ncpspm)); cidx = 1;
@@ -99,7 +99,7 @@ xmice = struct('ExperimentalGroup', {expTypes{:}}, ...
     'MiceNames', arrayfun(@(x) cat(1, miceNames(expTypeMbrshp == x)), ...
     1:numel(expTypes), fnOpts{:}), ...
     'SessionDate', []);
-condNames = cell(numel(expTypes), 1);
+
 
 for ce = 1:numel(expTypes)
     xmice(ce).DataTable = nan(sum(expTypeMbrshp == ce), mxC{ce}(1), mxC{ce}(2));
