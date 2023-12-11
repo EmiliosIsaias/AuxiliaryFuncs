@@ -39,6 +39,7 @@ end
 Nm = numel(miceStruct); Nspm = arrayfun(@(m) numel(m.Sessions), miceStruct);
 Ncpspm = arrayfun(@(m) arrayfun(@(s) size(s.DataTable,1), ...
     m.Sessions), miceStruct, fnOpts{:});
+Nem = sum(expTypeMbrshp(:) == reshape(unique(expTypeMbrshp),1,[]));
 
 behTable = arrayfun(@(m) arrayfun(@(s) {s.DataTable}, m.Sessions), ...
     miceStruct, fnOpts{:});
@@ -69,29 +70,40 @@ sessNames = cell(Nm, 1);
 condNames = cell(numel(expTypes), 1);
 miceNames = cat(1, miceStruct.Name);
 miceMats = cell(Nm, 1);
+miceConds = miceMats;
 idxTh = cumsum(cellfun(@sum, Ncpspm)); cidx = 1;
 for cm = 1:Nm
     mSessNames = string({miceStruct(cm).Sessions.Date})';
     sessNames{cm} = mSessNames;
     mBI = arrayfun(@(s) s.DataTable.BehaviourIndices, ...
         miceStruct(cm).Sessions, fnOpts{:}); mBI = cat(1, mBI{:});
+    csCondNames = asCondNames{cm};
     mCondClass = dfSubs(acnSubs(cidx:idxTh(cm)));
     cidx = idxTh(cm) + 1;
     [uAux, ~, muc] = unique(mCondClass); Ncpm_as = numel(uAux);
     mouseMat = nan(Ncpm_as, Nspm(cm));
-    cidx2 = 1; 
+    csCondNames2 = strings(Nspm(cm), Ncpm_as); cidx2 = 1;
     for cc = 1:Nspm(cm)
         cidx3 = cidx2:cidx2-1+Ncpspm{cm}(cc);
         sIdx = muc(cidx3);
         mouseMat(sIdx, cc) = mBI(cidx3);
+        csCondNames2(cc, sIdx) = csCondNames(cidx3);
         cidx2 = cidx2 + Ncpspm{cm}(cc);
     end
     miceMats{cm} = mouseMat';
+    miceConds{cm} = csCondNames2;
 end
 
-Nc_s = cellfun(@size, miceMats, fnOpts{:});
-mxC = arrayfun(@(x) max(cat(1, Nc_s{expTypeMbrshp == x}),[],1), ...
+Nc_s = cellfun(@size, miceMats, fnOpts{:}); Nc_s = cat(1, Nc_s{:});
+mxC = arrayfun(@(x) max(Nc_s(expTypeMbrshp == x,:),[],1), ...
     unique(expTypeMbrshp), fnOpts{:});
+
+homMiceMat = arrayfun(@(x) ...
+    cellfun(@(m) ...
+    reshape(padarray(m, mxC{x} - size(m), NaN, "post"), [1, mxC{x}]), ...
+    miceMats(expTypeMbrshp == x), fnOpts{:}), ...
+    unique(expTypeMbrshp), fnOpts{:});
+homMiceMat = cellfun(@(x) cat(1, x{:}), homMiceMat, fnOpts{:});
 
 %% Experimental group
 xmice = struct('ExperimentalGroup', {expTypes{:}}, ...
