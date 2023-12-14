@@ -51,7 +51,7 @@ allCondNames_aux = cat(1, allCondNames_aux{:});
 [uallCondNames_aux, ~, acnSubs] = unique(allCondNames_aux(:));
 dels = arrayfun(@(x) textscan(x, 'Delay %.3f s'), uallCondNames_aux);
 ctrlCond = contains(uallCondNames_aux, 'control', 'IgnoreCase', true);
-[udels, ~, udSubs] = uniquetol([dels{:}], 0.1 / max([dels{:}]));
+[udels, ~, udSubs] = uniquetol([dels{:}], 0.02 / max([dels{:}]));
 udSubs2 = nan(size(dels)); udSubs2(~cellfun(@isempty, dels)) = udSubs;
 udSubs2(ctrlCond) = 0; udSubs2(isnan(udSubs2)) = find(isnan(udSubs2));
 
@@ -124,6 +124,7 @@ homMiceConds = arrayfun(@(x) cat(3, homMiceConds{expTypeMbrshp == x }), ...
 %% Experimental group
 xmice = struct('ExperimentalGroup', cellstr(expTypes(:)), ...
     'DataTable', homMiceMat(:), ...
+    'ConditionNames', homMiceConds(:), ...
     'MiceNames', miceNames(:), ...
     'SessionDate', sessNames(:));
 
