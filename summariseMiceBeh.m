@@ -4,6 +4,8 @@ fnOpts = {'UniformOutput', false};
 dlyPttrn = 'delay\ \d?.\d+\ s$';
 dlfPttrn = [dlyPttrn(1:end-1), '\ \+\ L\d+.\d?'];
 rxOpts = {'once', 'freespacing'};
+% Removing mice with no sessions: anatomy, failed, other
+miceStruct(arrayfun(@(m) numel(m.Sessions) == 0, miceStruct)) = [];
 
 snglFlag = arrayfun(@(m) arrayfun(@(s) string(s.Type) == "single", ...
     m.Sessions), miceStruct, fnOpts{:});
@@ -24,10 +26,12 @@ for cm = multiMice(:)'
             auxTbls{cc} = table(auxVars{:}, ...
                 'VariableNames',currTbl.Properties.VariableNames);
         end
-        for ces = cs:cs+Nnt-1
+        auxC = 1;
+        for ces = [cs, (1:Nnt-1)+numel(miceStruct(cm).Sessions)]
             miceStruct(cm).Sessions(ces).Date = sessDate;
-            miceStruct(cm).Sessions(ces).DataTable = auxTbls{ces-cs+1};
+            miceStruct(cm).Sessions(ces).DataTable = auxTbls{auxC};
             miceStruct(cm).Sessions(ces).Type = 'single';
+            auxC = auxC + 1;
         end
         %currCondNames = [currTbl.Conditions{:}];
         %currBI = [currTbl.BehaviourIndices{:}];
@@ -50,16 +54,18 @@ allCondNames_aux = cellfun(@(x) cat(1, x{:}), allCondNames, fnOpts{:});
 allCondNames_aux = cat(1, allCondNames_aux{:});
 [uallCondNames_aux, ~, acnSubs] = unique(allCondNames_aux(:));
 dels = arrayfun(@(x) textscan(x, 'Delay %.3f s'), uallCondNames_aux);
-ctrlCond = contains(uallCondNames_aux, 'control', 'IgnoreCase', true);
+ctrlpCond = contains(uallCondNames_aux, 'control puff', 'IgnoreCase', true);
+ctrllCond = contains(uallCondNames_aux, 'laser', 'IgnoreCase', true);
 [udels, ~, udSubs] = uniquetol([dels{:}], 0.02 / max([dels{:}]));
 udSubs2 = nan(size(dels)); udSubs2(~cellfun(@isempty, dels)) = udSubs;
-udSubs2(ctrlCond) = 0; udSubs2(isnan(udSubs2)) = find(isnan(udSubs2));
+udSubs2(ctrllCond) = -1; udSubs2(ctrlpCond) = 0; 
+udSubs2(isnan(udSubs2)) = find(isnan(udSubs2));
 
 
 % Assuming the same frequency for all
-frqs = arrayfun(@(x) regexpi(x, dlfPttrn, rxOpts{:}), uallCondNames_aux,...
-    fnOpts{:}); frqs = ~cellfun(@isempty, frqs); 
-frqSubs = find(frqs, 1, "first");
+frqs = arrayfun(@(x) regexpi(x, {dlfPttrn, 'hz'}, rxOpts{:}), uallCondNames_aux,...
+    fnOpts{:}); frqs = cellfun(@(z) any(z, 2), cellfun(@(y) ...
+    ~cellfun(@isempty, y), frqs, fnOpts{:})); 
 pairedStimSubs = [udSubs2, frqs];
 [~, ~, dfSubs] = unique(pairedStimSubs, 'rows');
 dfSubs(isnan(udSubs2)) = NaN; % delAndFrq(any(isnan(delAndFrq),2),:) = [];
