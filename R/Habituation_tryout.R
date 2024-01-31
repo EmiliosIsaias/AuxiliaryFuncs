@@ -1,40 +1,88 @@
 library(rethinking)
 library(R.matlab)
 
-fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
+#fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
+fpath <- "C:\\Users\\Puercos\\seadrive_root\\Emilio U\\Für meine Gruppen\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
 dat <- R.matlab::readMat(fpath)
 
 d <- dat$mice.habituation[complete.cases(dat$mice.habituation),]
+B_z <- standardize(d[,4])
 d <- list(
-  mouse = as.integer(d[,1]),
-  sess = as.integer(d[,2]),
+  actor = as.integer(d[,1]),
+  block_id = as.integer(d[,2]),
   tid = as.integer(2L + d[,3]*2L),
-  B = standardize(d[,4])
+  B = B_z
 )
 d$tid[d$tid == 0L] = 1L
 
-m1.2 <- ulam(
+m1.1c <- ulam(
+  alist(
+    B ~ dnorm( mu, sigma),
+    mu <- g[tid] + alpha[actor,tid] + beta[block_id,tid],
+    
+    # adaptive priors
+    vector[8]:alpha[actor] ~ multi_normal(0,Rho_actor,sigma_actor),
+    vector[8]:beta[block_id] ~ multi_normal(0,Rho_block,sigma_block),
+    
+    # fixed priors
+    g[tid] ~ dnorm(0,1),
+    sigma_actor ~ dexp(1),
+    Rho_actor ~ dlkjcorr(4),
+    sigma_block ~ dexp(1),
+    sigma ~ dexp( 1 ),
+    Rho_block ~ dlkjcorr(4)
+  ) , data=d , chains=4 , cores=4 )
+
+
+m1.1nc <- ulam(
   alist(
     B ~ normal(mu, sigma),
-    mu <- gama[tid] + mice[mouse,tid] + session[sess, tid],
+    mu <- g[tid] + alpha[actor,tid] + beta[block_id,tid],
     
     #Adaptive priors
-    transpars> matrix[mouse,8]:mice <- 
-      compose_noncentered(sigma_m, L_Rho_m, z_m),
-    transpars> matrix[sess,8]:session <- 
-      compose_noncentered(sigma_s, L_Rho_s, z_s),
-    matrix[8,mouse]:z_m ~ dnorm(0, 1),
-    matrix[8,sess]:z_s ~ dnorm(0, 1),
+    transpars> matrix[actor,8]:alpha <- 
+      compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
+    transpars> matrix[block_id,8]:beta <- 
+      compose_noncentered( sigma_beta , L_Rho_beta , z_beta ),
+    matrix[8,actor]:z_actor ~ normal( 0 , 1 ),
+    matrix[8,block_id]:z_beta ~ normal( 0 , 1 ),
     
     #Fixed priors
-    gama[tid] ~ dnorm(0, 1),
-    vector[8]:sigma_m ~ dexp(1),
-    vector[8]:sigma_s ~ dexp(1),
-    sigma ~ dexp(1),
-    cholesky_factor_corr[8]:L_Rho_m ~ lkj_corr_cholesky(2),
-    cholesky_factor_corr[8]:L_Rho_s ~ lkj_corr_cholesky(2),
+    g[tid] ~ dnorm( 0 , 1 ),
+    vector[8]:sigma_actor ~ exponential( 1 ),
+    cholesky_factor_corr[8]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
+    vector[8]:sigma_beta ~ exponential( 1 ),
+    cholesky_factor_corr[8]:L_Rho_beta ~ lkj_corr_cholesky( 2 ),
+    sigma ~ exponential( 1 ),
     
     #Finally, compute ordinary correlation matrices from Cholesky factors
-    gq> matrix[8,8]:Rho_m <<- Chol_to_Corr(L_Rho_m),
-    gq> matrix[8,8]:Rho_s <<- Chol_to_Corr(L_Rho_s),
-  ), data = d, chains = 4, cores = 4, log_lik = TRUE )
+    gq> matrix[8,8]:Rho_actor <<- Chol_to_Corr(L_Rho_actor),
+    gq> matrix[8,8]:Rho_beta <<- Chol_to_Corr(L_Rho_beta),
+  ), data = d, chains = 4, cores = 2, log_lik = TRUE )
+
+m1.2nc <- ulam(
+  alist(
+    B ~ normal( mu, sigma ),
+    mu <- g[tid] + alpha[actor,tid] + beta[block_id,tid],
+    
+    # adaptive priors - non-centered
+    transpars> matrix[actor,8]:alpha <-
+      compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
+    transpars> matrix[block_id,8]:beta <-
+      compose_noncentered( sigma_block , L_Rho_block , z_block ),
+    matrix[8,actor]:z_actor ~ normal( 0 , 1 ),
+    matrix[8,block_id]:z_block ~ normal( 0 , 1 ),
+    
+    # fixed priors
+    g[tid] ~ normal(0,1),
+    vector[8]:sigma_actor ~ exponential(1),
+    cholesky_factor_corr[8]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
+    vector[8]:sigma_block ~ exponential(1),
+    cholesky_factor_corr[8]:L_Rho_block ~ lkj_corr_cholesky( 2 ),
+    sigma ~ exponential( 1 ),
+    
+    # compute ordinary correlation matrixes from Cholesky factors
+    gq> matrix[8,8]:Rho_actor <<- Chol_to_Corr(L_Rho_actor),
+    gq> matrix[8,8]:Rho_block <<- Chol_to_Corr(L_Rho_block)
+  ) , data=d , chains=3 , log_lik=TRUE )
+
