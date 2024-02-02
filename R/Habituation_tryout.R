@@ -1,8 +1,9 @@
 library(rethinking)
 library(R.matlab)
 
-fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
+#fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
 #fpath <- "C:\\Users\\Puercos\\seadrive_root\\Emilio U\\Für meine Gruppen\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
+fpath <- "C:\\Users\\jefe_\\seadrive_root\\Emilio U\\Für meine Gruppen\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
 dat <- R.matlab::readMat(fpath)
 
 d <- dat$mice.habituation[complete.cases(dat$mice.habituation),]
@@ -34,11 +35,10 @@ d$tid[d$tid == 0L] = 1L
 #   ) , data=d , chains=4 , cores=4 )
 
 
-m1.1nc <- ulam(
-  alist(
-    B ~ normal(mu, sigma),
+m1.1nc <- ulam( alist(
+    B ~ normal( mu , sigma ),
     mu <- g[tid] + alpha[actor,tid] + beta[block_id,tid],
-
+    
     #Adaptive priors
     transpars> matrix[actor,8]:alpha <-
       compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
@@ -57,7 +57,7 @@ m1.1nc <- ulam(
 
     #Finally, compute ordinary correlation matrices from Cholesky factors
     gq> matrix[8,8]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
-    gq> matrix[8,8]:Rho_beta <<- Chol_to_Corr( L_Rho_beta ),
+    gq> matrix[8,8]:Rho_beta <<- Chol_to_Corr( L_Rho_beta )
   ), data = d, chains = 4, cores = 4, log_lik = TRUE )
 
 m1.2nc <- ulam(
