@@ -1,13 +1,14 @@
 library(rethinking)
 library(R.matlab)
 
+#mdata <- R.matlab::readMat( "C:\\Users\\neuro\\seadrive_root\\Emilio U\\My Libraries\\My Library\\VPM-POm spatial correlation\\vpm_pom_cluster_data_for_Emilio_Oct_23.mat" )
 mdata <- R.matlab::readMat( 
-  "C:\\Users\\neuro\\seadrive_root\\Emilio U\\My Libraries\\My Library\\VPM-POm spatial correlation\\vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
-  )
-
-mdata2 <- R.matlab::readMat(
-  "C:\\Users\\neuro\\seadrive_root\\Emilio U\\My Libraries\\My Library\\VPM-POm spatial correlation\\vpm_pom_cluster_data_for_Emilio.mat"
+  "C:\\Users\\jefe_\\seadrive_root\\Emilio U\\Meine Bibliotheken\\My Library\\VPM-POm spatial correlation\\vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
 )
+
+#mdata2 <- R.matlab::readMat(
+#  "C:\\Users\\neuro\\seadrive_root\\Emilio U\\My Libraries\\My Library\\VPM-POm spatial correlation\\vpm_pom_cluster_data_for_Emilio.mat"
+#)
 
 # td <- list( vpm = mdata$is.vpm[,1],
 #             PF =  matrix( standardize( mdata$Puff.PSTH ) , nrow = nrow(mdata$Puff.PSTH) ) ,
@@ -20,9 +21,9 @@ td <- list( vpm = mdata$is.vpm[,1],
                                             function(i) max( mdata$Touch.PSTH[i,] ) ) )
 
 
-td2 <- list( vpm = mdata2$is.vpm[,1],
-             PF =  matrix( standardize( mdata2$Puff.PSTH ) , nrow = nrow(mdata2$Puff.PSTH) ) ,
-             TC =  matrix( standardize( mdata2$Touch.PSTH ) , nrow = nrow(mdata2$Touch.PSTH) )  )
+#td2 <- list( vpm = mdata2$is.vpm[,1],
+#             PF =  matrix( standardize( mdata2$Puff.PSTH ) , nrow = nrow(mdata2$Puff.PSTH) ) ,
+#             TC =  matrix( standardize( mdata2$Touch.PSTH ) , nrow = nrow(mdata2$Touch.PSTH) )  )
 
 mth.binom <- quap(
   alist(
@@ -57,8 +58,8 @@ mth.pt <- quap(
     B ~ dnorm(0, 5),
     W ~ dnorm(0, 5) ), 
   data = td,   
-  start = list( B = rep(0, ncol(td2$PF) ),
-                W = rep(0, ncol(td2$TC) ) ) )
+  start = list( B = rep(0, ncol(td$PF) ),
+                W = rep(0, ncol(td$TC) ) ) )
 
 mth.pta <- quap(
   alist(
