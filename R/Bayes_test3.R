@@ -9,7 +9,7 @@ d <- list(
   Hy = matrix( as.integer(dat$psth.c), 
                nrow = nrow(dat$psth.c), 
                ncol = ncol(dat$psth.c)),
-   = as.integer( nrow(dat$psth.c) ),
+  Nt = as.integer( nrow(dat$psth.c) ),
   U = as.integer( dim(dat$psth.u)[3] ),
   Hx =   dat$psth.u
   )
