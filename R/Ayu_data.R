@@ -21,12 +21,13 @@ d <- list(
   C = dat[1:N, "Total no. neurons"]
 )
 
-dl <- list(
+dp <- list(
   N = N,
-  O = as.integer(dat[1:N, "Overlap"]),
-  Bo = as.integer(dat[1:N, "BFP"]),
-  Go = as.integer(dat[1:N, "GFP"]),
-  log_C = log( dat[1:N, "Total no. neurons"] )
+  C = dat$`Total no. neurons`[1:N],
+  #C = dat$BFP[1:N] - dat$Overlap[1:N] + dat$GFP[1:N],
+  Op = dat$Overlap[1:N]/C,
+  Bop = dat$BFP[1:N]/C,
+  Gop = dat$GFP[1:N]/C
 )
 
 mGlu.1 <- ulam(
@@ -71,10 +72,10 @@ mGlu.3 <- ulam(
   alist(
     
     Bo ~ dpois( lambda_b ),
-    log( lambda_b ) <- log_C - B[gid] - ob[gid]*O,
+    log( lambda_b ) <- log_C - G[gid] - ob[gid]*O,
     
     Go ~ dpois( lambda_g ),
-    log( lambda_g ) <- log_C - G[gid] - og[gid]*O,
+    log( lambda_g ) <- log_C - B[gid] - og[gid]*O,
     
     O ~ dpois( lambda_o ),
     log( lambda_o ) <- log_C - B[gid] - G[gid],
@@ -143,22 +144,23 @@ mGlu.4 <- quap(
 
 precis( mGlu.4 )
 
-mGlu.5 <- ulam(
+# Winner of this contest.
+mGlu.6 <- ulam(
   alist(
     
-    Bo ~ dpois( lambda_b ),
-    log( lambda_b ) <- b - O,
-    
-    Go ~ dpois( lambda_g ),
-    log( lambda_g ) <- g - O,
+    O ~ dpois( lambda_o ),
+    lambda_o <- f[gid]*Bo,
     
     C ~ dpois( lambda_c ),
-    log( lambda_c ) <- e*(Bo + Go - O),
+    lambda_c <- B[gid] + Go,
     
-    O ~ dpois( lambda_o ),
-    log( lambda_o ) <- o*(C - Bo - Go),
+    B[gid] ~ dlnorm( 0, 2 ),
+    f[gid] ~ dlnorm( 0.5, 2 )
     
-    c(b,g) ~ dnorm( 10, 5 ),
-    c(o,e) ~ dnorm( 0, 2 )
-    
-  ), data = d, cores = 4, chains = 4)
+  ), data = d, chains = 4, cores = 4 )
+
+precis( mGlu.6, depth = 2 )
+
+post.6 <- link( mGlu.6 )
+params.6 <- extract.samples( mGlu.6 )
+
