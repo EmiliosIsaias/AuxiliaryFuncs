@@ -7,7 +7,11 @@ Created on Fri Jul 21 13:48:10 2023
 import jax.numpy as jnp
 import jax.random as jr
 import matplotlib.pyplot as plt
-from dynamax.hidden_markov_model import GaussianHMM
+import dynamax.hidden_markov_model as hm
+
+from dynamax.utils.plotting import COLORS
+from dynamax.utils.plotting import white_to_color_cmap
+
 from scipy import io
 import pathlib as pl
 
@@ -23,12 +27,29 @@ N = np.squeeze( dat['N'] )
 keys = map(jr.PRNGKey, count())
 num_states = 2
 emission_dim = 1
+emission_cov_rank = 1
 num_timesteps = N
 
-hmm = GaussianHMM(num_states, emission_dim)
-params, props = hmm.initialize(next(keys), emission_means=(-3,2))
+hmm = hm.GaussianHMM(num_states, emission_dim)
+params, props = hmm.initialize(next(keys))
 params, lps = hmm.fit_em(params, props, y )
 
+mls = hmm.most_likely_states(params, y)
+
+fig, ax = plt.subplots()
+
+offsets = 2 * jnp.arange(emission_dim)
+ax.imshow(mls[None, :],
+              extent=(0, num_timesteps, -2, 2 * emission_dim),
+              aspect="auto",
+              cmap="Greys",
+              alpha=0.25)
+#ax.plot(y + offsets, '-', marker='.')
+ax.plot(y, '-', marker='.')
+ax.set_xlim(0, num_timesteps)
+ax.set_ylim(-3, 3 * emission_dim)
+ax.set_ylabel("emissions")
+ax.set_xlabel("time")
 
 # Make a Gaussian HMM and sample data from it
 hmm = GaussianHMM(num_states, emission_dim)
@@ -45,7 +66,7 @@ plt.xlabel("EM iterations")
 plt.ylabel("marginal log prob.")
 
 # Use fitted model for posterior inference
-post = hmm.smoother(params, emissions)
+post = hmm.smoother(params, y)
 print(post.smoothed_probs.shape) # (1000, 3)
 
 from functools import partial
