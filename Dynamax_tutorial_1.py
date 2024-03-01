@@ -32,21 +32,32 @@ num_timesteps = N
 
 hmm = hm.GaussianHMM(num_states, emission_dim)
 params, props = hmm.initialize(next(keys))
-params, lps = hmm.fit_em(params, props, y )
+params, lps = hmm.fit_em(params, props, y , num_iters=100)
 
 mls = hmm.most_likely_states(params, y)
 
 fig, ax = plt.subplots()
 
 offsets = 2 * jnp.arange(emission_dim)
+
+ax.plot(y, '-', marker='.')
 ax.imshow(mls[None, :],
               extent=(0, num_timesteps, -2, 2 * emission_dim),
               aspect="auto",
               cmap="Greys",
               alpha=0.25)
 #ax.plot(y + offsets, '-', marker='.')
-ax.plot(y, '-', marker='.')
+
 ax.set_xlim(0, num_timesteps)
+
+plt.show()
+
+post = hmm.smoother( params, y )
+
+hmmres_fpath = r"Z:\Jesus\Jittering\FULLYCurated\05_190701_Jesus_Emili_Jittering_3800_1600_1500 yes VPM good\KS2_newChanMap\LFP_HMM.mat"
+
+io.savemat(hmmres_fpath, {"states": mls, "y": y, "N": N, "post": post})
+                                                                                                                                       
 ax.set_ylim(-3, 3 * emission_dim)
 ax.set_ylabel("emissions")
 ax.set_xlabel("time")
