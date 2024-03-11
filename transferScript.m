@@ -11,7 +11,7 @@ if cSb ~= 1
 else
     clMap = clMapAux;
 end
-behFig = figure('Color', 'w', 'Name', 'Behaviour'); 
+behFig = figure('Color', 'w', 'Name', 'Behaviour');
 axs = gobjects(Nccond+1,1);
 axSbs = (0:rwN-2)';
 for cc = 1:Nccond
@@ -27,7 +27,7 @@ arrayfun(@(x) patch(axs(end), 1e3*behTx([1:end, end:-1:1]),...
 lObj = arrayfun(@(x) plot(axs(end), 1e3*behTx, rsSgnls{x}(:,1), ...
     "Color", clMap(x,:), "LineWidth", 1.5, "DisplayName", ...
     consCondNames{x}), 1:Nccond);
-xlabel(axs(end), "Time [ms]"); xlim(axs(end), 1e3*bvWin); 
+xlabel(axs(end), "Time [ms]"); xlim(axs(end), 1e3*bvWin);
 ylabel(axs(end), "Roller speed [cm/s]")
 set(axs, axOpts{:}); title(axs(end), "Roller speed for all conditions")
 lgnd = legend(axs(end), lObj); set(lgnd, lgOpts{:})
@@ -89,7 +89,7 @@ lgnd = legend(lObj); set(lgnd, lgOpts{:});
 title("SC Population activity in logarithmic time scale")
 ylabel("Firing rate [Hz]")
 
-axs(2) = subplot(2, 1, 2, "Parent", combFig, "NextPlot", "add"); 
+axs(2) = subplot(2, 1, 2, "Parent", combFig, "NextPlot", "add");
 strt = 50*1e-3;
 lObj = arrayfun(@(x) semilogx(axs(2), 1e3*behTx(behTx>strt), ...
     rsSgnls{x}(behTx>strt,1), "Color", clMap(x,:), "LineWidth", 1.5, ...
@@ -103,3 +103,36 @@ combName = sprintf(combPttrn, sprintf(" %s", consCondNames{:}), ...
     responseWindow*1e3, strt*1e3, bvWin(2)*1e3);
 combFile = fullfile(figureDir, combName);
 saveFigure(combFig, combFile, 1)
+%%
+figure; clrmap = lines(5);
+gObj = gobjects(5, 2);
+for cm = 1:size(xmice.DataTable, 3)
+    x = (random( normDist, size( xmice.DataTable, [1, 2]) ) + ...
+        repmat( 1:3, size( xmice.DataTable, 1 ), 1 ) )';
+    y = squeeze( xmice.DataTable(:,[2,1,3],cm) )';
+    gObj(cm,:) = line( x, y, ...
+        'Marker', 'o', 'MarkerEdgeColor', 'none', ...
+        'MarkerFaceColor', clrmap(cm,:), 'Color', clrmap(cm,:), ...
+        'DisplayName', xmice.MiceNames(cm));
+    hold on
+end
+x = repmat(1:3, 10, 1);
+y = BImat(:,[2,1,3]);
+boxchart(x(:),  y(:), "Notch", "on", "BoxFaceColor", 0.15*ones(1,3) )
+lgObj = legend(gObj(:,1), "Location", "best", "Box", "off", ...
+    "Color", "none", "AutoUpdate", "off");
+ylim([0,1]); title("Batch 18"); ylabel("Behaviour index"); xticks(1:3);
+xticklabels({'Continuous', 'Control', 'Frequency'})
+line([1,2], 1.15*[1,1]*max(BImat(:,1:2), [], "all"), 'Color', 'k', ...
+    'Marker', '|')
+text(1.5, 1.15*max(BImat(:,1:2), [], "all"), ...
+    sprintf( "p=%.3f", signrank( behMI3(:,1) ) ), ...
+    "HorizontalAlignment", "center", "VerticalAlignment", "bottom")
+
+line(2:3, 1.15*[1,1]*max(BImat(:,[1,3]), [], "all"), 'Color', 'k', ...
+    'Marker', '|')
+text(2.5, 1.15*max(BImat(:,[1,3]), [], "all"), ...
+    sprintf( "p=%.3f", signrank( behMI3(:,2) ) ), ...
+    "HorizontalAlignment", "center", "VerticalAlignment", "bottom")
+
+set(gca, "Box", "off", "Color", "none")
