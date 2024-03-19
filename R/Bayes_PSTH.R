@@ -9,8 +9,8 @@ d <- list(
   #neuron = as.integer( dat$neuron ),
   nid = as.integer( 1:dat$Ncl ),
   
-  idx1 = as.integer( ( ( 1:d$Ncl-1) * d$Nbins )+1 ),
-  idx2 = as.integer( ( 1:d$Ncl )*d$Nbins ),
+  idx1 = as.integer( ( ( 1:dat$Ncl-1) * dat$Nbins )+1 ),
+  idx2 = as.integer( ( 1:dat$Ncl )*dat$Nbins ),
   #bin = as.integer( dat$bin ),
   counts = matrix( as.integer( dat$counts ) , ncol = ncol(dat$counts) ) ,
   Ncl = as.integer( dat$Ncl ),
@@ -19,7 +19,8 @@ d <- list(
   y = as.integer( dat$trig )
 )
 
-bayes_psth_psth <- "C:/Users/neuro/Documents/MATLAB/AuxiliaryFuncs/Stan/Bayes_PSTH.stan"
+#bayes_psth_psth <- "C:/Users/neuro/Documents/MATLAB/AuxiliaryFuncs/Stan/Bayes_PSTH.stan"
+bayes_psth_psth <- "C:/Users/jefe_/OneDrive/Documentos/GitHub/AuxiliaryFuncs/Stan/Bayes_PSTH.stan"
 
 mPSTH.1 <- stan( bayes_psth_psth, cores=6, chains=4, data=d )
 
