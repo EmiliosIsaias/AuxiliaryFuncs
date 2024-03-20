@@ -46,37 +46,64 @@ d <- list(
 #   ) , data=d , chains=4 , cores=4 )
 
 
-mLick.1 <- ulam( 
+mLick.2 <- ulam( 
   alist(
     y ~ binomial( 1 , p ),
     logit(p) <- g[tid] + alpha[actor,tid] + beta[block_id,tid],
     
     #Adaptive priors
-    transpars> matrix[actor,8]:alpha <-
+    transpars> matrix[actor,4]:alpha <-
       compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
-    transpars> matrix[block_id,8]:beta <-
+    transpars> matrix[block_id,4]:beta <-
       compose_noncentered( sigma_beta , L_Rho_beta , z_beta ),
-    matrix[8,actor]:z_actor ~ normal( 0 , 1 ),
-    matrix[8,block_id]:z_beta ~ normal( 0 , 1 ),
+    matrix[4,actor]:z_actor ~ normal( 0 , 1 ),
+    matrix[4,block_id]:z_beta ~ normal( 0 , 1 ),
 
     #Fixed priors
     g[tid] ~ normal( 0 , 1 ),
-    vector[8]:sigma_actor ~ exponential( 1 ),
-    cholesky_factor_corr[8]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
-    vector[8]:sigma_beta ~ exponential( 1 ),
-    cholesky_factor_corr[8]:L_Rho_beta ~ lkj_corr_cholesky( 2 ),
+    vector[4]:sigma_actor ~ exponential( 1 ),
+    cholesky_factor_corr[4]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
+    vector[4]:sigma_beta ~ exponential( 1 ),
+    cholesky_factor_corr[4]:L_Rho_beta ~ lkj_corr_cholesky( 2 ),
     sigma ~ exponential( 1 ),
 
     #Finally, compute ordinary correlation matrices from Cholesky factors
-    gq> matrix[8,8]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
-    gq> matrix[8,8]:Rho_beta <<- Chol_to_Corr( L_Rho_beta )
-  ), data = d, chains = 4, cores = 6, log_lik = TRUE )
+    gq> matrix[4,4]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
+    gq> matrix[4,4]:Rho_beta <<- Chol_to_Corr( L_Rho_beta )
+  ), data = d, chains = 4, cores = 4, log_lik = TRUE )
 
-post <- extract.samples( mLick.1 )
-pred <- link( mLick.1 )
+post <- extract.samples( mLick.2 )
+pred <- link( mLick.2 )
 
-fpath_out <- "Z:\\Nadine\\Behavior_Analysis\\lick_logistic_bayes.mat"
-R.matlab::writeMat(fpath_out, post = post, pred = pred)
+fpath_out <- "D:\\lick_post_mLick2.mat"
+R.matlab::writeMat(fpath_out, post = post)
 
-fpath_out <- "Z:\\Nadine\\Behavior_Analysis\\lick_logistic_bayes_y.mat"
+fpath_out <- "D:\\lick_pred_mLick2.mat"
 R.matlab::writeMat(fpath_out, pred = pred)
+
+
+mLick.2 <- ulam( 
+  alist(
+    y ~ binomial( 1 , p ),
+    logit(p) <- g[tid] + alpha[actor,tid] + beta[block_id,tid],
+    
+    #Adaptive priors
+    transpars> matrix[actor,4]:alpha <-
+      compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
+    transpars> matrix[block_id,4]:beta <-
+      compose_noncentered( sigma_beta , L_Rho_beta , z_beta ),
+    matrix[4,actor]:z_actor ~ normal( 0 , 1 ),
+    matrix[4,block_id]:z_beta ~ normal( 0 , 1 ),
+    
+    #Fixed priors
+    g[tid] ~ normal( 0 , 1 ),
+    vector[4]:sigma_actor ~ exponential( 1 ),
+    cholesky_factor_corr[4]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
+    vector[4]:sigma_beta ~ exponential( 1 ),
+    cholesky_factor_corr[4]:L_Rho_beta ~ lkj_corr_cholesky( 2 ),
+    sigma ~ exponential( 1 ),
+    
+    #Finally, compute ordinary correlation matrices from Cholesky factors
+    gq> matrix[4,4]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
+    gq> matrix[4,4]:Rho_beta <<- Chol_to_Corr( L_Rho_beta )
+  ), data = d, chains = 4, cores = 4, log_lik = TRUE )
