@@ -4,7 +4,7 @@ data{
     int Nb;
     int Nt;
     int Nn;
-    array[N] int y;
+    array[N] int psth;
     array[N] int trig;
     array[N] int bin_id;
     array[N] int neuron_id;
@@ -52,10 +52,10 @@ model{
         p[i] = inv_logit(p[i]);
     }
     for ( i in 1:N ) {
-        if ( y[i]==0 )
+        if ( psth[i]==0 )
             target += log_mix( p[i] , 0 , poisson_lpmf(0|lambda[i]) );
-        if ( y[i] > 0 )
-            target += log1m( p[i] ) + poisson_lpmf(y[i] | lambda[i] );
+        if ( psth[i] > 0 )
+            target += log1m( p[i] ) + poisson_lpmf(psth[i] | lambda[i] );
     }
 }
 generated quantities{
@@ -77,10 +77,10 @@ generated quantities{
         p[i] = inv_logit(p[i]);
     }
     for ( i in 1:N ) {
-        if ( y[i]==0 )
+        if ( psth[i]==0 )
             log_lik[i] = log_mix( p[i] , 0 , poisson_lpmf(0|lambda[i]) );
-        if ( y[i] > 0 )
-            log_lik[i] = log1m( p[i] ) + poisson_lpmf(y[i] | lambda[i] );
+        if ( psth[i] > 0 )
+            log_lik[i] = log1m( p[i] ) + poisson_lpmf(psth[i] | lambda[i] );
     }
 }
 
