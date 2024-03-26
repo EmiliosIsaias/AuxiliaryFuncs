@@ -136,3 +136,15 @@ text(2.5, 1.15*max(BImat(:,[1,3]), [], "all"), ...
     "HorizontalAlignment", "center", "VerticalAlignment", "bottom")
 
 set(gca, "Box", "off", "Color", "none")
+
+%% LFP filtering
+fs = 1e3;
+fo = 50;
+q = 40;
+bw = (fo/(fs/2))/q;
+[b,a] = iircomb(fs/fo,bw,'notch');
+lfp_filtered = filtfilt(b,a,lfp);
+lfp_filtered = brainwaves(lfp_filtered', 1e3, {'alpha', 0.1, 100});
+lfp_filtered = lfp_filtered';
+figure; line(tx1k, [lfp, lfp_filtered])
+lfp_z = zscore(lfp_filtered, 0);
