@@ -3,7 +3,6 @@ data{
     int Nn;
     int Nb;
     int Nc;
-    array[N] int trig;
     array[N] int psth;
     array[N] int bin_id;
     array[N] int neuron_id;
