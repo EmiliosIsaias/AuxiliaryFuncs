@@ -148,3 +148,65 @@ lfp_filtered = brainwaves(lfp_filtered', 1e3, {'alpha', 0.1, 100});
 lfp_filtered = lfp_filtered';
 figure; line(tx1k, [lfp, lfp_filtered])
 lfp_z = zscore(lfp_filtered, 0);
+
+%% MC-iRNs
+Nm = size( cherryFlag, 2);
+% Black, blue, baby blue
+clrMap = [zeros(1,3); 0, 102, 255; 128, 179, 255]/255;
+
+figure; hold on; arrayfun(@(c) boxchart( c + zeros( Nm, 1), ...
+    mean( x_cherry{c}, 1, "omitmissing" ), "Notch", "on", ...
+    "BoxFaceColor", clrMap(c,:) ), 1:3)
+
+arrayfun(@(x) text( x, ...
+    min( yv(:, x) ) * 0.85, sprintf( "n=%d", sum( ~isnan( ...
+    mean( x_cherry{x}, 1, "omitmissing") ) ) ), ...
+    "HorizontalAlignment", "center", "VerticalAlignment", "cap"), 1:3 )
+
+ylim([0,1]);
+jitDist = makedist("Normal", "mu", 0, "sigma", 0.1);
+
+xv = zeros( Nm, 3); yv = xv;
+for c = 1:3
+    xv(:,c) = random( jitDist, Nm, 1 ) + zeros( Nm, 1) + c;
+    yv(:,c) = mean( x_cherry{c}, 1, "omitmissing" );
+    scatter( xv(:,c), yv(:,c), "o", "MarkerEdgeColor", "none", ...
+        "MarkerFaceColor", clrMap(c, :) );
+end
+line( xv', yv', 'Color', 0.75 * ones(1,3) , 'LineWidth', 1/5)
+
+p = arrayfun(@(c) signrank( mean( ...
+    getMI( x_cherry{1}, x_cherry{c} ), 1, "omitmissing" ) ), 2:3 );
+
+arrayfun(@(x) line( [1, x], ...
+    max( yv(:,[1, x]), [], "all") * [1,1] * 1.15, 'Color', 'k', ...
+    'Marker', '|' ), 2:3 )
+
+posArg = {'bottom','top'};
+arrayfun(@(x) text( mean( [1, x] ), ...
+    max( yv(:, [1, x] ), [], "all" ) * 1.15, sprintf( "p=%.3f", p(x-1) ) , ...
+    "HorizontalAlignment", "center", "VerticalAlignment", posArg{x-1} ), ...
+    2:3 )
+
+title( "MC\rightarrowiRNs behaviour index" )
+ylabel("Behaviour index"); xticks(1:3); xticklabels(consCondNames)
+set( gca, "Box", "off", "Color", "none", "Clipping", "off" )
+
+%% Stan analysis
+Nc = size(x, 2);
+[Ns, Nm] = size(x{1}); N = Ns*Nc*Nm;
+bi = zeros(N, 1, "single");
+mouse_id = uint8(bi); block_id = mouse_id; tid = mouse_id;
+ci = 1;
+for cc = 1:size(x,2)
+    for cm = 1:size(x{cc},2)
+        cism = (ci:Ns+ci-1)';
+        bi(cism) = x{cc}(:,cm);
+        mouse_id(cism) = cm;
+        block_id(cism) = (1:Ns)';
+        tid(cism) = cc;
+        ci = ci + Ns;
+    end
+end
+
+nanflag = isnan(bi);
