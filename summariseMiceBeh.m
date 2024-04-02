@@ -19,6 +19,7 @@ for cm = multiMice(:)'
     for cs = multiSess{cm}(:)'
         currTbl = miceStruct(cm).Sessions(cs).DataTable;
         sessDate = miceStruct(cm).Sessions(cs).Date;
+        sessDepth = miceStruct(cm).Sessions(cs).Depth;
         Nnt = size(currTbl,1); % Number of new tables
         auxTbls = cell(Nnt,1);
         for cc = 1:size(currTbl,1)
@@ -31,6 +32,7 @@ for cm = multiMice(:)'
             miceStruct(cm).Sessions(ces).Date = sessDate;
             miceStruct(cm).Sessions(ces).DataTable = auxTbls{auxC};
             miceStruct(cm).Sessions(ces).Type = 'single';
+            miceStruct(cm).Sessions(ces).Depth = sessDepth;
             auxC = auxC + 1;
         end
         %currCondNames = [currTbl.Conditions{:}];
