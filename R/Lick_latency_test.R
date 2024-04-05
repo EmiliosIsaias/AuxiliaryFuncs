@@ -101,6 +101,7 @@ mLick.3 <- ulam(
     #Finally, compute ordinary correlation matrices from Cholesky factors
     gq> matrix[Nts,Nts]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
     gq> matrix[Nts,Nts]:Rho_beta <<- Chol_to_Corr( L_Rho_beta ),
-    gq> matrix[Nts,Nts]:Rho_beta <<- Chol_to_Corr( L_Rho_eta )
+    gq> matrix[Nts,Nts]:Rho_eta <<- Chol_to_Corr( L_Rho_eta )
     
   ), data = d, chains = 4, cores = 4, log_lik = TRUE )
+
