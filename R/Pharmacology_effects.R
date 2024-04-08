@@ -5,13 +5,16 @@ fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive 
 
 dat <- R.matlab::readMat(fpath)
 
-bi_centre <- apply(dat$biMat, 2, mean)[2]
-bi_scale <- apply(dat$biMat, 2, sd)[2]
+bi_centre <- dat$bi_centre[1,]
+bi_scale <- dat$bi_scale[1,]
+
+Nt <- max( dat$tid )
 
 d <- list(
-  treat = ( dat$biMat[,3] - bi_centre ) / bi_scale,
-  ctr = ( dat$biMat[,2] - bi_centre) / bi_scale,
-  treat_id = as.integer( dat$biMat[,1] )
+  bi = dat$bi[,1],
+  tid = as.integer( dat$tid ),
+  Nt = Nt,
+  mouse_id = as.integer( dat$mouse.id[,1] )
 )
 
 mPharma <- ulam(
