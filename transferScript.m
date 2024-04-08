@@ -360,4 +360,46 @@ save( "Z:\Nadine\Behavior_Analysis\Bayes\Lick_Bayes.mat", ...
     "mouse_id", "block_id", "tid", "lick_flag", ...
     "progress_id", "N", "Nm", "Nts", "lick_lat" ) 
 
-%% 
+%% Pharmacology effects from Bayes
+%{
+vw = [-2, 2]; binSize = 1e-2;
+histOpts = {'BinLimits', vw, 'BinWidth', binSize, ...
+    'Normalization', 'probability'};
+fnOpts = {'UniformOutput', false};
+
+gH = arrayfun(@(c) histcounts( params.g(:,c), histOpts{:}), 1:3, fnOpts{:});
+gH = cat(1, gH{:})';
+
+mdl_zbi = fit_poly( [1, size( gH, 1)], vw + [1, -1] * (binSize/2), 1);
+zbi_ax = ( (1:size(gH, 1) )'.^[1,0] ) * mdl_zbi;
+
+X = ones( size(gH, 1), 1) * (1:3);
+Y = zbi_ax * ones( 1, 3);
+figure; contour( X, Y, gH, 10); colormap( viridis )
+%}
+
+vw = [0, 1]; binSize = 1e-3;
+histOpts = {'BinLimits', vw, 'BinWidth', binSize, ...
+    'Normalization', 'probability'};
+fnOpts = {'UniformOutput', false};
+pharmaSubs = [2,1,3];
+
+bH = arrayfun(@(c) histcounts( ( params.g(:,c) * bi_scale) + bi_centre, ...
+    histOpts{:}), pharmaSubs, fnOpts{:});
+bH = cat(1, bH{:})';
+
+mdl_bi = fit_poly( [1, size( bH, 1)], vw + [1, -1] * (binSize/2), 1);
+bi_ax = ( (1:size(bH, 1))'.^[1,0] ) * mdl_bi;
+
+X = ones( size(bH, 1), 1) * (1:3);
+Y = bi_ax * ones( 1, 3);
+figure; contour( X, Y, bH, 10); colormap( roma )
+ylim(vw); xticks(1:3); xticklabels({'Muscimol', 'Control', 'Picrotoxin'})
+set(gca, "Box", "off", "Color", "none");
+ylabel("Behaviour index"); title("Effects of silencing / desinhibiting SC")
+
+hold on; line( 1:3, median( (params.g(:,pharmaSubs) * bi_scale) + bi_centre ), ...
+    'LineWidth', 2, 'Color', 'k', 'Marker', 'x', 'LineStyle', 'none' )
+
+cb = colorbar("Box", "off", "Location", "eastoutside", "Ticks", [] );
+cb.Label.String = "Low \leftarrow BI likelihood \rightarrow High";
