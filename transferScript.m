@@ -271,6 +271,10 @@ for cmi = 1:2
 end
 
 %% Lick bayes
+
+load( "C:\Users\neuro\seadrive_root\Emilio U\Shared with groups\GDrive GrohLab\Projects\00 Salience\Bayes Model Data\lick_tables_Native_DREADDs_IR_RS_all_sessions_with_trialID.mat" )
+load( "Z:\Nadine\Behavior_Analysis\lick_tables_Native_DREADDs_IR_RS_all_sessions_with_trialID.mat" )
+
 fnOpts = {'UniformOutput', false};
 getAllTrialsFromMice = @(tbl, m) tbl{ string( tbl{:, "MouseID"} ) == ...
     string( m ), "TrialID" };
@@ -355,3 +359,5 @@ save( fullfile( "C:\Users\jefe_\seadrive_root\Emilio U\Für meine Gruppen", ...
 save( "Z:\Nadine\Behavior_Analysis\Bayes\Lick_Bayes.mat", ...
     "mouse_id", "block_id", "tid", "lick_flag", ...
     "progress_id", "N", "Nm", "Nts", "lick_lat" ) 
+
+%% 
