@@ -105,3 +105,11 @@ mLick.3 <- ulam(
     
   ), data = d, chains = 4, cores = 4, log_lik = TRUE )
 
+post <- extract.samples( mLick.3 )
+params <- link( mLick.3 )
+
+fpath_out <- file.path("C:", "Users", "jefe_", "seadrive_root", "Emilio U", 
+                       "Für meine Gruppen", "GDrive GrohLab", "Projects", 
+                       "00 Salience", "Bayes Model Data", "Lick_Bayes.mat", 
+                       fsep = .Platform$file.sep )
+R.matlab::writeMat(fpath_out, post = post, params = params)
