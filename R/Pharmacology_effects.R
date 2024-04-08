@@ -5,15 +5,15 @@ fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive 
 
 dat <- R.matlab::readMat(fpath)
 
-bi_centre <- dat$bi_centre[1,]
-bi_scale <- dat$bi_scale[1,]
+bi_centre <- dat$bi.centre[1,]
+bi_scale <- dat$bi.scale[1,]
 
 Nt <- max( dat$tid )
 
 d <- list(
-  bi = dat$bi[,1],
+  bi = ( dat$bi[,1] - bi_centre ) / bi_scale,
   tid = as.integer( dat$tid ),
-  Nt = Nt,
+  Nt = as.integer( Nt ),
   mouse_id = as.integer( dat$mouse.id[,1] )
 )
 
@@ -30,13 +30,14 @@ mPharma <- ulam(
     g[tid] ~ normal(0,1),
     vector[Nt]:sigma_mouse ~ exponential(1),
     cholesky_factor_corr[Nt]:L_Rho_mouse ~ lkj_corr_cholesky( 2 ),
+    
     sigma ~ exponential( 1 ),
     
     # compute ordinary correlation matrixes from Cholesky factors
     gq> matrix[Nt,Nt]:Rho_mouse <<- Chol_to_Corr(L_Rho_mouse)
-  ) , data=d , chains=4 , cores=4 , log_lik=TRUE )
+  ) , data = d , chains = 4 , cores = 4 , log_lik = TRUE )
 
-post <- link(mPharma)
+post <- link( mPharma )
 params <- extract.samples( mPharma )
 
 R.matlab::writeMat("C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\PTX and muscimol Bayes.mat", 
