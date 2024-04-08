@@ -1,7 +1,7 @@
 library(rethinking)
 library(R.matlab)
 
-fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\PTX and muscimol.mat"
+fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\PTX_MUS_4_Stan.mat"
 
 dat <- R.matlab::readMat(fpath)
 
