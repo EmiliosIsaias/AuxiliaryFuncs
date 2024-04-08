@@ -19,15 +19,21 @@ d <- list(
 
 mPharma <- ulam(
   alist(
-    treat ~ normal( mu, sigma ),
-    ctr ~ normal( mu_c, sigma_c ),
-    mu <- mu_c + g[treat_id],
+    bi ~ normal( mu, sigma ),
+    mu <- g[tid] + alpha[mouse_id, tid],
+    
+    transpars> matrix[mouse_id,Nt]:alpha <-
+      compose_noncentered( sigma_mouse , L_Rho_mouse , z_mouse ),
+    matrix[Nt,mouse_id]:z_mouse ~ normal( 0 , 1 ),
     
     # fixed priors
-    mu_c ~ normal(0, 1),
-    g[treat_id] ~ normal(0, 1),
-    sigma ~ dexp(1),
-    sigma_c ~dexp(1)
+    g[tid] ~ normal(0,1),
+    vector[Nt]:sigma_mouse ~ exponential(1),
+    cholesky_factor_corr[Nt]:L_Rho_mouse ~ lkj_corr_cholesky( 2 ),
+    sigma ~ exponential( 1 ),
+    
+    # compute ordinary correlation matrixes from Cholesky factors
+    gq> matrix[Nt,Nt]:Rho_mouse <<- Chol_to_Corr(L_Rho_mouse)
   ) , data=d , chains=4 , cores=4 , log_lik=TRUE )
 
 post <- link(mPharma)
