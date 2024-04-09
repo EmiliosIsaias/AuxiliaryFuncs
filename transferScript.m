@@ -210,7 +210,55 @@ for cc = 1:size(x,2)
 end
 
 nanflag = isnan(bi);
-%% Mice (alpha) effects
+%% iRNs from Bayes
+
+figure_path = fullfile( ...
+    "C:\Users\neuro\seadrive_root\Emilio U", ...
+    "Shared with groups\GDrive GrohLab\Projects\00 SC", ...
+    "SC Behaviour\Figures\Figure 3\Matlab figures" );
+
+% figure_path = fullfile( ...
+%     "C:\Users\jefe_\seadrive_root\Emilio U", ...
+%     "Für meine Gruppen\GDrive GrohLab\Projects\00 SC", ...
+%     "SC Behaviour\Figures\Figure 2\Matlab figures" );
+
+data_path = fullfile(figure_path, "Data" );
+
+load( fullfile( data_path, "Bayes_iRN.mat") )
+load( fullfile( data_path, "iRNs_4_stan.mat") )
+
+vw = [0, 1]; binSize = 1e-2;
+histOpts = {'BinLimits', vw, 'BinWidth', binSize, ...
+    'Normalization', 'probability'};
+fnOpts = {'UniformOutput', false};
+laserSubs = 1:Nc;
+
+bH = arrayfun(@(c) histcounts( ( params.g(:,c) * bi_sd) + bi_mu, ...
+    histOpts{:}), laserSubs, fnOpts{:});
+bH = cat(1, bH{:})';
+
+mdl_bi = fit_poly( [1, size( bH, 1)], vw + [1, -1] * (binSize/2), 1);
+bi_ax = ( (1:size(bH, 1))'.^[1,0] ) * mdl_bi;
+
+X = ones( size(bH, 1), 1) * (1:Nc);
+Y = bi_ax * ones( 1, Nc);
+figure; patch( Y, X, bH, bH, "FaceAlpha", 1/3, "EdgeColor", "interp" )
+colormap( -roma + 1 ); view([0, 69])
+set( gca, "XGrid", "on", "XMinorGrid", "on")
+
+xlim(vw); yticks(1:Nc); yticklabels({'Control', 'Laser ON', 'Laser 40 Hz'})
+set(gca, "Box", "off", "Color", "none");
+xlabel("Behaviour index"); title("MC\rightarrowiRNs effect on BI")
+
+hold on; line( median( (params.g(:,laserSubs) * bi_sd) + bi_mu ), 1:Nc,...
+    'LineWidth', 2, 'Color', 'k', 'Marker', 'x', 'LineStyle', 'none' )
+
+cb = colorbar("Box", "off", "Location", "westoutside", "Ticks", [] );
+cb.Label.String = "Low \leftarrow BI likelihood \rightarrow High";
+
+set( get( gca, "ZAxis"), "visible", "off")
+
+%%
 for a = 1:size( aH, 2 )
     figure(a);
     contour( ...
