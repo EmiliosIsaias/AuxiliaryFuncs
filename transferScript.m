@@ -426,7 +426,13 @@ Y = zbi_ax * ones( 1, 3);
 figure; contour( X, Y, gH, 10); colormap( viridis )
 %}
 
-vw = [0, 1]; binSize = 1e-3;
+figure_path = fullfile( ...
+    "C:\Users\neuro\seadrive_root\Emilio U", ...
+    "Shared with groups\GDrive GrohLab\Projects\00 SC", ...
+    "SC Behaviour\Figures\Figure 1\Matlab figures" );
+data_path = fullfile( figure_path, "Data");
+
+vw = [0, 1]; binSize = 1e-2;
 histOpts = {'BinLimits', vw, 'BinWidth', binSize, ...
     'Normalization', 'probability'};
 fnOpts = {'UniformOutput', false};
@@ -441,16 +447,20 @@ bi_ax = ( (1:size(bH, 1))'.^[1,0] ) * mdl_bi;
 
 X = ones( size(bH, 1), 1) * (1:3);
 Y = bi_ax * ones( 1, 3);
-figure; contour( X, Y, bH, 10); colormap( roma )
-ylim(vw); xticks(1:3); xticklabels({'Muscimol', 'Control', 'Picrotoxin'})
-set(gca, "Box", "off", "Color", "none");
-ylabel("Behaviour index"); title("Effects of silencing / desinhibiting SC")
+figure; patch( Y, X, bH, bH, "FaceAlpha", 1/3, "EdgeColor", "interp" )
+xlim(vw); yticks(1:3); yticklabels({'Muscimol', 'Control', 'Picrotoxin'})
+colormap( -roma + 1); view([0, 60]); 
+set( gca, "XGrid", "on", "XMinorGrid", "on")
 
-hold on; line( 1:3, median( (params.g(:,pharmaSubs) * bi_scale) + bi_centre ), ...
+set(gca, "Box", "off", "Color", "none");
+xlabel("Behaviour index"); title("Effects of silencing / desinhibiting SC")
+
+hold on; line( median( (params.g(:,pharmaSubs) * bi_scale) + bi_centre ), 1:3,...
     'LineWidth', 2, 'Color', 'k', 'Marker', 'x', 'LineStyle', 'none' )
 
-cb = colorbar("Box", "off", "Location", "eastoutside", "Ticks", [] );
+cb = colorbar("Box", "off", "Location", "westoutside", "Ticks", [] );
 cb.Label.String = "Low \leftarrow BI likelihood \rightarrow High";
+set( get( gca, "ZAxis"), "visible", "off")
 
 %% eOPN3 & ChR2
 figure_path = fullfile( ...
