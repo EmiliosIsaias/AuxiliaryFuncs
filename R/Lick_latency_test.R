@@ -26,16 +26,6 @@ d <- list(
   Nts = as.integer( dat$Nts )
 )
 
-# d <- dat$mice.habituation[complete.cases(dat$mice.habituation),]
-# B_z <- standardize(d[,4])
-# d <- list(
-#   actor = as.integer(d[,1]),
-#   block_id = as.integer(d[,2]),
-#   tid = as.integer(2L + d[,3]*2L),
-#   B = B_z
-# )
-# d$tid[d$tid == 0L] = 1L
-
 mLick.2 <- ulam( 
   alist(
     y ~ binomial( 1 , p ),
@@ -119,38 +109,3 @@ post_lick <- link( mLick.3 )
 fpath_out <- file.path("Z:", "Nadine", "Behavior_Analysis", "Bayes", 
                        "Lick_Bayes.mat", fsep = .Platform$file.sep )
 R.matlab::writeMat(fpath_out, post = post_lick, params = params)
-
-mLick.4 <- ulam( 
-  alist(
-    y ~ binomial( 1 , p ),
-    logit(p) <- g[tid] + alpha[actor,tid] + beta[block_id,tid] + 
-      eta[progress, tid],
-    
-    #Adaptive priors
-    transpars> matrix[actor,Nts]:alpha <-
-      compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
-    transpars> matrix[block_id,Nts]:beta <-
-      compose_noncentered( sigma_beta , L_Rho_beta , z_beta ),
-    transpars> matrix[progress,Nts]:eta <-
-      compose_noncentered( sigma_eta , L_Rho_eta , z_eta ),
-    matrix[Nts,actor]:z_actor ~ normal( 0 , 1 ),
-    matrix[Nts,block_id]:z_beta ~ normal( 0 , 1 ),
-    matrix[Nts,progress]:z_eta ~ normal( 0 , 1 ),
-    
-    #Fixed priors
-    g[tid] ~ normal( 0 , 1 ),
-    vector[Nts]:sigma_actor ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
-    vector[Nts]:sigma_beta ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_beta ~ lkj_corr_cholesky( 2 ),
-    vector[Nts]:sigma_eta ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_eta ~ lkj_corr_cholesky( 2 ),
-    
-    sigma ~ exponential( 1 ),
-    
-    #Finally, compute ordinary correlation matrices from Cholesky factors
-    gq> matrix[Nts,Nts]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
-    gq> matrix[Nts,Nts]:Rho_beta <<- Chol_to_Corr( L_Rho_beta ),
-    gq> matrix[Nts,Nts]:Rho_eta <<- Chol_to_Corr( L_Rho_eta )
-    
-  ), data = d, chains = 4, cores = 4, log_lik = TRUE )
