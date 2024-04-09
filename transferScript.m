@@ -469,15 +469,17 @@ bi_ax = ( (1:size(bH, 1))'.^[1,0] ) * mdl_bi;
 
 X = ones( size(bH, 1), 1) * (1:Nc);
 Y = bi_ax * ones( 1, Nc);
-figure; surf( X, Y, bH, "EdgeColor","none", "FaceColor","interp");
-colormap( -roma + 1)
-ylim(vw); xticks(1:Nc); xticklabels({'eOPN3', 'Control', '30 ms', ...
+figure; patch( Y, X, bH, bH, "FaceAlpha", 1/3, "EdgeColor", "interp" )
+colormap( -roma + 1); view([0, 69])
+xlim(vw); yticks(1:Nc); yticklabels({'eOPN3', 'Control', '30 ms', ...
     '30 ms 40 Hz', '100 ms', '100 ms 40 Hz', '400 ms', '400 ms 40 Hz'})
 set(gca, "Box", "off", "Color", "none");
-ylabel("Behaviour index"); title("Effects of inhibiting / activating MC")
+xlabel("Behaviour index"); title("Effects of inhibiting / activating MC")
 
-hold on; line( 1:Nc, median( (params.g(:,opsinSubs) * bi_scale) + bi_centre ), ...
+hold on; line( median( (params.g(:,opsinSubs) * bi_scale) + bi_centre ), 1:Nc,...
     'LineWidth', 2, 'Color', 'k', 'Marker', 'x', 'LineStyle', 'none' )
 
-cb = colorbar("Box", "off", "Location", "north", "Ticks", [] );
+cb = colorbar("Box", "off", "Location", "westoutside", "Ticks", [] );
 cb.Label.String = "Low \leftarrow BI likelihood \rightarrow High";
+
+set( get( gca, "ZAxis"), "visible", "off")
