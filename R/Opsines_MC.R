@@ -8,150 +8,55 @@ library(R.matlab)
 # fpath <- file.path("c:", "users", "jefe_", "seadrive_root", "emilio u",
 #                    ""
 #                    fsep = "\\" )
+
+data_path <- file.path("c:", "users", "neuro", "seadrive_root", "emilio u",
+                   "Shared with groups", "gdrive grohlab", "projects",
+                   "00 SC", "SC Behaviour", "Figures", "Figure 2", 
+                   "Matlab figures", "Data" )
+fpath <- file.path( data_path, "MC_opsines_4_r.mat" )
 dat <- R.matlab::readMat(fpath)
 
-lick_mu <- mean( dat$lick.lat, na.rm = TRUE)
-lick_sig <- sd( dat$lick.lat, na.rm = TRUE)
+bi_mu <- dat$bi.centre[1]
+bi_sig <- dat$bi.scale[1]
 
-z_lick <- ( dat$lick.lat - lick_mu ) / lick_sig
+z_bi <- ( dat$bi[,1] - bi_mu ) / bi_sig
+
+cc_flag = complete.cases(dat$bi)
 
 d <- list(
-  y = as.integer( dat$lick.flag ),
+  bi = z_bi[cc_flag],
   #l_lat = z_lick,
-  actor = as.integer( dat$mouse.id ),
-  tid = as.integer( dat$tid ),
-  block_id = as.integer( dat$block.id ),
-  progress = as.integer( dat$progress.id ),
-  N = as.integer( dat$N ),
-  Nm = as.integer( dat$Nm ),
-  Nts = as.integer( dat$Nts )
+  mouse_id = as.integer( dat$mouse.id[cc_flag] ),
+  tid = as.integer( dat$tid[cc_flag] ),
+  Nc = as.integer( dat$Nc )
 )
 
-# d <- dat$mice.habituation[complete.cases(dat$mice.habituation),]
-# B_z <- standardize(d[,4])
-# d <- list(
-#   actor = as.integer(d[,1]),
-#   block_id = as.integer(d[,2]),
-#   tid = as.integer(2L + d[,3]*2L),
-#   B = B_z
-# )
-# d$tid[d$tid == 0L] = 1L
-
-mLick.2 <- ulam( 
+mMCBI <- ulam( 
   alist(
-    y ~ binomial( 1 , p ),
-    logit(p) <- g[tid] + alpha[actor,tid] + beta[block_id,tid],
+    bi ~ normal( mu , sigma ),
+    mu <- g[tid] + alpha[mouse_id,tid],
     
     #Adaptive priors
-    transpars> matrix[actor,4]:alpha <-
-      compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
-    transpars> matrix[block_id,4]:beta <-
-      compose_noncentered( sigma_beta , L_Rho_beta , z_beta ),
-    matrix[4,actor]:z_actor ~ normal( 0 , 1 ),
-    matrix[4,block_id]:z_beta ~ normal( 0 , 1 ),
+    transpars> matrix[mouse_id,Nc]:alpha <-
+      compose_noncentered( sigma_mouse , L_Rho_mouse , z_mouse ),
+    
+    matrix[Nc,mouse_id]:z_mouse ~ normal( 0 , 1 ),
+    
 
     #Fixed priors
     g[tid] ~ normal( 0 , 1 ),
-    vector[4]:sigma_actor ~ exponential( 1 ),
-    cholesky_factor_corr[4]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
-    vector[4]:sigma_beta ~ exponential( 1 ),
-    cholesky_factor_corr[4]:L_Rho_beta ~ lkj_corr_cholesky( 2 ),
+    vector[Nc]:sigma_mouse ~ exponential( 1 ),
+    cholesky_factor_corr[Nc]:L_Rho_mouse ~ lkj_corr_cholesky( 2 ),
+    
     sigma ~ exponential( 1 ),
 
     #Finally, compute ordinary correlation matrices from Cholesky factors
-    gq> matrix[4,4]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
-    gq> matrix[4,4]:Rho_beta <<- Chol_to_Corr( L_Rho_beta )
-  ), data = d, chains = 4, cores = 4, log_lik = TRUE )
-
-post <- extract.samples( mLick.2 )
-pred <- link( mLick.2 )
-
-fpath_out <- "D:\\lick_post_mLick2.mat"
-R.matlab::writeMat(fpath_out, post = post)
-
-fpath_out <- "D:\\lick_pred_mLick2.mat"
-R.matlab::writeMat(fpath_out, pred = pred)
-
-
-mLick.3 <- ulam( 
-  alist(
-    y ~ binomial( 1 , p ),
-    logit(p) <- g[tid] + alpha[actor,tid] + beta[block_id,tid] + 
-      eta[progress, tid],
-    
-    #Adaptive priors
-    transpars> matrix[actor,Nts]:alpha <-
-      compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
-    transpars> matrix[block_id,Nts]:beta <-
-      compose_noncentered( sigma_beta , L_Rho_beta , z_beta ),
-    transpars> matrix[progress,Nts]:eta <-
-      compose_noncentered( sigma_eta , L_Rho_eta , z_eta ),
-    matrix[Nts,actor]:z_actor ~ normal( 0 , 1 ),
-    matrix[Nts,block_id]:z_beta ~ normal( 0 , 1 ),
-    matrix[Nts,progress]:z_eta ~ normal( 0 , 1 ),
-    
-    #Fixed priors
-    g[tid] ~ normal( 0 , 1 ),
-    vector[Nts]:sigma_actor ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
-    vector[Nts]:sigma_beta ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_beta ~ lkj_corr_cholesky( 2 ),
-    vector[Nts]:sigma_eta ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_eta ~ lkj_corr_cholesky( 2 ),
-    
-    sigma ~ exponential( 1 ),
-    
-    #Finally, compute ordinary correlation matrices from Cholesky factors
-    gq> matrix[Nts,Nts]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
-    gq> matrix[Nts,Nts]:Rho_beta <<- Chol_to_Corr( L_Rho_beta ),
-    gq> matrix[Nts,Nts]:Rho_eta <<- Chol_to_Corr( L_Rho_eta )
+    gq> matrix[Nc,Nc]:Rho_mouse <<- Chol_to_Corr( L_Rho_mouse )
     
   ), data = d, chains = 4, cores = 4, log_lik = TRUE )
 
-params <- extract.samples( mLick.3 )
-post_lick <- link( mLick.3 )
+params <- extract.samples( mMCBI )
+post <- link( mMCBI )
 
-# fpath_out <- file.path("C:", "Users", "jefe_", "seadrive_root", "Emilio U", 
-#                        "Für meine Gruppen", "GDrive GrohLab", "Projects", 
-#                        "00 Salience", "Bayes Model Data", "Lick_Bayes.mat", 
-#                        fsep = .Platform$file.sep )
-#                        C:\Users\neuro\seadrive_root\Emilio U\Shared with groups\GDrive GrohLab
-#                        Z:\Nadine\Behavior_Analysis\Bayes
-fpath_out <- file.path("Z:", "Nadine", "Behavior_Analysis", "Bayes", 
-                       "Lick_Bayes.mat", fsep = .Platform$file.sep )
-R.matlab::writeMat(fpath_out, post = post_lick, params = params)
-
-mLick.4 <- ulam( 
-  alist(
-    y ~ binomial( 1 , p ),
-    logit(p) <- g[tid] + alpha[actor,tid] + beta[block_id,tid] + 
-      eta[progress, tid],
-    
-    #Adaptive priors
-    transpars> matrix[actor,Nts]:alpha <-
-      compose_noncentered( sigma_actor , L_Rho_actor , z_actor ),
-    transpars> matrix[block_id,Nts]:beta <-
-      compose_noncentered( sigma_beta , L_Rho_beta , z_beta ),
-    transpars> matrix[progress,Nts]:eta <-
-      compose_noncentered( sigma_eta , L_Rho_eta , z_eta ),
-    matrix[Nts,actor]:z_actor ~ normal( 0 , 1 ),
-    matrix[Nts,block_id]:z_beta ~ normal( 0 , 1 ),
-    matrix[Nts,progress]:z_eta ~ normal( 0 , 1 ),
-    
-    #Fixed priors
-    g[tid] ~ normal( 0 , 1 ),
-    vector[Nts]:sigma_actor ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_actor ~ lkj_corr_cholesky( 2 ),
-    vector[Nts]:sigma_beta ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_beta ~ lkj_corr_cholesky( 2 ),
-    vector[Nts]:sigma_eta ~ exponential( 1 ),
-    cholesky_factor_corr[Nts]:L_Rho_eta ~ lkj_corr_cholesky( 2 ),
-    
-    sigma ~ exponential( 1 ),
-    
-    #Finally, compute ordinary correlation matrices from Cholesky factors
-    gq> matrix[Nts,Nts]:Rho_actor <<- Chol_to_Corr( L_Rho_actor ),
-    gq> matrix[Nts,Nts]:Rho_beta <<- Chol_to_Corr( L_Rho_beta ),
-    gq> matrix[Nts,Nts]:Rho_eta <<- Chol_to_Corr( L_Rho_eta )
-    
-  ), data = d, chains = 4, cores = 4, log_lik = TRUE )
+fpath_out <- file.path(data_path, "Opsines_Bayes.mat")
+R.matlab::writeMat(fpath_out, params = params, post = post)
