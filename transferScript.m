@@ -403,3 +403,31 @@ hold on; line( 1:3, median( (params.g(:,pharmaSubs) * bi_scale) + bi_centre ), .
 
 cb = colorbar("Box", "off", "Location", "eastoutside", "Ticks", [] );
 cb.Label.String = "Low \leftarrow BI likelihood \rightarrow High";
+
+%% eOPN3 & ChR2
+figure_path = fullfile( ...
+    "C:\Users\jefe_\seadrive_root\Emilio U", ...
+    "Für meine Gruppen\GDrive GrohLab\Projects\00 SC", ...
+    "SC Behaviour\Figures\Figure 2\Matlab figures" );
+data_path = fullfile(figure_path, "Data" );
+
+load( fullfile( data_path, 'eOPN3_pool.mat' ) )
+load( fullfile( data_path, 'ChR2_pool.mat' ) )
+
+Nc = size( oPN3, 2 ) + size( chr2, 2 ) - 2;
+
+om_ids = 1:6; cm_ids = 7:18;
+
+bi = [reshape( oPN3(:, 1:2), [], 1); reshape( chr2, [], 1)];
+[~, bi_centre, bi_scale] = zscore(bi(~isnan(bi)), 0);
+
+omouse_id = reshape( ( 1:Nmo )' * ones(1, 2), [], 1 );
+cmouse_id = reshape( ( Nmo + (1:Nmc))' * ones(1,7), [], 1 );
+mouse_id = uint8( [omouse_id; cmouse_id] );
+
+otid = reshape( ones( Nmo, 1) * (1:2), [], 1 );
+ctid = reshape( ones( Nmc, 1) * [1,3:Nc], [], 1 );
+tid = uint8( [otid; ctid ]);
+
+save( fullfile( data_path, "MC_opsines_4_r.mat" ), "Nc", "mouse_id", ...
+    "tid", "bi", "bi_centre", "bi_scale")
