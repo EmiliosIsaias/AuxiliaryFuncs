@@ -268,7 +268,7 @@ for a = 1:size( aH, 2 )
     colormap(-gray(10)+1); ylabel( 'Movement bias' )
     xticks( 1:size( aH{a}, 1 ) ); xticklabels( consCondNames )
     title( sprintf( "Mouse %d (%s)", a, ...
-    strrep(xmice_iRNs.MiceNames(a), '_', '\_' ) ) )
+        strrep(xmice_iRNs.MiceNames(a), '_', '\_' ) ) )
     grid on; set(gca, "Box", "off", "Color", "none", "Clipping", "off")
     cb = colorbar("peer", gca, ...
         "eastoutside", "AxisLocation", "out", "Box", "off");
@@ -406,7 +406,7 @@ save( fullfile( "C:\Users\jefe_\seadrive_root\Emilio U\Für meine Gruppen", ...
 %}
 save( "Z:\Nadine\Behavior_Analysis\Bayes\Lick_Bayes.mat", ...
     "mouse_id", "block_id", "tid", "lick_flag", ...
-    "progress_id", "N", "Nm", "Nts", "lick_lat" ) 
+    "progress_id", "N", "Nm", "Nts", "lick_lat" )
 
 %% Pharmacology effects from Bayes
 %{
@@ -432,12 +432,14 @@ figure_path = fullfile( ...
     "SC Behaviour\Figures\Figure 1\Matlab figures" );
 data_path = fullfile( figure_path, "Data");
 
+load( fullfile( data_path, "Pharma.mat" ))
+
 vw = [0, 1]; binSize = 1e-2;
 histOpts = {'BinLimits', vw, 'BinWidth', binSize, ...
     'Normalization', 'probability'};
 fnOpts = {'UniformOutput', false};
 pharmaSubs = [2,1,3];
-
+consCondNames = {'Muscimol', 'Control', 'Picrotoxin'};
 bH = arrayfun(@(c) histcounts( ( params.g(:,c) * bi_scale) + bi_centre, ...
     histOpts{:}), pharmaSubs, fnOpts{:});
 bH = cat(1, bH{:})';
@@ -449,7 +451,7 @@ X = ones( size(bH, 1), 1) * (1:3);
 Y = bi_ax * ones( 1, 3);
 figure; patch( Y, X, bH, bH, "FaceAlpha", 1/3, "EdgeColor", "interp" )
 xlim(vw); yticks(1:3); yticklabels({'Muscimol', 'Control', 'Picrotoxin'})
-colormap( -roma + 1); view([0, 60]); 
+colormap( -roma + 1); view([0, 60]);
 set( gca, "XGrid", "on", "XMinorGrid", "on")
 
 set(gca, "Box", "off", "Color", "none");
@@ -541,3 +543,103 @@ cb = colorbar("Box", "off", "Location", "westoutside", "Ticks", [] );
 cb.Label.String = "Low \leftarrow BI likelihood \rightarrow High";
 
 set( get( gca, "ZAxis"), "visible", "off")
+
+%% Analysing behaviour alone
+
+exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\RNs\WTg64\221111_C+PTX10microM_1900";
+expandPath = @(x) fullfile( x.folder, x.name);
+
+eph_path = dir( fullfile( exp_path, "ephys_*" ) );
+beh_path = fullfile( exp_path, "Behaviour" );
+if ~isempty( eph_path )
+    eph_path = expandPath( eph_path );
+    figure_path = fullfile( eph_path, "Figures" );
+    af_path = dir( fullfile( eph_path , "*analysis.mat" ) );
+    af_path = expandPath( af_path );
+else
+    af_path = expandPath( dir( fullfile( beh_path, "*analysis.mat") ) );
+    figure_path = fullfile( beh_path, "Figures" );
+end
+[~, af_name] = fileparts( af_path );
+expName = extractBefore(af_name, "analysis");
+load( af_path, "Conditions", "fs")
+
+load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
+
+fnOpts = {'UniformOutput', false};
+hstOpts = {'BinMethod', 'integers', 'BinLimits', [-0.5,4.5]};
+axOpts = {'Box','off','Color','none'};
+lgOpts = cat(2, axOpts{1:2}, {'Location','best'});
+
+open Conditions
+%% Run independently
+% User input!!
+consCond = 3:6;
+Nccond = length( consCond );
+prmSubs = nchoosek(1:Nccond,2);
+
+pairedStimFlags = arrayfun(@(c) any( ...
+    Conditions(1).Triggers(:,1) == ...
+    reshape( Conditions(c).Triggers(:,1), 1, []), 2), consCond, fnOpts{:} );
+pairedStimFlags = cat(2, pairedStimFlags{:});
+
+consCondNames = string( { Conditions( consCond ).name  } );
+
+[behRes, behFig_path, behData, aInfo] = analyseBehaviour(beh_path, ...
+    "ConditionsNames", cellstr(consCondNames), ...
+    "PairedFlags", pairedStimFlags, ...
+    "FigureDirectory", figure_path, ...
+    "ResponseWindow", [30, 400]*1e-3);
+
+vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
+mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1]*(1/(2 * fr) ), 1);
+txb = ( (1:size( behData.Data, 1))'.^[1,0] ) * mdlt;
+
+biFigPttrn = "BehIndex%s";
+biFigPttrn = sprintf(biFigPttrn, sprintf(" %s (%%.3f)", consCondNames));
+[pAreas, ~, behAreaFig] = createBehaviourIndex(behRes);
+behRes = arrayfun(@(bs, ba) setfield(bs,'BehIndex', ba), behRes, pAreas);
+set(behAreaFig, 'UserData', behRes)
+
+biFN = sprintf(biFigPttrn, pAreas);
+
+trMvFlag = arrayfun(@(cr) behRes(1).Results(cr).MovStrucure.MovmentFlags, ...
+    1:size(behRes(1).Results,2), fnOpts{:}); trMvFlag = cat(3, trMvFlag{:});
+BIscaleMat = sum(trMvFlag,3);
+BIscale = arrayfun(@(cc) BIscaleMat(pairedStimFlags(:,cc), cc), 1:Nccond, ...
+    fnOpts{:});
+[hg, hg_bin] = cellfun(@(c) histcounts(c, hstOpts{:}), ...
+    BIscale, fnOpts{:});
+hg = cat(1, hg{:}); hg_bin = cat(1, hg_bin{:});
+
+
+% [p_amp, h_amp] = ranksum(cat(1, zamp{1,:}), cat(1, zamp{2,:}));
+
+clrMap = lines(Nccond);
+countFig = figure; ax(1) = subplot(10,1,1:8);
+bar(ax(1), (0:4)', (hg./sum(hg,2))', 'EdgeColor', 'none'); hold on;
+poaDist = cellfun(@(bi) fitdist(bi,"Poisson"), BIscale);
+ylim(ax(1), [0,1]); set(ax(1), axOpts{:});
+legend(ax(1), consCondNames, 'AutoUpdate','off', lgOpts{:})
+lmbdaHeight = 0.95-(0.15/Nccond)*(0:Nccond-1);
+arrayfun(@(pd) scatter(ax(1), poaDist(pd).lambda, lmbdaHeight(pd), '|',...
+    'MarkerEdgeColor', clrMap(pd,:)), 1:Nccond)
+arrayfun(@(pd) line(ax(1), paramci(poaDist(pd)), ...
+    lmbdaHeight([pd,pd]), 'Color', clrMap(pd,:), ...
+    'Marker', '|'), 1:Nccond)
+[p, chiVal] = arrayfun(@(ps) chi2test(hg(prmSubs(ps,:), :)), ...
+    1:size(prmSubs,1));
+ax(2) = subplot(10,1,9:10);
+signBeh = arrayfun(@(x) sprintf("%s vs %s p=%.3f", ...
+    consCondNames(prmSubs(x,:)), p(x)), 1:size(prmSubs,1));
+text(ax(2), 0, -0.3, sprintf('%s vs. %s P=%.3f\n', ...
+    [consCondNames(prmSubs), string(p(:))]'))
+set(ax(2), 'Visible', 'off')
+set(countFig, 'UserData', {signBeh, p})
+title(ax(1), strrep(expName, '_',' ')); xlabel(ax(1),'Moving body parts')
+ylabel(ax(1),'Trial proportion')
+countFigName = sprintf("Count distributions P%s", ...
+    sprintf(" %.3f", p(:)));
+
+saveFigure(behAreaFig, fullfile(behFig_path, biFN), true);
+saveFigure(countFig, fullfile(behFig_path, countFigName), true);
