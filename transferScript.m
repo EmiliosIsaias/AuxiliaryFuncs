@@ -546,7 +546,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 %% Analysing behaviour alone
 
-exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\RNs\WTg64\221111_C+PTX10microM_1900";
+exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\iRNs\GADi42\240216_C+F_2400";
 expandPath = @(x) fullfile( x.folder, x.name);
 
 eph_path = dir( fullfile( exp_path, "ephys_*" ) );
@@ -574,7 +574,7 @@ lgOpts = cat(2, axOpts{1:2}, {'Location','best'});
 open Conditions
 %% Run independently
 % User input!!
-consCond = 3:6;
+consCond = 3:5;
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
@@ -589,7 +589,8 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "ConditionsNames", cellstr(consCondNames), ...
     "PairedFlags", pairedStimFlags, ...
     "FigureDirectory", figure_path, ...
-    "ResponseWindow", [30, 400]*1e-3);
+    "ResponseWindow", [25, 400]*1e-3, ...
+    "ViewingWindow", [-0.5, 0.5]);
 
 vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
 mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1]*(1/(2 * fr) ), 1);
@@ -645,15 +646,98 @@ saveFigure(behAreaFig, fullfile(behFig_path, biFN), true);
 saveFigure(countFig, fullfile(behFig_path, countFigName), true);
 
 %% Behaviour Window testing
+respWin = sscanf( aInfo.Evoked, "R%f - %f ms")' * 1e-3;
+% respWin = [30, 400]*1e-3;
+sponWin = -flip(respWin);
 [Nb, Nt, Ns] = size( behData.Data );
-% Linearly increasing weights for spontaneous
-sponWeight = (1:sum(txb<0))/sum(1:sum(txb<0));
+n = getHesseLineForm([1,0]);
 
-w_mu = sponWeight*behData.Data(txb<0,:,1);
-X = ones( Nt, 1) * txb';
-Y = (1:Nt)' * ones( 1, Nb);
-figure; surf( X, Y, squeeze( behData.Data(:, :, 1) )', ...
-    squeeze( behData.Data(:, :, 1) )', "EdgeColor", "interp", ...
-    "FaceColor", "none", "EdgeAlpha", 1/3)
-hold on; line( zeros(Nt,1), 1:Nt, w_mu, "Marker", "x", ...
+% Linearly increasing weights for spontaneous
+
+sponFlag = txb > sponWin;
+sponFlag = xor( sponFlag(:,1), sponFlag(:,2) );
+
+% Quickly rising and slowly decaying
+evokFlag = txb > respWin;
+evokFlag = xor( evokFlag(:,1), evokFlag(:,2) );
+
+sponWeight = (1:sum(sponFlag))/sum(1:sum(sponFlag));
+
+% ln1 = 1:(round( sum( evokFlag )/3 ) );
+% ln1 = padarray(ln1, [0, sum( evokFlag ) - numel( ln1 )], "replicate", "post");
+ln1 = log10( 1:sum(evokFlag) );
+
+ln2 = sum( evokFlag ):-1:1;
+evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
+
+
+for cb = cbp
+    w_smu = sponWeight*behData.Data(sponFlag,:,cb);
+    w_emu = evokWeight*behData.Data(evokFlag, :, cb);
+    X = ones( Nt, 1) * txb';
+    Y = (1:Nt)' * ones( 1, Nb);
+    figure; surf( X, Y, squeeze( behData.Data(:, :, cb) )', ...
+        squeeze( behData.Data(:, :, 1) )', "EdgeColor", "interp", ...
+        "FaceColor", "none", "EdgeAlpha", 1/3)
+    hold on; line(zeros(Nt,2)+[-0.125,0.03] , 1:Nt, ...
+        [w_smu(:), w_emu(:)], ... 
+        "Marker", "x", "LineStyle", "none", "LineWidth", 2)
+    title( behNames(cb) )
+    figure; scatter( w_smu, w_emu, [], [w_smu(:), w_emu(:)] * n ); 
+    colormap(-roma+1); colorbar();
+    line( xlim, xlim, 'LineStyle', '--', 'Color', 0.45*ones(1,3))
+    title( behNames(cb) )
+
+end
+%% Gamma distribution
+x = ((1:sum(evokFlag)) - 1 ) /sum(evokFlag);
+plot( txb( evokFlag ), gampdf(x*10, 3, 1) )
+
+%% Normalised amplitud by absolute maximum
+
+cbp = 1:4;
+figure("Color", "w");
+for bpi = 1:length(cbp)
+    ax = subplot(2,2,bpi);
+    if bpi == 2
+        auxStack = -squeeze( behData.Data(:,:,cbp(bpi)) )';
+    else
+        auxStack = squeeze( behData.Data(:,:,cbp(bpi)) )';
+    end
+    auxStack = auxStack ./ max( abs( auxStack ) );
+    imagesc( txb*1e3, [],  auxStack ); xline(0, 'k'); 
+    xline( [20, 120], 'LineWidth', 1, 'Color', 'b')
+    xlabel('Time [ms]'); ylabel('Trials'); title( behNames(bpi) )
+    set( ax, "Box", "off", "Color", "none" )
+end
+clearvars auxStack
+cb = colorbar(ax, "Box", "off", "Location", "south");
+cb.Ticks = [-1, 1] * 0.85; cb.Label.String = "\leftarrow Direction \rightarrow";
+cb.TickLabels = {'Backward', 'Forward'};
+linkaxes( findobj(gcf, "Type", "Axes"), "xy")
+
+%%
+figure("Color", "w");
+for bpi = 1:length(cbp)
+    ax = subplot(2,2,bpi, "Box", "off", "Color", "none" );
+    if bpi == 1
+        ylabel('Evoked')
+    elseif bpi == 4
+        xlabel('Spontaneous_{RMS}')
+    end
+    aux_x = sqrt( sum( (-behData.Data(txb<0, :, bpi)).^2 ) ) ./ sum( txb<0 );
+    aux_y = sqrt( sum( behData.Data(txb>0.03 & txb<0.4, :, bpi).^2 ) ) ./ sum( txb>0.03 & txb<0.4 );
+    % aux_x = rms( behData.Data(txb<0, :, bpi) );
+    % aux_y = rms( behData.Data(txb>0.03 & txb<0.4, :, bpi) );
+    line( aux_x, aux_y, "LineStyle", "none" ); title( behNames(bpi) );
+    set( get(ax, "XAxis"), "Scale", "log"); set( get(ax, "YAxis"), "Scale", "log")
+    line( xlim(ax), xlim(ax), "LineStyle", "--", "Color", 0.45*ones(1,3) );
+    xticklabels(ax, xticks(ax) ); yticklabels( ax, yticks(ax) );
+    text( aux_x, aux_y, num2str( (1:Nt)' ), ...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle')
+    set(ax, "Box", "off", "Color", "none", "XGrid", "on", "YGrid", "on")
+end
+clearvars aux_*
+%%
+line( zeros(Nt,1), 1:Nt, w_mu, "Marker", "x", ...
     "LineWidth", 2, "Color", "k", "LineStyle", "none")
