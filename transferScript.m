@@ -643,3 +643,17 @@ countFigName = sprintf("Count distributions P%s", ...
 
 saveFigure(behAreaFig, fullfile(behFig_path, biFN), true);
 saveFigure(countFig, fullfile(behFig_path, countFigName), true);
+
+%% Behaviour Window testing
+[Nb, Nt, Ns] = size( behData.Data );
+% Linearly increasing weights for spontaneous
+sponWeight = (1:sum(txb<0))/sum(1:sum(txb<0));
+
+w_mu = sponWeight*behData.Data(txb<0,:,1);
+X = ones( Nt, 1) * txb';
+Y = (1:Nt)' * ones( 1, Nb);
+figure; surf( X, Y, squeeze( behData.Data(:, :, 1) )', ...
+    squeeze( behData.Data(:, :, 1) )', "EdgeColor", "interp", ...
+    "FaceColor", "none", "EdgeAlpha", 1/3)
+hold on; line( zeros(Nt,1), 1:Nt, w_mu, "Marker", "x", ...
+    "LineWidth", 2, "Color", "k", "LineStyle", "none")
