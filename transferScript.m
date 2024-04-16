@@ -546,7 +546,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 %% Analysing behaviour alone
 
-exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\iRNs\GADi42\240216_C+F_2400";
+exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch14_ephys.MC\ChR2\WTk12\230616_C+F_1997";
 expandPath = @(x) fullfile( x.folder, x.name);
 
 eph_path = dir( fullfile( exp_path, "ephys_*" ) );
@@ -556,9 +556,12 @@ if ~isempty( eph_path )
     figure_path = fullfile( eph_path, "Figures" );
     af_path = dir( fullfile( eph_path , "*analysis.mat" ) );
     af_path = expandPath( af_path );
-else
+elseif exist( beh_path, "dir" )
     af_path = expandPath( dir( fullfile( beh_path, "*analysis.mat") ) );
     figure_path = fullfile( beh_path, "Figures" );
+else
+    beh_path = exp_path;
+    af_path = expandPath( dir( fullfile( beh_path, "*analysis.mat") ) );
 end
 [~, af_name] = fileparts( af_path );
 expName = extractBefore(af_name, "analysis");
@@ -589,13 +592,14 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "ConditionsNames", cellstr(consCondNames), ...
     "PairedFlags", pairedStimFlags, ...
     "FigureDirectory", figure_path, ...
-    "ResponseWindow", [25, 400]*1e-3, ...
-    "ViewingWindow", [-0.5, 0.5]);
+    "ResponseWindow", [30, 350] * 1e-3, ...
+    "ViewingWindow", [-0.3, 0.4]);
 
 vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
 mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1]*(1/(2 * fr) ), 1);
 txb = ( (1:size( behData.Data, 1))'.^[1,0] ) * mdlt;
-
+behNames = string( { behRes(1).Results.BehSigName } );
+ 
 biFigPttrn = "BehIndex%s";
 biFigPttrn = sprintf(biFigPttrn, sprintf(" %s (%%.3f)", consCondNames));
 [pAreas, ~, behAreaFig] = createBehaviourIndex(behRes);
@@ -669,9 +673,9 @@ ln1 = log10( 1:sum(evokFlag) );
 
 ln2 = sum( evokFlag ):-1:1;
 evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
+%%
 
-
-for cb = cbp
+for cb = 1:size( behData.Data, 3 )
     w_smu = sponWeight*behData.Data(sponFlag,:,cb);
     w_emu = evokWeight*behData.Data(evokFlag, :, cb);
     X = ones( Nt, 1) * txb';
@@ -680,10 +684,10 @@ for cb = cbp
         squeeze( behData.Data(:, :, 1) )', "EdgeColor", "interp", ...
         "FaceColor", "none", "EdgeAlpha", 1/3)
     hold on; line(zeros(Nt,2)+[-0.125,0.03] , 1:Nt, ...
-        [w_smu(:), w_emu(:)], ... 
+        [w_smu(:), w_emu(:)], ...
         "Marker", "x", "LineStyle", "none", "LineWidth", 2)
     title( behNames(cb) )
-    figure; scatter( w_smu, w_emu, [], [w_smu(:), w_emu(:)] * n ); 
+    figure; scatter( w_smu, w_emu, [], [w_smu(:), w_emu(:)] * n );
     colormap(-roma+1); colorbar();
     line( xlim, xlim, 'LineStyle', '--', 'Color', 0.45*ones(1,3))
     title( behNames(cb) )
@@ -695,17 +699,16 @@ plot( txb( evokFlag ), gampdf(x*10, 3, 1) )
 
 %% Normalised amplitud by absolute maximum
 
-cbp = 1:4;
 figure("Color", "w");
-for bpi = 1:length(cbp)
+for bpi = 1:size( behData.Data, 3 )
     ax = subplot(2,2,bpi);
     if bpi == 2
-        auxStack = -squeeze( behData.Data(:,:,cbp(bpi)) )';
+        auxStack = -squeeze( behData.Data(:,:,bpi) )';
     else
-        auxStack = squeeze( behData.Data(:,:,cbp(bpi)) )';
+        auxStack = squeeze( behData.Data(:,:,bpi) )';
     end
-    auxStack = auxStack ./ max( abs( auxStack ) );
-    imagesc( txb*1e3, [],  auxStack ); xline(0, 'k'); 
+    auxStack = ( auxStack - median( auxStack, 2) ) ./ max( abs( auxStack ) );
+    imagesc( txb*1e3, [],  auxStack ); xline(0, 'k');
     xline( [20, 120], 'LineWidth', 1, 'Color', 'b')
     xlabel('Time [ms]'); ylabel('Trials'); title( behNames(bpi) )
     set( ax, "Box", "off", "Color", "none" )
@@ -716,28 +719,46 @@ cb.Ticks = [-1, 1] * 0.85; cb.Label.String = "\leftarrow Direction \rightarrow";
 cb.TickLabels = {'Backward', 'Forward'};
 linkaxes( findobj(gcf, "Type", "Axes"), "xy")
 
-%%
-figure("Color", "w");
-for bpi = 1:length(cbp)
-    ax = subplot(2,2,bpi, "Box", "off", "Color", "none" );
-    if bpi == 1
-        ylabel('Evoked')
-    elseif bpi == 4
-        xlabel('Spontaneous_{RMS}')
+%% RMS
+
+myRMS = @(x) vecnorm(x, 2, 1) ./ size( x, 1 );
+funcs = {@(x) x, @(x) diff(x, 1, 1) };
+app = [ repmat("", 1,4); repmat( " diff", 1, 4) ];
+
+Nfgs = numel(funcs);
+figs = gobjects(Nfgs, 1);
+for cf = 1:Nfgs
+    figs(cf) = figure("Color", "w");
+    for bpi = 1:size( behData.Data, 3 )
+
+        ax = subplot( 2, 2, bpi, "Box", "off", ...
+            "Color", "none", "Parent", figs(cf) );
+        if bpi == 1
+            ylabel(ax, 'Evoked')
+        elseif bpi == 4
+            xlabel(ax, 'Spontaneous_{RMS}')
+        end
+
+        aux_x = myRMS( funcs{cf}(behData.Data( sponFlag, :, bpi ) ) );
+        aux_y = myRMS( funcs{cf}(behData.Data( evokFlag, :, bpi ) ) );
+
+        line(ax, aux_x, aux_y, "LineStyle", "none" ); 
+        title(ax, behNames(bpi) + app(cf,bpi) );
+        set( get(ax, "XAxis"), "Scale", "log"); 
+        set( get(ax, "YAxis"), "Scale", "log")
+        line(ax, xlim(ax), xlim(ax), "LineStyle", "--", ...
+            "Color", 0.45*ones(1,3) );
+        xticklabels( ax, xticks(ax) ); 
+        yticklabels( ax, yticks(ax) );
+        text( ax, aux_x, aux_y, num2str( (1:Nt)' ), ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle')
+        set(ax, "Box", "off", "Color", "none", "XGrid", "on", ...
+            "YGrid", "on")
+
     end
-    aux_x = sqrt( sum( (-behData.Data(txb<0, :, bpi)).^2 ) ) ./ sum( txb<0 );
-    aux_y = sqrt( sum( behData.Data(txb>0.03 & txb<0.4, :, bpi).^2 ) ) ./ sum( txb>0.03 & txb<0.4 );
-    % aux_x = rms( behData.Data(txb<0, :, bpi) );
-    % aux_y = rms( behData.Data(txb>0.03 & txb<0.4, :, bpi) );
-    line( aux_x, aux_y, "LineStyle", "none" ); title( behNames(bpi) );
-    set( get(ax, "XAxis"), "Scale", "log"); set( get(ax, "YAxis"), "Scale", "log")
-    line( xlim(ax), xlim(ax), "LineStyle", "--", "Color", 0.45*ones(1,3) );
-    xticklabels(ax, xticks(ax) ); yticklabels( ax, yticks(ax) );
-    text( aux_x, aux_y, num2str( (1:Nt)' ), ...
-        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle')
-    set(ax, "Box", "off", "Color", "none", "XGrid", "on", "YGrid", "on")
+
 end
-clearvars aux_*
+clearvars aux_* ax
 %%
 line( zeros(Nt,1), 1:Nt, w_mu, "Marker", "x", ...
     "LineWidth", 2, "Color", "k", "LineStyle", "none")
