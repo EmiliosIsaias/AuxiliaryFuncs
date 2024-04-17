@@ -731,13 +731,14 @@ funcs = {@(x) x, @(x) diff(x, 1, 1) };
 app = [ repmat("", 1,4); repmat( " diff", 1, 4) ];
 
 Nfgs = numel(funcs);
-figs = gobjects(Nfgs, 1);
+figs = gobjects(Nfgs, 2);
 for cf = 1:Nfgs
-    figs(cf) = figure("Color", "w");
+    figs(cf, 1) = figure( "Color", "w" );
+    figs(cf, 2) = figure( "Color", "w" );
     for bpi = 1:size( behData.Data, 3 )
 
         ax = subplot( 2, 2, bpi, "Box", "off", ...
-            "Color", "none", "Parent", figs(cf) );
+            "Color", "none", "Parent", figs(cf, 1) );
         if bpi == 1
             ylabel(ax, 'Evoked')
         elseif bpi == 4
@@ -759,6 +760,12 @@ for cf = 1:Nfgs
             'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle')
         set(ax, "Box", "off", "Color", "none", "XGrid", "on", ...
             "YGrid", "on")
+        Dyx = [aux_x(:), aux_y(:)] * n;
+        
+        ax = subplot(2, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
+        boxchart(ax, pairedStimFlags * (1:Nccond)', Dyx, "Notch", "on" )
+        title(ax, behNames(bpi) + app(cf,bpi) );
+        set( ax, axOpts{:} )
 
     end
 
