@@ -652,6 +652,28 @@ countFigName = sprintf("Count distributions P%s", ...
 saveFigure(behAreaFig, fullfile(behFig_path, biFN), true);
 saveFigure(countFig, fullfile(behFig_path, countFigName), true);
 
+% Normalised amplitud by absolute maximum
+
+figure("Color", "w");
+for bpi = 1:size( behData.Data, 3 )
+    ax = subplot(2,2,bpi);
+    if bpi == 2
+        auxStack = -squeeze( behData.Data(:,:,bpi) )';
+    else
+        auxStack = squeeze( behData.Data(:,:,bpi) )';
+    end
+    auxStack = ( auxStack - median( auxStack, 2) ) ./ max( abs( auxStack ) );
+    imagesc( txb*1e3, [],  auxStack ); xline(0, 'k');
+    xline( [20, 120], 'LineWidth', 1, 'Color', 'b')
+    xlabel('Time [ms]'); ylabel('Trials'); title( behNames(bpi) )
+    set( ax, "Box", "off", "Color", "none" )
+end
+clearvars auxStack
+cb = colorbar(ax, "Box", "off", "Location", "south");
+cb.Ticks = [-1, 1] * 0.85; cb.Label.String = "\leftarrow Direction \rightarrow";
+cb.TickLabels = {'Backward', 'Forward'};
+linkaxes( findobj(gcf, "Type", "Axes"), "xy")
+
 %% Behaviour Window testing
 respWin = sscanf( aInfo.Evoked, "R%f - %f ms")' * 1e-3;
 % respWin = [30, 400]*1e-3;
@@ -700,27 +722,7 @@ end
 x = ((1:sum(evokFlag)) - 1 ) /sum(evokFlag);
 plot( txb( evokFlag ), gampdf(x*10, 3, 1) )
 
-%% Normalised amplitud by absolute maximum
 
-figure("Color", "w");
-for bpi = 1:size( behData.Data, 3 )
-    ax = subplot(2,2,bpi);
-    if bpi == 2
-        auxStack = -squeeze( behData.Data(:,:,bpi) )';
-    else
-        auxStack = squeeze( behData.Data(:,:,bpi) )';
-    end
-    auxStack = ( auxStack - median( auxStack, 2) ) ./ max( abs( auxStack ) );
-    imagesc( txb*1e3, [],  auxStack ); xline(0, 'k');
-    xline( [20, 120], 'LineWidth', 1, 'Color', 'b')
-    xlabel('Time [ms]'); ylabel('Trials'); title( behNames(bpi) )
-    set( ax, "Box", "off", "Color", "none" )
-end
-clearvars auxStack
-cb = colorbar(ax, "Box", "off", "Location", "south");
-cb.Ticks = [-1, 1] * 0.85; cb.Label.String = "\leftarrow Direction \rightarrow";
-cb.TickLabels = {'Backward', 'Forward'};
-linkaxes( findobj(gcf, "Type", "Axes"), "xy")
 
 %% RMS
 
