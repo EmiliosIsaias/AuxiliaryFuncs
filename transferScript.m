@@ -548,6 +548,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch14_ephys.MC\ChR2\WTk12\230616_C+F_1997";
 expandPath = @(x) fullfile( x.folder, x.name);
+m = 1e-3;
 
 eph_path = dir( fullfile( exp_path, "ephys_*" ) );
 beh_path = fullfile( exp_path, "Behaviour" );
@@ -562,7 +563,9 @@ elseif exist( beh_path, "dir" )
 else
     beh_path = exp_path;
     af_path = expandPath( dir( fullfile( beh_path, "*analysis.mat") ) );
+    figure_path = fullfile( beh_path, "Figures" );
 end
+
 [~, af_name] = fileparts( af_path );
 expName = extractBefore(af_name, "analysis");
 load( af_path, "Conditions", "fs")
@@ -592,8 +595,8 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "ConditionsNames", cellstr(consCondNames), ...
     "PairedFlags", pairedStimFlags, ...
     "FigureDirectory", figure_path, ...
-    "ResponseWindow", [30, 350] * 1e-3, ...
-    "ViewingWindow", [-0.3, 0.4]);
+    "ResponseWindow", [30, 350] * m, ...
+    "ViewingWindow", [-350, 400] * m);
 
 vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
 mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1]*(1/(2 * fr) ), 1);
