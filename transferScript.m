@@ -576,8 +576,12 @@ axOpts = {'Box','off','Color','none'};
 lgOpts = cat( 2, axOpts{1:2}, {'Location','best'} );
 
 open Conditions
-
-load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
+ldFlag = false;
+try
+    load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
+catch
+    ldFlag = true;
+end
 
 %% Run independently
 % User input!!
@@ -598,6 +602,11 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "FigureDirectory", figure_path, ...
     "ResponseWindow", [30, 350] * m, ...
     "ViewingWindow", [-400, 500] * m);
+
+if ~exist( "fr", "var") && ldFlag
+    load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
+    ldFlag = false;
+end
 
 vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
 mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1] * (1/(2 * fr) ), 1);
