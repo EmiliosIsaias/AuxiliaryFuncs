@@ -550,7 +550,7 @@ exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch2_ephys\MC\GAD17
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
-eph_path = dir( fullfile( exp_path, "ephys_*" ) );
+eph_path = dir( fullfile( exp_path, "ephys*" ) );
 beh_path = fullfile( exp_path, "Behaviour" );
 if ~isempty( eph_path )
     eph_path = expandPath( eph_path );
