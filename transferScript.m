@@ -546,7 +546,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 %% Analysing behaviour alone
 
-exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch2_ephys\MC\GAD17\211203_C";
+exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch1_ephys\MC\GAD49_Mx\210629_C";
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
@@ -681,7 +681,6 @@ respWin = sscanf( aInfo.Evoked, "R%f - %f ms")' * 1e-3;
 sponWin = -flip(respWin);
 [Nb, Nt, Ns] = size( behData.Data );
 n = getHesseLineForm([1,0]);
-
 
 % Spontaneous window
 sponFlag = txb > sponWin;
