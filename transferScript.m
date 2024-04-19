@@ -768,7 +768,7 @@ ln1 = log10( 1:sum(evokFlag) );
 ln2 = sum( evokFlag ):-1:1;
 evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
 rwi = 1;
-behData.ZValues
+
 for cb = 1:size( behData.Data, 3 )
     w_smu = sponWeight*behData.Data(sponFlag,:,cb);
     if cb == 1
@@ -790,6 +790,25 @@ for cb = 1:size( behData.Data, 3 )
     title( behNames(cb) )
     rwi = 1;
 end
+
+%% Z-maximum value
+Na = sum(behData.Conditions);
+normDist = makedist("Normal", "mu", 0, "sigma", 1 );
+z_mvpt = arrayfun(@(x) cat(1, x.Results.Z_Amplitude)', behRes, fnOpts{:});
+z_mvpt = cat(1, z_mvpt{:});
+ylmts = [min( z_mvpt(:) ), max( z_mvpt(:) )] * 1.1;
+zax = ylmts(1):range(z_mvpt(:))/100:ylmts(2);
+figure("Color", "w"); %imagesc( [1,4], ylmts, pdf( normDist, zax )', ...
+    %"AlphaData", 1/3);
+hold on; colormap(-gray + 1); xlim([0,5])
+bxObj = boxchart( reshape( ones(sum( Na ), 1) * (1:4), [], 1), ...
+    reshape( z_mvpt, [], 1), "Notch", "on", ...
+    "GroupByColor", repmat( behData.Conditions, 4, 1 ) * (1:Nccond)', ...
+    "JitterOutliers", "on", "MarkerStyle", "." );
+xticks(1:4); xticklabels(behNames); 
+set( gca, "Box", "off", "Color", "none" );
+legend(bxObj, consCondNames, "Color", "none", "Box", "off", "Location", "best")
+title("Z-score of maximum per trial"); ylabel("Z-Max")
 %% Gamma distribution
 x = ((1:sum(evokFlag)) - 1 ) /sum(evokFlag);
 plot( txb( evokFlag ), gampdf(x*10, 3, 1) )
@@ -820,3 +839,11 @@ Texp_ephys = Ns_intan ./ fs_ephys;
 Texp_vid = cellfun(@(x) diff( x([1,end]) ), vidTx );
 
 delta_tiv = Texp_ephys - Texp_vid;
+
+%% Find thresholds for a z-distribution
+alph = 0:0.01:0.99;
+signTh = arrayfun(@(z) ...
+    fminbnd(@(y) ...
+    norm( integral(@(x) normDist.pdf(x), -y, y) - z, 2 ), 0, 5 ), ...
+    alph );
+figure; plot( alph, signTh )
