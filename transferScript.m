@@ -759,16 +759,20 @@ ln1 = log10( 1:sum(evokFlag) );
 
 ln2 = sum( evokFlag ):-1:1;
 evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
-
+rwi = 1;
+behData.ZValues
 for cb = 1:size( behData.Data, 3 )
     w_smu = sponWeight*behData.Data(sponFlag,:,cb);
-    w_emu = evokWeight*behData.Data(evokFlag, :, cb);
+    if cb == 1
+        rwi = 2;        
+    end
+    w_emu = evokWeight*behData.Data( evokFlags(:,rwi), :, cb );
     X = ones( Nt, 1) * txb';
     Y = (1:Nt)' * ones( 1, Nb);
     figure; surf( X, Y, squeeze( behData.Data(:, :, cb) )', ...
         squeeze( behData.Data(:, :, 1) )', "EdgeColor", "interp", ...
-        "FaceColor", "none", "EdgeAlpha", 1/3)
-    hold on; line(zeros(Nt,2)+[-0.125,0.03] , 1:Nt, ...
+        "FaceColor", "none", "EdgeAlpha", 1/3); colormap(gray)
+    hold on; line( zeros(Nt,2) + [-0.125,0.03] , 1:Nt, ...
         [w_smu(:), w_emu(:)], ...
         "Marker", "x", "LineStyle", "none", "LineWidth", 2)
     title( behNames(cb) )
@@ -776,7 +780,7 @@ for cb = 1:size( behData.Data, 3 )
     colormap(-roma+1); colorbar();
     line( xlim, xlim, 'LineStyle', '--', 'Color', 0.45*ones(1,3))
     title( behNames(cb) )
-
+    rwi = 1;
 end
 %% Gamma distribution
 x = ((1:sum(evokFlag)) - 1 ) /sum(evokFlag);
