@@ -546,7 +546,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 %% Analysing behaviour alone
 
-exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch1_ephys\MC\GAD49_Mx\210629_C";
+exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch1_ephys\BC\GAD48_S1\210727_F";
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
@@ -629,7 +629,6 @@ BIscale = arrayfun(@(cc) BIscaleMat(pairedStimFlags(:,cc), cc), 1:Nccond, ...
 [hg, hg_bin] = cellfun(@(c) histcounts(c, hstOpts{:}), ...
     BIscale, fnOpts{:});
 hg = cat(1, hg{:}); hg_bin = cat(1, hg_bin{:});
-
 
 % [p_amp, h_amp] = ranksum(cat(1, zamp{1,:}), cat(1, zamp{2,:}));
 
