@@ -546,7 +546,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 %% Analysing behaviour alone
 
-exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch14_ephys.MC\ChR2\WTk12\230616_C+F_1997";
+exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch2_ephys\MC\GAD17\211203_C";
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
@@ -570,17 +570,18 @@ end
 expName = extractBefore(af_name, "analysis");
 load( af_path, "Conditions", "fs")
 
-load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
-
 fnOpts = {'UniformOutput', false};
 hstOpts = {'BinMethod', 'integers', 'BinLimits', [-0.5,4.5]};
 axOpts = {'Box','off','Color','none'};
-lgOpts = cat(2, axOpts{1:2}, {'Location','best'});
+lgOpts = cat( 2, axOpts{1:2}, {'Location','best'} );
 
 open Conditions
+
+load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
+
 %% Run independently
 % User input!!
-consCond = 3:5;
+consCond = 3:4;
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
@@ -596,10 +597,10 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "PairedFlags", pairedStimFlags, ...
     "FigureDirectory", figure_path, ...
     "ResponseWindow", [30, 350] * m, ...
-    "ViewingWindow", [-350, 400] * m);
+    "ViewingWindow", [-400, 500] * m);
 
 vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
-mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1]*(1/(2 * fr) ), 1);
+mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1] * (1/(2 * fr) ), 1);
 txb = ( (1:size( behData.Data, 1))'.^[1,0] ) * mdlt;
 behNames = string( { behRes(1).Results.BehSigName } );
  
@@ -652,7 +653,7 @@ countFigName = sprintf("Count distributions P%s", ...
 saveFigure(behAreaFig, fullfile(behFig_path, biFN), true);
 saveFigure(countFig, fullfile(behFig_path, countFigName), true);
 
-% Normalised amplitud by absolute maximum
+%% Normalised amplitud by absolute maximum
 
 figure("Color", "w");
 for bpi = 1:size( behData.Data, 3 )
@@ -674,22 +675,82 @@ cb.Ticks = [-1, 1] * 0.85; cb.Label.String = "\leftarrow Direction \rightarrow";
 cb.TickLabels = {'Backward', 'Forward'};
 linkaxes( findobj(gcf, "Type", "Axes"), "xy")
 
-%% Behaviour Window testing
+%% RMS
 respWin = sscanf( aInfo.Evoked, "R%f - %f ms")' * 1e-3;
 % respWin = [30, 400]*1e-3;
 sponWin = -flip(respWin);
 [Nb, Nt, Ns] = size( behData.Data );
 n = getHesseLineForm([1,0]);
 
-% Linearly increasing weights for spontaneous
 
+% Spontaneous window
 sponFlag = txb > sponWin;
 sponFlag = xor( sponFlag(:,1), sponFlag(:,2) );
 
-% Quickly rising and slowly decaying
+% Responsive window
 evokFlag = txb > respWin;
 evokFlag = xor( evokFlag(:,1), evokFlag(:,2) );
 
+respWin_i = [0, diff( respWin )] + 0.12; 
+if respWin_i(2) > vwin(2) 
+    respWin_i(2) = vwin(2);
+end
+evokFlag_i = txb > respWin_i;
+evokFlag_i = xor( evokFlag_i(:,1), evokFlag_i(:,2) );
+
+evokFlags = [evokFlag, evokFlag_i];
+
+myRMS = @(x) vecnorm(x, 2, 1) ./ size( x, 1 );
+funcs = {@(x) x, @(x) diff(x, 1, 1) };
+app = [ repmat("", 1,4); repmat( " diff", 1, 4) ];
+
+Nfgs = numel(funcs);
+figs = gobjects(Nfgs, 2);
+for cf = 1:Nfgs
+    figs(cf, 1) = figure( "Color", "w" );
+    figs(cf, 2) = figure( "Color", "w" );
+    for bpi = 1:size( behData.Data, 3 )
+        rwSub = 1;
+        ax = subplot( 2, 2, bpi, "Box", "off", ...
+            "Color", "none", "Parent", figs(cf, 1) );
+        if bpi == 1
+            ylabel(ax, 'Evoked')
+            rwSub = 2;
+        elseif bpi == 4
+            xlabel(ax, 'Spontaneous_{RMS}')
+        end
+        
+        aux_x = myRMS( funcs{cf}(behData.Data( sponFlag, :, bpi ) ) );
+        aux_y = ...
+            myRMS( funcs{cf}(behData.Data( evokFlags(:, rwSub), :, bpi ) ) );
+        
+        line(ax, aux_x, aux_y, "LineStyle", "none" ); 
+        title(ax, behNames(bpi) + app(cf,bpi) );
+        set( get(ax, "XAxis"), "Scale", "log"); 
+        set( get(ax, "YAxis"), "Scale", "log")
+        line(ax, xlim(ax), xlim(ax), "LineStyle", "--", ...
+            "Color", 0.45*ones(1,3) );
+        xticklabels( ax, xticks(ax) ); 
+        yticklabels( ax, yticks(ax) );
+        text( ax, aux_x, aux_y, num2str( (1:Nt)' ), ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle')
+        set(ax, "Box", "off", "Color", "none", "XGrid", "on", ...
+            "YGrid", "on")
+        Dyx = [aux_x(:), aux_y(:)] * n;
+        
+        ax = subplot(2, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
+        % boxchart(ax, pairedStimFlags * (1:Nccond)', Dyx, "Notch", "on" )
+        boxchart( ax, pairedStimFlags * (1:Nccond)', Dyx, ...
+            "Notch", "on" )
+        title(ax, behNames(bpi) + app(cf,bpi) );
+        set( ax, axOpts{:} ); % set( ax.YAxis, "Scale", "log" )
+        
+    end
+    
+end
+clearvars aux_* ax
+
+%%
 sponWeight = (1:sum(sponFlag))/sum(1:sum(sponFlag));
 
 % ln1 = 1:(round( sum( evokFlag )/3 ) );
@@ -698,7 +759,6 @@ ln1 = log10( 1:sum(evokFlag) );
 
 ln2 = sum( evokFlag ):-1:1;
 evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
-%%
 
 for cb = 1:size( behData.Data, 3 )
     w_smu = sponWeight*behData.Data(sponFlag,:,cb);
@@ -724,53 +784,27 @@ plot( txb( evokFlag ), gampdf(x*10, 3, 1) )
 
 
 
-%% RMS
 
-myRMS = @(x) vecnorm(x, 2, 1) ./ size( x, 1 );
-funcs = {@(x) x, @(x) diff(x, 1, 1) };
-app = [ repmat("", 1,4); repmat( " diff", 1, 4) ];
-
-Nfgs = numel(funcs);
-figs = gobjects(Nfgs, 2);
-for cf = 1:Nfgs
-    figs(cf, 1) = figure( "Color", "w" );
-    figs(cf, 2) = figure( "Color", "w" );
-    for bpi = 1:size( behData.Data, 3 )
-
-        ax = subplot( 2, 2, bpi, "Box", "off", ...
-            "Color", "none", "Parent", figs(cf, 1) );
-        if bpi == 1
-            ylabel(ax, 'Evoked')
-        elseif bpi == 4
-            xlabel(ax, 'Spontaneous_{RMS}')
-        end
-
-        aux_x = myRMS( funcs{cf}(behData.Data( sponFlag, :, bpi ) ) );
-        aux_y = myRMS( funcs{cf}(behData.Data( evokFlag, :, bpi ) ) );
-
-        line(ax, aux_x, aux_y, "LineStyle", "none" ); 
-        title(ax, behNames(bpi) + app(cf,bpi) );
-        set( get(ax, "XAxis"), "Scale", "log"); 
-        set( get(ax, "YAxis"), "Scale", "log")
-        line(ax, xlim(ax), xlim(ax), "LineStyle", "--", ...
-            "Color", 0.45*ones(1,3) );
-        xticklabels( ax, xticks(ax) ); 
-        yticklabels( ax, yticks(ax) );
-        text( ax, aux_x, aux_y, num2str( (1:Nt)' ), ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle')
-        set(ax, "Box", "off", "Color", "none", "XGrid", "on", ...
-            "YGrid", "on")
-        Dyx = [aux_x(:), aux_y(:)] * n;
-        
-        ax = subplot(2, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
-        boxchart(ax, pairedStimFlags * (1:Nccond)', Dyx, "Notch", "on" )
-        title(ax, behNames(bpi) + app(cf,bpi) );
-        set( ax, axOpts{:} )
-
-    end
-
-end
-clearvars aux_* ax
 %%
-line( zeros(Nt,1), 1:Nt, w_mu, "Marker", "x", ...
-    "LineWidth", 2, "Color", "k", "LineStyle", "none")
+video_paths = dir( fullfile( beh_path, "roller*.avi" ) );
+vidObj = arrayfun(@(x) VideoReader( expandPath( x ) ), video_paths, fnOpts{:} );
+
+readCSV = @(x) readtable(x, "Delimiter", ",");
+fid_paths = dir( fullfile( beh_path, "FrameID*.csv") );
+vidTx = arrayfun(@(x) readCSV( expandPath( x ) ), fid_paths, fnOpts{:} );
+vidTx = cellfun(@(x) x.Var2/1e9, vidTx, fnOpts{:} ); % nanoseconds
+
+dlcFiles = dir( fullfile( beh_path, "roller*filtered.csv" ) );
+fid_paths = dir( fullfile( beh_path, "FrameID*.csv" ) );
+
+exp_path = getParentDir( beh_path, 1);
+tf_paths = dir( fullfile( exp_path, "**", "TriggerSignals*.bin") );
+fsf_path = dir( fullfile( exp_path, "**", "*_sampling_frequency.mat") );
+
+fs_ephys = load( expandPath( fsf_path ), "fs" ); fs_ephys = fs_ephys.fs;
+Ns_intan = [tf_paths.bytes]' ./ 4; % 2 signals x 2 bytes per sample.
+Texp_ephys = Ns_intan ./ fs_ephys;
+
+Texp_vid = cellfun(@(x) diff( x([1,end]) ), vidTx );
+
+delta_tiv = Texp_ephys - Texp_vid;
