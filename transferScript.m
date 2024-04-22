@@ -546,7 +546,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 %% Analysing behaviour alone
 
-exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch1_ephys\BC\GAD48_S1\210727_F";
+exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\iRNs\GADi39\240206_C+F_2399";
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
@@ -585,7 +585,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = 3:4;
+consCond = 3:5;
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
