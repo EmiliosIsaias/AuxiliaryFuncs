@@ -1,9 +1,11 @@
 
-home_path = "/gpfs/bwfor/home/hd/hd_hd/hd_bf154/";
-addpath( arrayfun(@(x) fullfile( home_path, x), ...
-    ["NeuroNetzAnalysis", "AuxiliaryFuncs", "Scripts"]) )
-
 fnOpts = {'UniformOutput', false};
+
+home_path = '/gpfs/bwfor/home/hd/hd_hd/hd_bf154/';
+repo_paths = cellfun(@(x) char( fullfile( home_path, x) ), ...
+    {'NeuroNetzAnalysis', 'AuxiliaryFuncs', 'Scripts'},  fnOpts{:} );
+addpath( repo_paths{:} )
+%%
 expandPath = @(x) fullfile( x.folder, x.name);
 exp_path = getParentDir( pwd, 1);
 m = 1e-3;
