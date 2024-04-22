@@ -839,6 +839,9 @@ Texp_vid = cellfun(@(x) diff( x([1,end]) ), vidTx );
 
 delta_tiv = Texp_ephys - Texp_vid;
 
+%%
+dlcTables = arrayfun(@(x) readDLCData(expandPath(x)), dlcFiles, fnOpts{:} );
+
 %% Find thresholds for a z-distribution
 alph = 0:0.01:0.99;
 signTh = arrayfun(@(z) ...
