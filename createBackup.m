@@ -1,5 +1,5 @@
 expandName = @(x) string(fullfile(x.folder, x.name));
-dataDir = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch13_beh";
+dataDir = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch4_beh";
 % All mat files, skipping the arduino files - no video dependence
 resultFiles = dir(fullfile(dataDir, "*\*\*\*.mat"));
 resultFiles(arrayfun(@(s) contains(s.name, 'arduino', ...
