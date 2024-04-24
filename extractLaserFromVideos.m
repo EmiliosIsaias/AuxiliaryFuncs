@@ -1,10 +1,23 @@
-function [lsrInt] = extractLaserFromVideos( beh_path ) 
+function [lsrInt] = extractLaserFromVideos( beh_path )
 
 fnOpts = {'UniformOutput', false};
 expandPath = @(x) fullfile( x.folder, x.name );
 pathHere = @(x) fullfile( beh_path, x );
 
 fprintf( 1, "Working directory: %s\n", beh_path )
+
+if exist(pathHere( "VideoLaserIntensity.mat" ), "file")
+    fprintf(1, "Laser signal file exists!\n")
+    fprintf(1, "Loading... ")
+    try
+        load( pathHere( "VideoLaserIntensity.mat" ) )
+        fprintf(1, "Ready\n")
+    catch
+        fprintf(1, "Error while loading!\n")
+    end
+else
+    fprintf(1, "Computing laser signals from video(s)... \n")
+end
 
 exp_path = getParentDir( beh_path, 1);
 
