@@ -1,7 +1,8 @@
 function [lsrInt] = extractLaserFromVideos( beh_path ) 
 
 fnOpts = {'UniformOutput', false};
-expandPath = @(x) fullfile( x.folder, x.name);
+expandPath = @(x) fullfile( x.folder, x.name );
+pathHere = @(x) fullfile( beh_path, x );
 
 fprintf( 1, "Working directory: %s\n", beh_path )
 
@@ -9,20 +10,19 @@ exp_path = getParentDir( beh_path, 1);
 
 m = 1e-3;
 
-video_paths = dir( fullfile( beh_path, "roller*.avi" ) );
+video_paths = dir( pathHere( "roller*.avi" ) );
 vidObj = arrayfun(@(x) VideoReader( expandPath( x ) ), ...
     video_paths, fnOpts{:} );
 
 readCSV = @(x) readtable(x, "Delimiter", ",");  
-fid_paths = dir( fullfile( beh_path, "FrameID*.csv" ) );
+fid_paths = dir( pathHere( "FrameID*.csv" ) );
 
 vidTx = arrayfun(@(x) readCSV( expandPath( x ) ), fid_paths, fnOpts{:} );
 vidTx = cellfun(@(x) x.Var2 ./ 1e9, vidTx, fnOpts{:} ); % nanoseconds
 
-dlc_paths = dir( fullfile( beh_path, "roller*filtered.csv" ) );
-fid_paths = dir( fullfile( beh_path, "FrameID*.csv" ) );
+dlc_paths = dir( pathHere( "roller*filtered.csv" ) );
 
-tf_paths = dir( fullfile( beh_path, "TriggerSignals*.bin") );
+tf_paths = dir( pathHere( "TriggerSignals*.bin") );
 fsf_path = dir( fullfile( exp_path, "ephys*", "*_sampling_frequency.mat") );
 
 if isempty( tf_paths )
@@ -30,7 +30,7 @@ if isempty( tf_paths )
 end
 
 if isempty( fsf_path )
-    fsf_path = dir( fullfile( beh_path, "*_sampling_frequency.mat") );
+    fsf_path = dir( pathHere( "*_sampling_frequency.mat") );
 end
 
 fprintf(1, "Sampling frequency file: %s\n", fsf_path.name)
@@ -49,7 +49,7 @@ delta_tiv = Texp_ephys - Texp_vid;
 lsrInt = cellfun(@(v,t) getLaserIntensitySignalFromVideo(v, t), ...
     vidObj(:), dlcTables(:), fnOpts{:} );
 
-save( fullfile( beh_path, "VideoLaserIntensity.mat" ), ...
+save( pathHere( "VideoLaserIntensity.mat" ), ...
     "lsrInt", "delta_tiv", "Texp_vid", "Texp_ephys")
 
 end
