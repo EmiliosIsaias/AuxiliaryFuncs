@@ -546,7 +546,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 %% Analysing behaviour alone
 
-exp_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch19_ephys_BCiRNs\iRNs\GAD46\240423_C+F_2150";
+exp_path = fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch13_beh\PTX\WT2\230324_PiTX");
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
@@ -585,7 +585,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = 3:5;
+consCond = 2:3;
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
@@ -755,7 +755,7 @@ for cf = 1:Nfgs
     end
     
 end
-clearvars aux_* ax
+clearvars aux_* ax figs
 
 %%
 sponWeight = (1:sum(sponFlag))/sum(1:sum(sponFlag));
