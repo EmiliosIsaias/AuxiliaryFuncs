@@ -17,6 +17,7 @@ if exist(pathHere( "VideoLaserIntensity.mat" ), "file")
     catch
         fprintf(1, "Error while loading!\n")
     end
+    return
 else
     fprintf(1, "Computing laser signals from video(s)... \n")
 end
