@@ -687,6 +687,8 @@ cb.TickLabels = {'Backward', 'Forward'};
 linkaxes( findobj(gcf, "Type", "Axes"), "xy")
 
 %% RMS
+my_zscore = @(x, m, s) ( x - m ) ./ ( s .* (s~=0) + 1 .* (s==0) );
+
 respWin = sscanf( aInfo.Evoked, "R%f - %f ms")' * 1e-3;
 % respWin = [30, 400]*1e-3;
 sponWin = -flip(respWin);
@@ -698,17 +700,19 @@ sponFlag = txb > sponWin;
 sponFlag = xor( sponFlag(:,1), sponFlag(:,2) );
 
 % Responsive window
-evokFlag = txb > respWin;
-evokFlag = xor( evokFlag(:,1), evokFlag(:,2) );
-
-respWin_i = [0, diff( respWin )] + 0.12; 
-if respWin_i(2) > vwin(2) 
-    respWin_i(2) = vwin(2);
+respWin_aux = respWin;
+if respWin(1) < 0.12
+    respWin_aux = respWin + 0.1;
 end
-evokFlag_i = txb > respWin_i;
-evokFlag_i = xor( evokFlag_i(:,1), evokFlag_i(:,2) );
 
-evokFlags = [evokFlag, evokFlag_i];
+if respWin_aux(2) > vwin(2)
+    respWin_aux(2) = vwin(2);
+end
+respWin = [respWin_aux; repmat( respWin, 3, 1)];
+
+evokFlags = arrayfun(@(x) txb > respWin(x,:), 1:4, fnOpts{:} );
+evokFlags = cellfun(@(x) xor(x(:,1), x(:,2) ), evokFlags, fnOpts{:} );
+evokFlags = cat( 2, evokFlags{:} );
 
 myRMS = @(x) vecnorm(x, 2, 1) ./ size( x, 1 );
 funcs = {@(x) x, @(x) diff(x, 1, 1) };
