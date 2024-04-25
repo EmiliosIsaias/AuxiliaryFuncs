@@ -808,12 +808,40 @@ xticks(1:4); xticklabels(behNames);
 set( gca, "Box", "off", "Color", "none" );
 legend(bxObj, consCondNames, "Color", "none", "Box", "off", "Location", "best")
 title("Z-score of maximum per trial"); ylabel("Z-Max")
-%% Gamma distribution
-x = ((1:sum(evokFlag)) - 1 ) /sum(evokFlag);
-plot( txb( evokFlag ), gampdf(x*10, 3, 1) )
+%% Find thresholds for a z-distribution
+alph = 0:0.01:1;
+sigmaTh = arrayfun(@(z) ...
+    fminbnd(@(y) ...
+    norm( integral(@(x) normDist.pdf(x), -y, y) - z, 2 ), 0, 5 ), ...
+    alph );
+% figure; plot( alph, sigmaTh )
 
+z_flags = z_mvpt > reshape( -[sigmaTh, inf], 1, 1, [] ) & ...
+    z_mvpt < reshape( [sigmaTh, inf], 1, 1, [] );
 
+z_th_curves = arrayfun(@(c) ...
+    squeeze( sum( z_flags( pairedStimFlags(:,c), :, :) ) )./Na(c), ...
+    1:Nccond, fnOpts{:} );
 
+z_auc = cellfun(@(z) sum( z, 2 )./ (numel( sigmaTh ) + 1), ...
+    z_th_curves, fnOpts{:} );
+
+figure("Color", "w");
+for cbp = 1:4
+    ax = subplot( 2, 2, cbp, "NextPlot", "add" );
+    arrayfun(@(c) line( ax, [sigmaTh, sigmaTh(end)+1] , ...
+        z_th_curves{c}(cbp,:)' ), 1:Nccond)
+    title(ax, behNames(cbp));
+    if cbp==1
+        ylabel(ax, 'Trial proportion')
+    elseif cbp==4
+        xlabel(ax, '\Theta_Z')
+    end
+    set(ax, axOpts{:})
+    legend( arrayfun(@(c) ...
+        join( [consCondNames(c), string( z_auc{c}(cbp) )]), 1:Nccond ), ...
+        lgOpts{:})
+end
 
 %%
 video_paths = dir( fullfile( beh_path, "roller*.avi" ) );
@@ -842,10 +870,3 @@ delta_tiv = Texp_ephys - Texp_vid;
 %%
 dlcTables = arrayfun(@(x) readDLCData(expandPath(x)), dlcFiles, fnOpts{:} );
 
-%% Find thresholds for a z-distribution
-alph = 0:0.01:0.99;
-signTh = arrayfun(@(z) ...
-    fminbnd(@(y) ...
-    norm( integral(@(x) normDist.pdf(x), -y, y) - z, 2 ), 0, 5 ), ...
-    alph );
-figure; plot( alph, signTh )
