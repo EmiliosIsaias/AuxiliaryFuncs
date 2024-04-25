@@ -24,8 +24,6 @@ end
 
 exp_path = getParentDir( beh_path, 1);
 
-m = 1e-3;
-
 video_paths = dir( pathHere( "roller*.avi" ) );
 vidObj = arrayfun(@(x) VideoReader( expandPath( x ) ), ...
     video_paths, fnOpts{:} );
