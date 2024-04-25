@@ -717,6 +717,7 @@ for cf = 1:Nfgs
     figs(cf, 1) = figure( "Color", "w" );
     figs(cf, 2) = figure( "Color", "w" );
     for bpi = 1:size( behData.Data, 3 )
+
         rwSub = 1;
         ax = subplot( 2, 2, bpi, "Box", "off", ...
             "Color", "none", "Parent", figs(cf, 1) );
@@ -728,8 +729,8 @@ for cf = 1:Nfgs
         end
         
         aux_x = myRMS( funcs{cf}(behData.Data( sponFlag, :, bpi ) ) );
-        aux_y = ...
-            myRMS( funcs{cf}(behData.Data( evokFlags(:, rwSub), :, bpi ) ) );
+        aux_y = myRMS( funcs{cf}( ...
+            behData.Data( evokFlags(:, rwSub), :, bpi ) ) );
         
         line(ax, aux_x, aux_y, "LineStyle", "none" ); 
         title(ax, join( [behNames(bpi), app(cf,bpi)] ) );
