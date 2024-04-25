@@ -1,8 +1,10 @@
-function [lsrInt] = extractLaserFromVideos( beh_path )
+function [lsrInt, delta_tiv, Texp_vid, Texp_ephys] = ...
+    extractLaserFromVideos( beh_path )
 
 fnOpts = {'UniformOutput', false};
 expandPath = @(x) fullfile( x.folder, x.name );
 pathHere = @(x) fullfile( beh_path, x );
+varsInFile = {'lsrInt', 'delta_tiv', 'Texp_vid', 'Texp_ephys'};
 
 fprintf( 1, "Working directory: %s\n", beh_path )
 
@@ -10,7 +12,7 @@ if exist(pathHere( "VideoLaserIntensity.mat" ), "file")
     fprintf(1, "Laser signal file exists!\n")
     fprintf(1, "Loading... ")
     try
-        load( pathHere( "VideoLaserIntensity.mat" ) )
+        load( pathHere( "VideoLaserIntensity.mat" ) , varsInFile{:} )
         fprintf(1, "Ready\n")
     catch
         fprintf(1, "Error while loading!\n")
@@ -62,7 +64,6 @@ delta_tiv = Texp_ephys - Texp_vid;
 lsrInt = cellfun(@(v,t) getLaserIntensitySignalFromVideo(v, t), ...
     vidObj(:), dlcTables(:), fnOpts{:} );
 
-save( pathHere( "VideoLaserIntensity.mat" ), ...
-    "lsrInt", "delta_tiv", "Texp_vid", "Texp_ephys")
+save( pathHere( "VideoLaserIntensity.mat" ), varsInFile{:} )
 
 end
