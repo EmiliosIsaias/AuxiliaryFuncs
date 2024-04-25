@@ -709,7 +709,7 @@ evokFlags = [evokFlag, evokFlag_i];
 
 myRMS = @(x) vecnorm(x, 2, 1) ./ size( x, 1 );
 funcs = {@(x) x, @(x) diff(x, 1, 1) };
-app = [ repmat("", 1,4); repmat( " diff", 1, 4) ];
+app = [ repmat("", 1,4); repmat( "diff", 1, 4) ];
 
 Nfgs = numel(funcs);
 figs = gobjects(Nfgs, 2);
@@ -732,7 +732,7 @@ for cf = 1:Nfgs
             myRMS( funcs{cf}(behData.Data( evokFlags(:, rwSub), :, bpi ) ) );
         
         line(ax, aux_x, aux_y, "LineStyle", "none" ); 
-        title(ax, behNames(bpi) + app(cf,bpi) );
+        title(ax, join( [behNames(bpi), app(cf,bpi)] ) );
         set( get(ax, "XAxis"), "Scale", "log"); 
         set( get(ax, "YAxis"), "Scale", "log")
         line(ax, xlim(ax), xlim(ax), "LineStyle", "--", ...
@@ -744,16 +744,27 @@ for cf = 1:Nfgs
         set(ax, "Box", "off", "Color", "none", "XGrid", "on", ...
             "YGrid", "on")
         Dyx = [aux_x(:), aux_y(:)] * n;
+        [~, d_centre, d_scale] = zscore( double( Dyx(pairedStimFlags(:,1)) ) );
         
         ax = subplot(2, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
         % boxchart(ax, pairedStimFlags * (1:Nccond)', Dyx, "Notch", "on" )
         boxchart( ax, pairedStimFlags * (1:Nccond)', Dyx, ...
-            "Notch", "on" )
+            "Notch", "on", "JitterOutliers", "on", "MarkerStyle", "." )
+        yyaxis(ax, "right"); line( ax, pairedStimFlags * (1:Nccond)', ...
+            my_zscore(Dyx, d_centre, d_scale), "LineStyle", "none")
+        yyaxis(ax, "left"); yline(ax, d_centre, 'k' )
         title(ax, behNames(bpi) + app(cf,bpi) );
         set( ax, axOpts{:} ); % set( ax.YAxis, "Scale", "log" )
+        xticks(ax, 1:Nccond ); xticklabels( ax, behNames )
         
     end
-    
+    saveFigure( figs(cf, 1), fullfile(figure_path, ...
+            "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
+            join(["RMS", app(cf,1)]) ), true )
+
+    saveFigure( figs(cf, 2), fullfile(figure_path, ...
+            "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
+            join(["RMS", app(cf,2), "boxplots"]) ), true )
 end
 clearvars aux_* ax figs
 
