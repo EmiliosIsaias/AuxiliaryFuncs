@@ -10,13 +10,14 @@ from sklearn import linear_model, model_selection, metrics
 import matplotlib.pyplot as plt
 #import matplotlib.figure as Fig
 import numpy as np
-import scipy.stats as sts
+#import scipy.stats as sts
 from scipy import io
 import pathlib as pl
 
 data_path = pl.Path(r"C:\Users\neuro\seadrive_root\Emilio U\My Libraries\My Library\VPM-POm spatial correlation")
 # file_name = "vpm_pom_cluster_data_for_Emilio.mat"
-file_name = "vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
+# file_name = "vpm_pom_cluster_data_for_Emilio_Oct_23.mat"
+file_name = "vpm_pom_cluster_data_for_Emilio_Feb_24.mat"
 file_path = data_path.as_posix() + pl.os.sep + file_name
 data = io.loadmat(file_path)
 
@@ -104,7 +105,8 @@ def logReg(X, Yv, title_string, leg_string, test_size=0.25):
     return log_reg_model
 
 def normMax(a):
-    return a / np.reshape( np.max( a, axis=1), (np.shape(a)[0],1) )
+    return a / np.reshape( np.linalg.norm( a, ord=np.Inf, axis=1),
+                          ( np.shape(a)[0], 1 ) )
 
 # for cx, X in enumerate((np.concatenate((sts.zscore(puffH, ddof=1),
 #                     sts.zscore(touchH, ddof=1)), axis=1),
@@ -112,7 +114,6 @@ def normMax(a):
 #                         sts.zscore(touchH, ddof=1))):
 # for cx, X in enumerate((sts.zscore(np.concatenate((puffH, touchH), axis=1), ddof=1),
 #                         sts.zscore(puffH, ddof=1), sts.zscore(touchH, ddof=1))):
-
 
 for cx, X in enumerate( ( np.concatenate( 
         ( normMax(puffH), normMax(touchH) ), axis=1),
@@ -125,4 +126,4 @@ for cx, X in enumerate( ( np.concatenate(
         y_pred = lrm.predict(X)
         d2s = {"True_Labels":Yv, "Predicted_Lables":y_pred}
         io.savemat(data_path.as_posix() + pl.os.sep + 
-                   file_name.split('.')[0] + 'with_p+t_pred.mat', d2s)
+                    file_name.split('.')[0] + 'with_p+t_pred.mat', d2s)
