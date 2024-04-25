@@ -663,7 +663,7 @@ saveFigure(countFig, fullfile(behFig_path, countFigName), true);
 
 %% Normalised amplitud by absolute maximum
 
-figure("Color", "w");
+fig = figure("Color", "w");
 for bpi = 1:size( behData.Data, 3 )
     ax = subplot(2,2,bpi);
     if bpi == 2
@@ -677,6 +677,9 @@ for bpi = 1:size( behData.Data, 3 )
     xlabel('Time [ms]'); ylabel('Trials'); title( behNames(bpi) )
     set( ax, "Box", "off", "Color", "none" )
 end
+saveFigure(fig, fullfile(figure_path, ...
+    "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
+    "All trials all body parts normalised"), true)
 clearvars auxStack
 cb = colorbar(ax, "Box", "off", "Location", "south");
 cb.Ticks = [-1, 1] * 0.85; cb.Label.String = "\leftarrow Direction \rightarrow";
