@@ -47,7 +47,9 @@ if ~exist(foName,"file")
         frCount = frCount + bufferFrames;
     end
     sPx = smudMeanPx;
+    fprintf(1, "Saving %s... ", "VideoMovements" + string(dt) )
     save(foName, 'fr', 'sPx')
+    fprintf(1, "done!\n")
 else
     fprintf(1, 'Video movement file exists!\nNo file nor output created\n')
 end
