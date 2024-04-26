@@ -39,7 +39,7 @@ if ~exist(foName,"file")
         frames = cat(4, auxFrame, frames);
         deltaFrame = diff( frames(:, :, 1, :), 1, 4 ); 
         meanPx = squeeze( mean( deltaFrame, [1, 2] ) );
-        smudMeanPx( frCount + (1:(bufferFrames-1)) ) = ...
+        smudMeanPx( frCount + (1:numel(meanPx)) ) = ...
             movmedian( meanPx, 65 );
 
         % Auxiliary variables
