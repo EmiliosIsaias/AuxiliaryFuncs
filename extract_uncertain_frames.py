@@ -15,7 +15,6 @@ if os_name == 'Linux':
 else:
     path_base = 'Z:\\';
 
-
 config_path = pl.Path(path_base + 'Emilio/AwakenSC-EIC-2021-07-20/config.yaml')
 config_path = config_path.as_posix()
 
