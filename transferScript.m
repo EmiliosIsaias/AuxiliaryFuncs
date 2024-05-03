@@ -928,3 +928,4 @@ delta_tiv = Texp_ephys - Texp_vid;
 %%
 dlcTables = arrayfun(@(x) readDLCData(expandPath(x)), dlcFiles, fnOpts{:} );
 
+whisk_cols = cellfun(@(c) ~isempty(c), regexp( dlcTables{1}.Properties.VariableNames, '[lr]w\d' ) );
