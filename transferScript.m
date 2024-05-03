@@ -546,7 +546,8 @@ set( get( gca, "ZAxis"), "visible", "off")
 
 %% Analysing behaviour alone
 
-exp_path = fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch13_beh\PTX\WT2\230324_PiTX");
+exp_path = ...
+    fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\eOPN3\WT68\221205_mus_2000");
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
@@ -603,7 +604,7 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "ResponseWindow", [25, 350] * m, ...
     "ViewingWindow", [-450, 500] * m);
 
-if ~exist( "fr", "var") && ldFlag
+if ~exist( "fr", "var" ) && ldFlag
     load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
     ldFlag = false;
 end
@@ -612,7 +613,7 @@ vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
 mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1] * (1/(2 * fr) ), 1);
 txb = ( (1:size( behData.Data, 1))'.^[1,0] ) * mdlt;
 behNames = string( { behRes(1).Results.BehSigName } );
- 
+
 biFigPttrn = "BehIndex%s";
 biFigPttrn = sprintf(biFigPttrn, sprintf(" %s (%%.3f)", consCondNames));
 [pAreas, ~, behAreaFig] = createBehaviourIndex(behRes);
@@ -671,20 +672,22 @@ for bpi = 1:size( behData.Data, 3 )
     else
         auxStack = squeeze( behData.Data(:,:,bpi) )';
     end
-    auxStack = ( auxStack - median( auxStack, 2) ) ./ max( abs( auxStack ) );
+    auxStack = ( auxStack - median( auxStack, 2) );
+    auxStack = auxStack ./ max( abs( auxStack ), [], 1 );
     imagesc( txb*1e3, [],  auxStack ); xline(0, 'k');
     xline( [20, 120], 'LineWidth', 1, 'Color', 'b')
     xlabel('Time [ms]'); ylabel('Trials'); title( behNames(bpi) )
     set( ax, "Box", "off", "Color", "none" )
 end
-saveFigure(fig, fullfile(figure_path, ...
-    "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
-    "All trials all body parts normalised"), true)
-clearvars auxStack
-cb = colorbar(ax, "Box", "off", "Location", "south");
+cb = colorbar(ax, "Box", "off", "Location", "eastoutside");
 cb.Ticks = [-1, 1] * 0.85; cb.Label.String = "\leftarrow Direction \rightarrow";
 cb.TickLabels = {'Backward', 'Forward'};
 linkaxes( findobj(gcf, "Type", "Axes"), "xy")
+saveFigure(fig, fullfile(figure_path, ...
+    "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
+    "All trials all body parts normalised"), true, true)
+clearvars auxStack
+
 
 %% RMS
 my_zscore = @(x, m, s) ( x - m ) ./ ( s .* (s~=0) + 1 .* (s==0) );
@@ -714,100 +717,137 @@ evokFlags = arrayfun(@(x) txb > respWin(x,:), 1:4, fnOpts{:} );
 evokFlags = cellfun(@(x) xor(x(:,1), x(:,2) ), evokFlags, fnOpts{:} );
 evokFlags = cat( 2, evokFlags{:} );
 
-myRMS = @(x) vecnorm(x, 2, 1) ./ size( x, 1 );
+myRMS = @(x,l) vecnorm(x, l, 1);% ./ size( x, 1 );
 funcs = {@(x) x, @(x) diff(x, 1, 1) };
 app = [ repmat("", 1,4); repmat( "diff", 1, 4) ];
 
 Nfgs = numel(funcs);
 figs = gobjects(Nfgs, 2);
-for cf = 1:Nfgs
-    figs(cf, 1) = figure( "Color", "w" );
-    figs(cf, 2) = figure( "Color", "w" );
-    for bpi = 1:size( behData.Data, 3 )
 
-        rwSub = 1;
-        ax = subplot( 2, 2, bpi, "Box", "off", ...
-            "Color", "none", "Parent", figs(cf, 1) );
-        if bpi == 1
-            ylabel(ax, 'Evoked')
-            rwSub = 2;
-        elseif bpi == 4
-            xlabel(ax, 'Spontaneous_{RMS}')
+for l = [1, 2, inf]
+
+    for cf = 1:Nfgs
+        figs(cf, 1) = figure( "Color", "w" );
+        figs(cf, 2) = figure( "Color", "w" );
+        for bpi = 1:size( behData.Data, 3 )
+
+            rwSub = 1;
+            ax = subplot( 2, 2, bpi, "Box", "off", ...
+                "Color", "none", "Parent", figs(cf, 1) );
+            if bpi == 1
+                ylabel(ax, 'Evoked')
+                rwSub = 2;
+            elseif bpi == 4
+                xlabel(ax, 'Spontaneous')
+            end
+
+            aux_x = myRMS( funcs{cf}(behData.Data( sponFlag, :, bpi ) ), l );
+            aux_y = myRMS( funcs{cf}( ...
+                behData.Data( evokFlags(:, rwSub), :, bpi ) ), l );
+
+            scObj = arrayfun(@(c) line(ax, aux_x(pairedStimFlags(:,c)), ...
+            aux_y(pairedStimFlags(:,c)), "LineStyle", "none", "Marker", "." ), ...
+            1:Nccond);
+            lgObj = legend( ax, scObj, consCondNames, lgOpts{:}, ...
+                "AutoUpdate", "off" );
+            title(ax, join( [sprintf("L%d", l), behNames(bpi), ...
+                app(cf,bpi)] ) );
+            set( get(ax, "XAxis"), "Scale", "log");
+            set( get(ax, "YAxis"), "Scale", "log")
+            line(ax, xlim(ax), xlim(ax), "LineStyle", "--", ...
+                "Color", 0.45*ones(1,3) );
+            xticklabels( ax, xticks(ax) );
+            yticklabels( ax, yticks(ax) );
+            % text( ax, aux_x, aux_y, num2str( (1:Nt)' ), ...
+            %     'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle')
+            set(ax, "Box", "off", "Color", "none", "XGrid", "on", ...
+                "YGrid", "on")
+            Dyx = [aux_x(:), aux_y(:)] * n;
+            [~, d_centre, d_scale] = zscore( double( Dyx(pairedStimFlags(:,1)) ) );
+
+            ax = subplot(2, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
+            % boxchart(ax, pairedStimFlags * (1:Nccond)', Dyx, "Notch", "on" )
+            trFlag = any( pairedStimFlags, 2 );
+            boxchart( ax, pairedStimFlags(trFlag,:) * (1:Nccond)', ...
+                Dyx(trFlag), "Notch", "on", "JitterOutliers", "on", ...
+                "MarkerStyle", "." )
+            yyaxis(ax, "right"); line( ax, pairedStimFlags * (1:Nccond)', ...
+                my_zscore(Dyx, d_centre, d_scale), "LineStyle", "none")
+            yyaxis(ax, "left"); yline( ax, 0, 'k' )
+            title(ax, join( [sprintf("L%d", l), ...
+                behNames(bpi), app(cf,bpi)] ) );
+            set( ax, axOpts{:} ); % set( ax.YAxis, "Scale", "log" )
+            xticks(ax, 1:Nccond ); xticklabels( ax, consCondNames )
+
         end
-        
-        aux_x = myRMS( funcs{cf}(behData.Data( sponFlag, :, bpi ) ) );
-        aux_y = myRMS( funcs{cf}( ...
-            behData.Data( evokFlags(:, rwSub), :, bpi ) ) );
-        
-        line(ax, aux_x, aux_y, "LineStyle", "none" ); 
-        title(ax, join( [behNames(bpi), app(cf,bpi)] ) );
-        set( get(ax, "XAxis"), "Scale", "log"); 
-        set( get(ax, "YAxis"), "Scale", "log")
-        line(ax, xlim(ax), xlim(ax), "LineStyle", "--", ...
-            "Color", 0.45*ones(1,3) );
-        xticklabels( ax, xticks(ax) ); 
-        yticklabels( ax, yticks(ax) );
-        text( ax, aux_x, aux_y, num2str( (1:Nt)' ), ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle')
-        set(ax, "Box", "off", "Color", "none", "XGrid", "on", ...
-            "YGrid", "on")
-        Dyx = [aux_x(:), aux_y(:)] * n;
-        [~, d_centre, d_scale] = zscore( double( Dyx(pairedStimFlags(:,1)) ) );
-        
-        ax = subplot(2, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
-        % boxchart(ax, pairedStimFlags * (1:Nccond)', Dyx, "Notch", "on" )
-        boxchart( ax, pairedStimFlags * (1:Nccond)', Dyx, ...
-            "Notch", "on", "JitterOutliers", "on", "MarkerStyle", "." )
-        yyaxis(ax, "right"); line( ax, pairedStimFlags * (1:Nccond)', ...
-            my_zscore(Dyx, d_centre, d_scale), "LineStyle", "none")
-        yyaxis(ax, "left"); yline(ax, d_centre, 'k' )
-        title(ax, behNames(bpi) + app(cf,bpi) );
-        set( ax, axOpts{:} ); % set( ax.YAxis, "Scale", "log" )
-        xticks(ax, 1:Nccond ); xticklabels( ax, behNames )
-        
-    end
-    saveFigure( figs(cf, 1), fullfile(figure_path, ...
+        saveFigure( figs(cf, 1), fullfile(figure_path, ...
             "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
-            join(["RMS", app(cf,1)]) ), true )
+            join([sprintf("L%d norm", l), app(cf,1)]) ), true, true )
 
-    saveFigure( figs(cf, 2), fullfile(figure_path, ...
+        saveFigure( figs(cf, 2), fullfile(figure_path, ...
             "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
-            join(["RMS", app(cf,2), "boxplots"]) ), true )
+            join([sprintf("L%d norm", l), app(cf,2), "boxplots"]) ), true, true )
+    end
+    clearvars aux_* ax figs
 end
-clearvars aux_* ax figs
 
 %%
 sponWeight = (1:sum(sponFlag))/sum(1:sum(sponFlag));
 
 % ln1 = 1:(round( sum( evokFlag )/3 ) );
 % ln1 = padarray(ln1, [0, sum( evokFlag ) - numel( ln1 )], "replicate", "post");
-ln1 = log10( 1:sum(evokFlag) );
+ln1 = log10( 1:sum(evokFlags(:,1)) );
 
-ln2 = sum( evokFlag ):-1:1;
+ln2 = sum( evokFlags(:,1) ):-1:1;
 evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
 rwi = 1;
 
+clrMap = lines(Nccond);
+figs = gobjects(4, 1);
+Na = sum( pairedStimFlags );
+
 for cb = 1:size( behData.Data, 3 )
-    w_smu = sponWeight*behData.Data(sponFlag,:,cb);
+    w_smu = reshape( sponWeight*behData.Data(sponFlag,:,cb), [], 1 );
     if cb == 1
-        rwi = 2;        
+        rwi = 2;
     end
-    w_emu = evokWeight*behData.Data( evokFlags(:,rwi), :, cb );
-    X = ones( Nt, 1) * txb';
-    Y = (1:Nt)' * ones( 1, Nb);
-    figure; surf( X, Y, squeeze( behData.Data(:, :, cb) )', ...
-        squeeze( behData.Data(:, :, 1) )', "EdgeColor", "interp", ...
-        "FaceColor", "none", "EdgeAlpha", 1/3); colormap(gray)
-    hold on; line( zeros(Nt,2) + [-0.125,0.03] , 1:Nt, ...
-        [w_smu(:), w_emu(:)], ...
-        "Marker", "x", "LineStyle", "none", "LineWidth", 2)
-    title( behNames(cb) )
-    figure; scatter( w_smu, w_emu, [], [w_smu(:), w_emu(:)] * n );
-    colormap(-roma+1); colorbar();
-    line( xlim, xlim, 'LineStyle', '--', 'Color', 0.45*ones(1,3))
-    title( behNames(cb) )
+    w_emu = reshape( evokWeight*behData.Data( ...
+        evokFlags(:,rwi), :, cb ), [], 1 );
+
+    figs(cb) = figure( "Color", "w" );
+    ax = subplot(1, 2, 1, "NextPlot", "add", "Parent", figs(cb) );
+    scObj = arrayfun(@(c) scatter(ax, w_smu(pairedStimFlags(:,c)), ...
+        w_emu(pairedStimFlags(:,c)), '.', "MarkerEdgeColor", clrMap(c,:) ), ...
+        1:Nccond);
+    legend(ax, scObj, consCondNames, lgOpts{:}, "AutoUpdate", "off");
+    xlabel( ax, 'Spontaneous', 'FontSize', 8 );
+    ylabel( ax, 'Evoked', 'FontSize', 8 );
+    line(ax, xlim, xlim, 'LineStyle', '--', 'Color', 0.45*ones(1,3))
+
+    title(ax, behNames(cb) );
+    set( ax, axOpts{:}, "XAxisLocation", "origin", ...
+        "YAxisLocation", "origin" ); grid( ax, "on" ); axis( ax, 'square' )
+    ax = subplot( 1, 2, 2, "NextPlot", "add", "Parent", figs(cb) );
+    bxObj = boxchart(ax, repmat( pairedStimFlags(trFlag,:) * (1:Nccond)', 2, 1 ) , ...
+        cat(1, [w_smu(trFlag), w_emu(trFlag)] * n, ...
+        vecnorm( [w_smu(trFlag), w_emu(trFlag)], 2, 2) ), ...
+        "Notch", "on", "JitterOutlier", "on", "MarkerStyle", ".", ...
+        "GroupByColor", reshape( ones( sum(Na), 1) * [1, 2], [], 1 ) );
+    legend( ax, bxObj, {'x\timesn + d', 'L-2 norm'}, ...
+        lgOpts{:}, "AutoUpdate", "off" );
+
+    xticks( ax, 1:Nccond ); xticklabels( ax, consCondNames )
+    title( ax, "Condition effect" ); axis( ax, 'square' )
+    set( ax, axOpts{:} ); yline( ax, 0, 'k', 'LineWidth', 1/3)
+    ylabel( ax, 'Decreased \leftrightarrow Increased')
     rwi = 1;
+
 end
+arrayfun(@(x, y) saveFigure( x, fullfile( fullfile(figure_path, ...
+    "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
+    join( [y, "weighted mean scatter and boxplots"] ) ) ), ...
+    true, true), figs(:), behNames(:) )
+clearvars ax figs
 
 %% Z-maximum value
 Na = sum(behData.Conditions);
@@ -817,13 +857,13 @@ z_mvpt = cat(1, z_mvpt{:});
 ylmts = [min( z_mvpt(:) ), max( z_mvpt(:) )] * 1.1;
 zax = ylmts(1):range(z_mvpt(:))/100:ylmts(2);
 figure("Color", "w"); %imagesc( [1,4], ylmts, pdf( normDist, zax )', ...
-    %"AlphaData", 1/3);
+%"AlphaData", 1/3);
 hold on; colormap(-gray + 1); xlim([0,5])
 bxObj = boxchart( reshape( ones(sum( Na ), 1) * (1:4), [], 1), ...
     reshape( z_mvpt, [], 1), "Notch", "on", ...
     "GroupByColor", repmat( behData.Conditions, 4, 1 ) * (1:Nccond)', ...
     "JitterOutliers", "on", "MarkerStyle", "." );
-xticks(1:4); xticklabels(behNames); 
+xticks(1:4); xticklabels(behNames);
 set( gca, "Box", "off", "Color", "none" );
 legend(bxObj, consCondNames, "Color", "none", "Box", "off", "Location", "best")
 title("Z-score of maximum per trial"); ylabel("Z-Max")
@@ -841,7 +881,7 @@ z_flags = z_mvpt > reshape( -[sigmaTh, inf], 1, 1, [] ) & ...
 z_th_curves = arrayfun(@(c) ...
     squeeze( sum( z_flags( pairedStimFlags(:,c), :, :) ) )./Na(c), ...
     1:Nccond, fnOpts{:} );
-
+figu
 z_auc = cellfun(@(z) sum( z, 2 )./ (numel( sigmaTh ) + 1), ...
     z_th_curves, fnOpts{:} );
 
@@ -872,7 +912,6 @@ vidTx = arrayfun(@(x) readCSV( expandPath( x ) ), fid_paths, fnOpts{:} );
 vidTx = cellfun(@(x) x.Var2/1e9, vidTx, fnOpts{:} ); % nanoseconds
 
 dlcFiles = dir( fullfile( beh_path, "roller*filtered.csv" ) );
-fid_paths = dir( fullfile( beh_path, "FrameID*.csv" ) );
 
 exp_path = getParentDir( beh_path, 1);
 tf_paths = dir( fullfile( exp_path, "**", "TriggerSignals*.bin") );
