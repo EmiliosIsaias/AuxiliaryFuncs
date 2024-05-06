@@ -24,4 +24,4 @@ video_paths = list( batch_path.glob(r'**/*.avi') )
 video_paths = [v.as_posix() for v in video_paths]
 
 dlc.extract_outlier_frames( config_path, video_paths, 
-                           outlieralgorithm='uncertain', p_bound=0.5 )
+                           outlieralgorithm='uncertain', automatic=True )
