@@ -547,7 +547,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\eOPN3\WT68\221205_mus_2000");
+    fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch6_beh+Muscimol\Musc\ChR47\220531");
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
