@@ -547,7 +547,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch6_beh+Muscimol\Musc\ChR47\220531");
+    fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\RNs\WTg63\221109_PTX100microM_2000");
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
@@ -586,7 +586,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = 2:3;
+consCond = 2:4;
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
@@ -928,5 +928,5 @@ delta_tiv = Texp_ephys - Texp_vid;
 
 %%
 dlcTables = arrayfun(@(x) readDLCData(expandPath(x)), dlcFiles, fnOpts{:} );
-
+%%
 whisk_cols = cellfun(@(c) ~isempty(c), regexp( dlcTables{1}.Properties.VariableNames, '[lr]w\d' ) );
