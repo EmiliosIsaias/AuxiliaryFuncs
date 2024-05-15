@@ -911,7 +911,7 @@ fid_paths = dir( fullfile( beh_path, "FrameID*.csv") );
 vidTx = arrayfun(@(x) readCSV( expandPath( x ) ), fid_paths, fnOpts{:} );
 vidTx = cellfun(@(x) x.Var2/1e9, vidTx, fnOpts{:} ); % nanoseconds
 
-dlcFiles = dir( fullfile( beh_path, "roller*filtered.csv" ) );
+%dlcFiles = dir( fullfile( beh_path, "roller*filtered.csv" ) );
 dlcFiles = dir( fullfile( beh_path, "roller*shuffle2*filtered.csv" ) );
 
 exp_path = getParentDir( beh_path, 1);
