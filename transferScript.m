@@ -930,3 +930,26 @@ delta_tiv = Texp_ephys - Texp_vid;
 dlcTables = arrayfun(@(x) readDLCData(expandPath(x)), dlcFiles, fnOpts{:} );
 %%
 whisk_cols = cellfun(@(c) ~isempty(c), regexp( dlcTables{1}.Properties.VariableNames, '[lr]w\d' ) );
+%%
+ellipse_bodyparts = cellfun(@(c) ~isempty(c), regexp( dlcTables{2}.Properties.VariableNames, '([lr]w\d|^[hn])' ) );
+%%
+ellipse_bodyparts = cellfun(@(c) ~isempty(c), regexp( dlcTables{2}.Properties.VariableNames, '([lr]w\d|^[n])' ) );
+
+%%
+expand_range = @(x) x(1):x(2);
+chosen_frames = expand_range(round((puff_subs(14,1)/fs)*fr ) + round( 0.6*[-1,1]*fr ));
+
+rotMat = @(theta) [cos(theta), -sin(theta); sin(theta), cos(theta)];
+rotateBy = @(A, theta) rotMat(theta) * A;
+wt = size( frames_test, 2);
+%%
+for cf = randsample( numel( chosen_frames ), 20 )'
+    figure; imshow( imadjust( frames_test(:,:,1,cf) ) ); hold on;
+    ell_fit = fit_ellipse( ...
+        dlcTables{2}{chosen_frames(cf), ellipse_bodyparts}(1:3:end)', ...
+        dlcTables{2}{chosen_frames(cf),ellipse_bodyparts}(2:3:end)' , gca );
+    mdl_cntr = fit_poly( ...
+        [ell_fit.X0_in, dlcTables{2}{chosen_frames(cf), 'headplate'}(1)], ...
+        [ ell_fit.Y0_in, dlcTables{2}{chosen_frames(cf),'headplate'}(2)], 1);
+    yhat = ( ( 1:wt)'.^[1,0] ) * mdl_cntr; line( 1:wt, yhat, 'color', 'b')
+end
