@@ -746,8 +746,8 @@ for l = [1, 2, inf]
                 behData.Data( evokFlags(:, rwSub), :, bpi ) ), l );
 
             scObj = arrayfun(@(c) line(ax, aux_x(pairedStimFlags(:,c)), ...
-            aux_y(pairedStimFlags(:,c)), "LineStyle", "none", "Marker", "." ), ...
-            1:Nccond);
+                aux_y(pairedStimFlags(:,c)), "LineStyle", "none", "Marker", "." ), ...
+                1:Nccond);
             lgObj = legend( ax, scObj, consCondNames, lgOpts{:}, ...
                 "AutoUpdate", "off" );
             title(ax, join( [sprintf("L%d", l), behNames(bpi), ...
@@ -941,15 +941,29 @@ chosen_frames = expand_range(round((puff_subs(14,1)/fs)*fr ) + round( 0.6*[-1,1]
 
 rotMat = @(theta) [cos(theta), -sin(theta); sin(theta), cos(theta)];
 rotateBy = @(A, theta) rotMat(theta) * A;
-wt = size( frames_test, 2);
+wt = size( frames_test, 2); ht = size( frames_test, 1);
 %%
-for cf = randsample( numel( chosen_frames ), 20 )'
-    figure; imshow( imadjust( frames_test(:,:,1,cf) ) ); hold on;
+Nframes = vidObj{2}.NumFrames;
+middle_snout = zeros(Nframes, 2, "single");
+for cf = 1:size( dlcTables{2}, 1)
+    frame = read(vidObj{2}, cf);
+    figure; imshow( imadjust( frame(:,:,1) ) ); hold on;
     ell_fit = fit_ellipse( ...
-        dlcTables{2}{chosen_frames(cf), ellipse_bodyparts}(1:3:end)', ...
-        dlcTables{2}{chosen_frames(cf),ellipse_bodyparts}(2:3:end)' , gca );
-    mdl_cntr = fit_poly( ...
-        [ell_fit.X0_in, dlcTables{2}{chosen_frames(cf), 'headplate'}(1)], ...
-        [ ell_fit.Y0_in, dlcTables{2}{chosen_frames(cf),'headplate'}(2)], 1);
-    yhat = ( ( 1:wt)'.^[1,0] ) * mdl_cntr; line( 1:wt, yhat, 'color', 'b')
+        dlcTables{2}{cf, ellipse_bodyparts}(1:3:end)', ...
+        dlcTables{2}{cf,ellipse_bodyparts}(2:3:end)', gca );
+    middle_snout(cf,:) = [ell_fit.X0_in, ell_fit.Y0_in];
+    if strlength(ell_fit.status) == 0
+        mdl_cntr = fit_poly( ...
+            [ell_fit.Y0_in, dlcTables{2}{cf, 'headplate'}(2)], ...
+            [ell_fit.X0_in, dlcTables{2}{cf, 'headplate'}(1)], 1);
+        xhat = ( [1;ht].^[1,0] ) * mdl_cntr;
+        line( xhat, [1,ht], 'Color', 'b')
+        p_i = [dlcTables{2}{cf, 'ueyelid'}(2);dlcTables{2}{cf, 'ueyelid'}(1)];
+        [n, d] = getHesseLineForm( mdl_cntr );
+        p_p = p_i - (p_i' * n - d) * n;
+        line( p_p(2), p_p(1), 'LineStyle', 'none', 'Marker', 'o', 'Color', 'g', 'LineWidth', 5)
+    else
+        fprintf(1, "Couldn't fit an ellipse!\n")
+    end
+    break
 end
