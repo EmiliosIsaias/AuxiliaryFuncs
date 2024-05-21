@@ -596,7 +596,7 @@ pairedStimFlags = arrayfun(@(c) any( ...
 pairedStimFlags = cat(2, pairedStimFlags{:});
 
 consCondNames = string( { Conditions( consCond ).name  } );
-
+%%
 [behRes, behFig_path, behData, aInfo] = analyseBehaviour(beh_path, ...
     "ConditionsNames", cellstr(consCondNames), ...
     "PairedFlags", pairedStimFlags, ...
@@ -921,7 +921,7 @@ fsf_path = dir( fullfile( exp_path, "**", "*_sampling_frequency.mat") );
 fs_ephys = load( expandPath( fsf_path ), "fs" ); fs_ephys = fs_ephys.fs;
 Ns_intan = [tf_paths.bytes]' ./ 4; % 2 signals x 2 bytes per sample.
 Texp_ephys = Ns_intan ./ fs_ephys;
-
+%%
 Texp_vid = cellfun(@(x) diff( x([1,end]) ), vidTx );
 
 delta_tiv = Texp_ephys - Texp_vid;
@@ -933,37 +933,70 @@ whisk_cols = cellfun(@(c) ~isempty(c), regexp( dlcTables{1}.Properties.VariableN
 %%
 ellipse_bodyparts = cellfun(@(c) ~isempty(c), regexp( dlcTables{2}.Properties.VariableNames, '([lr]w\d|^[hn])' ) );
 %%
-ellipse_bodyparts = cellfun(@(c) ~isempty(c), regexp( dlcTables{2}.Properties.VariableNames, '([lr]w\d|^[n])' ) );
-
+ellipse_bodyparts = cellfun(@(c) ~isempty(c), ...
+    regexp( dlcTables{2}.Properties.VariableNames, '([lr]w\d|^[n])' ) );
+proj_bodyparts = contains( dlcTables{2}.Properties.VariableNames, ...
+    {'nose', 'ueye'} );
 %%
-expand_range = @(x) x(1):x(2);
-chosen_frames = expand_range(round((puff_subs(14,1)/fs)*fr ) + round( 0.6*[-1,1]*fr ));
-
+wt = vidObj{2}.Width; ht = vidObj{2}.Height;
+Nframes = uint32(vidObj{2}.NumFrames);
 rotMat = @(theta) [cos(theta), -sin(theta); sin(theta), cos(theta)];
 rotateBy = @(A, theta) rotMat(theta) * A;
-wt = size( frames_test, 2); ht = size( frames_test, 1);
 %%
-Nframes = vidObj{2}.NumFrames;
-middle_snout = zeros(Nframes, 2, "single");
-for cf = 1:size( dlcTables{2}, 1)
-    frame = read(vidObj{2}, cf);
-    figure; imshow( imadjust( frame(:,:,1) ) ); hold on;
-    ell_fit = fit_ellipse( ...
-        dlcTables{2}{cf, ellipse_bodyparts}(1:3:end)', ...
-        dlcTables{2}{cf,ellipse_bodyparts}(2:3:end)', gca );
-    middle_snout(cf,:) = [ell_fit.X0_in, ell_fit.Y0_in];
+expand_range = @(x) x(1):x(2);
+fID = fopen( expandPath( tf_paths(2) ), "r" );
+trig = fread( fID, [2, inf], "uint16=>uint16" );
+[~] = fclose( fID );
+swObj = StepWaveform( trig(1,:), fs );
+puff_subs = swObj.subTriggers;
+clearvars swObj fID;
+chosen_frames = expand_range( round( (puff_subs(15,1)/fs)*fr ) + ...
+    round( [-1,1]*fr ));
+
+%%
+
+middle_snout_ellipse = zeros(Nframes, 2, "single");
+eye2nose = zeros( Nframes, 1, "single" );
+% for cf = sort( randsample( chosen_frames, 10 ) )
+
+ell_tbl = dlcTables{2}{:, ellipse_bodyparts}(:, setdiff( 1:end, 3:3:end ) );
+x_ell_vals = ell_tbl(:,1:2:end);
+y_ell_vals = ell_tbl(:,2:2:end);
+
+hp_tbl = dlcTables{2}{:, 'headplate'}(:, setdiff( 1:end, 3:3:end ) );
+x_hp_coord = hp_tbl(:,1:2:end);
+y_hp_coord = hp_tbl(:,2:2:end);
+
+proj_tbl = dlcTables{2}{:, proj_bodyparts}(:, setdiff( 1:end, 3:3:end ) );
+x_proj_coord = proj_tbl(:,1:2:end);
+y_proj_coord = proj_tbl(:,2:2:end);
+
+parfor cf = 1:Nframes
+    % frame = read( vidObj{2}, cf );
+    % figure; imshow( imadjust( frame(:,:,1) ) ); hold on;
+    ell_fit = fit_ellipse( x_ell_vals(cf,:), y_ell_vals(cf,:) );% , gca );
+    coords = [ell_fit.X0_in, ell_fit.Y0_in];
+    for ii = 1:2
+        middle_snout_ellipse(cf,ii) = coords(ii);
+    end
     if strlength(ell_fit.status) == 0
-        mdl_cntr = fit_poly( ...
-            [ell_fit.Y0_in, dlcTables{2}{cf, 'headplate'}(2)], ...
-            [ell_fit.X0_in, dlcTables{2}{cf, 'headplate'}(1)], 1);
-        xhat = ( [1;ht].^[1,0] ) * mdl_cntr;
-        line( xhat, [1,ht], 'Color', 'b')
-        p_i = [dlcTables{2}{cf, 'ueyelid'}(2);dlcTables{2}{cf, 'ueyelid'}(1)];
+        mdl_cntr = fit_poly( ... Fitting a more stable line with a 90° rotation.
+            [coords(2), y_hp_coord(cf)], ... Y coordinate
+            [coords(1), x_hp_coord(cf)], 1); % X coordinate
+        % xhat = ( [1;ht].^[1,0] ) * mdl_cntr;
+        % line( xhat, [1, h t], 'Color', 'b')
+        p_i = [y_proj_coord(cf,:)', x_proj_coord(cf,:)']; 
         [n, d] = getHesseLineForm( mdl_cntr );
-        p_p = p_i - (p_i' * n - d) * n;
-        line( p_p(2), p_p(1), 'LineStyle', 'none', 'Marker', 'o', 'Color', 'g', 'LineWidth', 5)
+        p_p = p_i - ( n * (p_i * n - d)' )';
+        % line( p_p(:,2), p_p(:,1), 'LineStyle', 'none', 'Marker', '.', ...
+        %     'Color', 'g', 'LineWidth', 2)
+        % line( p_i(:,2), p_i(:,1), 'LineStyle', 'none', 'Marker', '.', ...
+        %     'Color', 'r', 'LineWidth', 2)
+        % line( [p_i(:,2)';p_p(:,2)'], [p_i(:,1)';p_p(:,1)'], ...
+        %     'LineWidth', 1, 'Color', 'k')
+        
     else
         fprintf(1, "Couldn't fit an ellipse!\n")
     end
-    break
+    eye2nose(cf) = pdist( p_p, "euclidean");
 end
