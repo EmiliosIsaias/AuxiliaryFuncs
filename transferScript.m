@@ -955,13 +955,15 @@ chosen_frames = expand_range( round( (puff_subs(15,1)/fs)*fr ) + ...
 
 %%
 
-middle_snout_ellipse = zeros(Nframes, 2, "single");
-eye2nose = zeros( Nframes, 1, "single" );
+eye2nose_circ = zeros( Nframes, 1, "single" );
+middle_snout_circle = zeros( Nframes, 2, "single" );
+nangle = zeros( Nframes, 1, "single" );
+wangles = zeros( Nframes, 8, "single" );
 % for cf = sort( randsample( chosen_frames, 10 ) )
 
 ell_tbl = dlcTables{2}{:, ellipse_bodyparts}(:, setdiff( 1:end, 3:3:end ) );
-x_ell_vals = ell_tbl(:,1:2:end);
-y_ell_vals = ell_tbl(:,2:2:end);
+x_ell_coord = ell_tbl(:,1:2:end);
+y_ell_coord = ell_tbl(:,2:2:end);
 
 hp_tbl = dlcTables{2}{:, 'headplate'}(:, setdiff( 1:end, 3:3:end ) );
 x_hp_coord = hp_tbl(:,1:2:end);
@@ -971,32 +973,103 @@ proj_tbl = dlcTables{2}{:, proj_bodyparts}(:, setdiff( 1:end, 3:3:end ) );
 x_proj_coord = proj_tbl(:,1:2:end);
 y_proj_coord = proj_tbl(:,2:2:end);
 
+wx = dlcTables{2}{:,whisk_cols}(:, 1:3:end);
+wy = dlcTables{2}{:,whisk_cols}(:, 2:3:end);
+nx = dlcTables{2}{:,"nose"}(:, 1:3:end);
+ny = dlcTables{2}{:,"nose"}(:, 2:3:end);
+nx_c = nx; ny_c = ny;
+wx_c = wx; wy_c = wy;
+
+% Not general implementation! Only with the yx coordinate system!
+angleWRTn = @(x,y,n) acosd( ([y(:), x(:)] * n(:)) ./ ...
+    vecnorm( [x(:), y(:)], 2, 2 ) );
+
+% Golden ratio
+gr = ( ( 1 + sqrt(5) )/2 );
+
+% Objective function for circle fit
+sseval = @(theta, xdata, ydata) sum( ( sqrt( (xdata - theta(1)).^2 + ...
+    (ydata - theta(2)).^2) - theta(3) ).^2 );
+
 parfor cf = 1:Nframes
-    % frame = read( vidObj{2}, cf );
-    % figure; imshow( imadjust( frame(:,:,1) ) ); hold on;
-    ell_fit = fit_ellipse( x_ell_vals(cf,:), y_ell_vals(cf,:) );% , gca );
-    coords = [ell_fit.X0_in, ell_fit.Y0_in];
+
+    circTheta = fminsearch( @(x) sseval( x, x_ell_coord(cf,:)', ...
+        y_ell_coord(cf,:)' ), [x_hp_coord(cf), y_hp_coord(cf), 40] );
+
+    c_coords = circTheta(1:2);
+
+    mdl_yx_circ = fit_poly( ... Fitting a more stable line with a 90° rotation.
+        [circTheta(2), y_hp_coord(cf)], ... Y coordinate
+        [circTheta(1), x_hp_coord(cf)], 1); % X coordinate
+
+    p_i = [y_proj_coord(cf,:)', x_proj_coord(cf,:)'];
+
+    [n, d] = getHesseLineForm( mdl_yx_circ );
+    p_p = p_i - ( n * (p_i * n - d)' )';
+
+    % Golden ration from nose to the cicle centre
+    wpivot_nose_d = pdist( [p_p(1,:); c_coords([2,1])] ) / gr;
+    % Orthogonal vector to n
+    n_orth = rotateBy( n, pi/2 );
+    % Pivotal point for all whiskers
+    w_pivot = p_p(1,:) + ( n_orth * wpivot_nose_d )';
+    line( w_pivot(2), w_pivot(1), 'LineStyle', 'none', 'Marker', 'x', ...
+        'LineWidth', 2, 'Color', 'b' )
+    wx_c(cf,:) = ( wx(cf,:) - w_pivot(2) );
+    wy_c(cf,:) = ( wy(cf,:) - w_pivot(1) );
+    nx_c(cf,:) = ( nx(cf,:) - w_pivot(2) );
+    ny_c(cf,:) = ( ny(cf,:) - w_pivot(1) );
+
+    wangles(cf,:) = angleWRTn( wx_c(cf,:), wy_c(cf,:), n_orth )';
+    nangle(cf) = angleWRTn( nx_c(cf,:), ny_c(cf,:), n );
+
+    eye2nose_circ(cf) = pdist( p_p, "euclidean" );
+
     for ii = 1:2
-        middle_snout_ellipse(cf,ii) = coords(ii);
+        middle_snout_circle(cf, ii) = circTheta(ii);
     end
-    if strlength(ell_fit.status) == 0
-        mdl_cntr = fit_poly( ... Fitting a more stable line with a 90° rotation.
-            [coords(2), y_hp_coord(cf)], ... Y coordinate
-            [coords(1), x_hp_coord(cf)], 1); % X coordinate
-        % xhat = ( [1;ht].^[1,0] ) * mdl_cntr;
-        % line( xhat, [1, h t], 'Color', 'b')
-        p_i = [y_proj_coord(cf,:)', x_proj_coord(cf,:)']; 
-        [n, d] = getHesseLineForm( mdl_cntr );
-        p_p = p_i - ( n * (p_i * n - d)' )';
-        % line( p_p(:,2), p_p(:,1), 'LineStyle', 'none', 'Marker', '.', ...
-        %     'Color', 'g', 'LineWidth', 2)
-        % line( p_i(:,2), p_i(:,1), 'LineStyle', 'none', 'Marker', '.', ...
-        %     'Color', 'r', 'LineWidth', 2)
-        % line( [p_i(:,2)';p_p(:,2)'], [p_i(:,1)';p_p(:,1)'], ...
-        %     'LineWidth', 1, 'Color', 'k')
-        
-    else
-        fprintf(1, "Couldn't fit an ellipse!\n")
-    end
-    eye2nose(cf) = pdist( p_p, "euclidean");
+end
+%%
+chosen_frames = randsample( Nframes, 1 ) + round( [-1,1] * fr );
+frames = read( vidObj{2}, chosen_frames );
+wx = dlcTables{2}{:,whisk_cols}(:, 1:3:end);
+wy = dlcTables{2}{:,whisk_cols}(:, 2:3:end);
+nx = dlcTables{2}{:,"nose"}(:, 1:3:end);
+ny = dlcTables{2}{:,"nose"}(:, 2:3:end);
+nx_c = nx; ny_c = ny;
+wx_c = wx; wy_c = wy;
+
+% Not general implementation! Only with the yx coordinate system!
+angleWRTn = @(x,y,n) acosd( ([y(:), x(:)] * n(:)) ./ ...
+    vecnorm( [x(:), y(:)], 2, 2 ) );
+gr = ( ( 1 + sqrt(5) )/2 );
+for cf = randsample( expand_range(chosen_frames), 10 )
+    figure; imshow( imadjust( frames(:,:,1,cf-chosen_frames(1)) ), ...
+        "interp", "bilinear" ); hold on
+    circTheta = fminsearch( @(x) sseval( x, x_ell_coord(cf,:)', ...
+        y_ell_coord(cf,:)' ), [x_hp_coord(cf), y_hp_coord(cf), 40] );
+    c_coords = circTheta(1:2);
+    mdl_yx = fit_poly( [y_hp_coord(cf); c_coords(2)], ...
+        [x_hp_coord(cf); c_coords(1)], 1);
+    [n, d] = getHesseLineForm( mdl_yx );
+    p_i = [y_proj_coord(cf,:)', x_proj_coord(cf,:)'];
+    p_p = p_i - ( n * (p_i * n - d)' )';
+    line( [p_p(:,2); c_coords(1)], [p_p(:,1); c_coords(2)], ...
+        'LineStyle', 'none', 'Color', 'g', 'Marker', '.')
+    % Golden ration from nose to the cicle centre
+    wpivot_nose_d = pdist( [p_p(1,:); c_coords([2,1])] ) / gr;
+    % Orthogonal vector to n
+    n_orth = rotateBy( n, pi/2 );
+    % Pivotal point for all whiskers
+    w_pivot = p_p(1,:) + ( n_orth * wpivot_nose_d )';
+    line( w_pivot(2), w_pivot(1), 'LineStyle', 'none', 'Marker', 'x', ...
+        'LineWidth', 2, 'Color', 'b' )
+    wx_c(cf,:) = ( wx(cf,:) - w_pivot(2) );
+    wy_c(cf,:) = ( wy(cf,:) - w_pivot(1) );
+    nx_c(cf,:) = ( nx(cf,:) - w_pivot(2) );
+    ny_c(cf,:) = ( ny(cf,:) - w_pivot(1) );
+
+    wangles = angleWRTn(wx_c(cf,:), wy_c(cf,:), n_orth );
+    nangle = angleWRTn( nx_c(cf,:), ny_c(cf,:), n );
+
 end
