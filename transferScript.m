@@ -953,7 +953,7 @@ clearvars swObj fID;
 chosen_frames = expand_range( round( (puff_subs(15,1)/fs)*fr ) + ...
     round( [-1,1]*fr ));
 
-%%
+%% New analysis prototype
 
 eye2nose_circ = zeros( Nframes, 1, "single" );
 middle_snout_circle = zeros( Nframes, 2, "single" );
@@ -1013,18 +1013,18 @@ parfor cf = 1:Nframes
     n_orth = rotateBy( n, pi/2 );
     % Pivotal point for all whiskers
     w_pivot = p_p(1,:) + ( n_orth * wpivot_nose_d )';
-    line( w_pivot(2), w_pivot(1), 'LineStyle', 'none', 'Marker', 'x', ...
-        'LineWidth', 2, 'Color', 'b' )
+    % Centering on the pivotal point
     wx_c(cf,:) = ( wx(cf,:) - w_pivot(2) );
     wy_c(cf,:) = ( wy(cf,:) - w_pivot(1) );
     nx_c(cf,:) = ( nx(cf,:) - w_pivot(2) );
     ny_c(cf,:) = ( ny(cf,:) - w_pivot(1) );
-
+    % Getting angles of all whiskers w.r.t. the rotated n vector
     wangles(cf,:) = angleWRTn( wx_c(cf,:), wy_c(cf,:), n_orth )';
+    % Angle of the nose w.r.t. the n vector
     nangle(cf) = angleWRTn( nx_c(cf,:), ny_c(cf,:), n );
-
+    
+    % Validation and verification variables
     eye2nose_circ(cf) = pdist( p_p, "euclidean" );
-
     for ii = 1:2
         middle_snout_circle(cf, ii) = circTheta(ii);
     end
