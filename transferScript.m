@@ -572,7 +572,6 @@ expName = extractBefore(af_name, "analysis");
 load( af_path, "Conditions", "fs")
 
 fnOpts = {'UniformOutput', false};
-hstOpts = {'BinMethod', 'integers', 'BinLimits', [-0.5,4.5]};
 axOpts = {'Box','off','Color','none'};
 lgOpts = cat( 2, axOpts{1:2}, {'Location','best'} );
 
@@ -604,29 +603,40 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "ResponseWindow", [25, 350] * m, ...
     "ViewingWindow", [-450, 500] * m);
 
+[Ns, Nt, Nb] = size( behData.Data );
+
 if ~exist( "fr", "var" ) && ldFlag
     load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
     ldFlag = false;
 end
 
 vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
-mdlt = fit_poly( [1, size( behData.Data, 1)], vwin + [1,-1] * (1/(2 * fr) ), 1);
-txb = ( (1:size( behData.Data, 1))'.^[1,0] ) * mdlt;
+mdlt = fit_poly( [1, Ns], vwin + [1,-1] * (1/(2 * fr) ), 1);
+txb = ( (1:Ns)'.^[1,0] ) * mdlt;
 behNames = string( { behRes(1).Results.BehSigName } );
 
-biFigPttrn = "BehIndex%s";
-biFigPttrn = sprintf(biFigPttrn, sprintf(" %s (%%.3f)", consCondNames));
-[pAreas, ~, behAreaFig] = createBehaviourIndex(behRes);
-behRes = arrayfun(@(bs, ba) setfield(bs,'BehIndex', ba), behRes, pAreas);
-set(behAreaFig, 'UserData', behRes)
 
-biFN = sprintf(biFigPttrn, pAreas);
+[pAreas, ~, behAreaFig] = createBehaviourIndex(behRes);
+behMeasures = string({behAreaFig.Name});
+biFigPttrn = behMeasures+"%s";
+biFigPttrn = arrayfun(@(s) sprintf(s, sprintf(" %s (%%.3f)", ...
+    consCondNames ) ), biFigPttrn );
+
+for it = 1:numel(behMeasures)
+    behRes = arrayfun(@(bs, ba) setfield( bs, ...
+        strrep( behMeasures(it), " ", "_" ), ba), behRes(:), pAreas(:,it) );
+end
+
+arrayfun(@(f) set( f, 'UserData', behRes ), behAreaFig);
+
+biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), 1:numel(behMeasures) );
 
 trMvFlag = arrayfun(@(cr) behRes(1).Results(cr).MovStrucure.MovmentFlags, ...
     1:size(behRes(1).Results,2), fnOpts{:}); trMvFlag = cat(3, trMvFlag{:});
 BIscaleMat = sum(trMvFlag,3);
 BIscale = arrayfun(@(cc) BIscaleMat(pairedStimFlags(:,cc), cc), 1:Nccond, ...
     fnOpts{:});
+hstOpts = {'BinMethod', 'integers', 'BinLimits', [0,Nb] + [-1,1]/2};
 [hg, hg_bin] = cellfun(@(c) histcounts(c, hstOpts{:}), ...
     BIscale, fnOpts{:});
 hg = cat(1, hg{:}); hg_bin = cat(1, hg_bin{:});
@@ -635,7 +645,7 @@ hg = cat(1, hg{:}); hg_bin = cat(1, hg_bin{:});
 
 clrMap = lines(Nccond);
 countFig = figure; ax(1) = subplot(10,1,1:8);
-bar(ax(1), (0:4)', (hg./sum(hg,2))', 'EdgeColor', 'none'); hold on;
+bar(ax(1), (0:Nb)', (hg./sum(hg,2))', 'EdgeColor', 'none'); hold on;
 poaDist = cellfun(@(bi) fitdist(bi,"Poisson"), BIscale);
 ylim(ax(1), [0,1]); set(ax(1), axOpts{:});
 legend(ax(1), consCondNames, 'AutoUpdate','off', lgOpts{:})
@@ -659,13 +669,14 @@ ylabel(ax(1),'Trial proportion')
 countFigName = sprintf("Count distributions P%s", ...
     sprintf(" %.3f", p(:)));
 
-saveFigure(behAreaFig, fullfile(behFig_path, biFN), true);
+arrayfun(@(f, fn) saveFigure(f, fullfile(behFig_path, fn), true), ...
+    behAreaFig(:), biFN(:) );
 saveFigure(countFig, fullfile(behFig_path, countFigName), true);
 
 %% Normalised amplitud by absolute maximum
 
 fig = figure("Color", "w");
-for bpi = 1:size( behData.Data, 3 )
+for bpi = 1:Nb
     ax = subplot(2,2,bpi);
     if bpi == 2
         auxStack = -squeeze( behData.Data(:,:,bpi) )';
@@ -695,7 +706,6 @@ my_zscore = @(x, m, s) ( x - m ) ./ ( s .* (s~=0) + 1 .* (s==0) );
 respWin = sscanf( aInfo.Evoked, "R%f - %f ms")' * 1e-3;
 % respWin = [30, 400]*1e-3;
 sponWin = -flip(respWin);
-[Nb, Nt, Ns] = size( behData.Data );
 n = getHesseLineForm([1,0]);
 
 % Spontaneous window
@@ -938,8 +948,7 @@ ellipse_bodyparts = cellfun(@(c) ~isempty(c), ...
 proj_bodyparts = contains( dlcTables{2}.Properties.VariableNames, ...
     {'nose', 'ueye'} );
 %%
-wt = vidObj{2}.Width; ht = vidObj{2}.Height;
-Nframes = uint32(vidObj{2}.NumFrames);
+Nframes = uint32( size( dlcTables{2}, 1 ) );
 rotMat = @(theta) [cos(theta), -sin(theta); sin(theta), cos(theta)];
 rotateBy = @(A, theta) rotMat(theta) * A;
 %%
