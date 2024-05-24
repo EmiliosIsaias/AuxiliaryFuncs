@@ -282,7 +282,8 @@ for a = 1:size( aH, 2 )
 end
 
 %% All mice
-figurePath = fullfile( "C:\Users\jefe_\seadrive_root\Emilio U\Für meine Gruppen\GDrive GrohLab\Projects\00 SC\SC Behaviour\Figures\Figure 3\Matlab figures" );
+figurePath = ...
+    fullfile( "C:\Users\jefe_\seadrive_root\Emilio U\Für meine Gruppen\GDrive GrohLab\Projects\00 SC\SC Behaviour\Figures\Figure 3\Matlab figures" );
 
 c_MI = arrayfun(@(c) getMI( params.alpha(:,:,1), params.alpha(:, :, c) ), ...
     2:3, fnOpts{:} ); c_MI = cat(3, c_MI{:} );
@@ -547,7 +548,9 @@ set( get( gca, "ZAxis"), "visible", "off")
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile("Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\RNs\WTg63\221109_PTX100microM_2000");
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\" + ...
+    "Batch11_ephys.MC\eOPN3\WT67\221205_mus_2000" );
+
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
 
@@ -585,7 +588,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = 2:4;
+consCond = 2:3;
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
