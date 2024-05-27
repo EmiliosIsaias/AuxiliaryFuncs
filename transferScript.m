@@ -548,8 +548,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\" + ...
-    "Batch11_ephys.MC\eOPN3\WT67\221205_mus_2000" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch2_ephys\MC\GAD17\211203_C" );
 
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
@@ -589,7 +588,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = 2:3;
+consCond = [3,4];
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
@@ -619,7 +618,7 @@ mdlt = fit_poly( [1, Ns], vwin + [1,-1] * (1/(2 * fr) ), 1);
 txb = ( (1:Ns)'.^[1,0] ) * mdlt;
 behNames = string( { behRes(1).Results.BehSigName } );
 
-
+%%
 [pAreas, ~, behAreaFig] = createBehaviourIndex(behRes);
 behMeasures = string({behAreaFig.Name});
 biFigPttrn = behMeasures+"%s";
