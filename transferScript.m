@@ -677,27 +677,40 @@ arrayfun(@(f, fn) saveFigure(f, fullfile(behFig_path, fn), true), ...
     behAreaFig(:), biFN(:) );
 saveFigure(countFig, fullfile(behFig_path, countFigName), true);
 
-%% Normalised amplitud by absolute maximum
-
+%%
+rollYL = "Roller speed [cm/s]";
+yLabels = [repmat("Angle [°]", 1, Nb-1), rollYL];
+sym_flag = contains( behNames, "symmetry", "IgnoreCase", true );
+yLabels(sym_flag) = "Symmetry [a.u.]";
+cbLabels = strings(Nb, 2);
+cbLabels([1,3],:) = repmat(["Retract", "Protract"],2,1);
+cbLabels([2,4,5],:) = repmat(["Closed", "Opened"],3,1);
+cbLabels(6,:) = ["Away", "Puff"];
+cbLabels(7,:) = ["Puff", "Away"];
+cbLabels(8,:) = ["Backward", "Forward"];
+%%  Normalised amplitud by absolute maximum
 fig = figure("Color", "w");
 for bpi = 1:Nb
-    ax = subplot(2,2,bpi);
-    if bpi == 2
-        auxStack = -squeeze( behData.Data(:,:,bpi) )';
-    else
-        auxStack = squeeze( behData.Data(:,:,bpi) )';
+    ax = subplot(4,2,bpi);
+    auxStack = squeeze( behData.Data(:,:,bpi) )';
+    if bpi ~= 6
+        auxStack = ( auxStack - median( auxStack, 2) );
+        auxStack = auxStack ./ max( abs( auxStack ), [], 2 );
     end
-    auxStack = ( auxStack - median( auxStack, 2) );
-    auxStack = auxStack ./ max( abs( auxStack ), [], 1 );
     imagesc( txb*1e3, [],  auxStack ); xline(0, 'k');
     xline( [20, 120], 'LineWidth', 1, 'Color', 'b')
     xlabel('Time [ms]'); ylabel('Trials'); title( behNames(bpi) )
     set( ax, "Box", "off", "Color", "none" )
+    cb = colorbar(ax, "Box", "off", "Location", "west");
+    cb.Ticks = [min(auxStack(:)), max(auxStack(:))] * 0.85;
+    cb.Label.String = yLabels(bpi);
+    cb.TickLabels = cellstr(cbLabels(bpi,:));
+    cb.TickDirection = "none";
 end
-cb = colorbar(ax, "Box", "off", "Location", "eastoutside");
-cb.Ticks = [-1, 1] * 0.85; cb.Label.String = "\leftarrow Direction \rightarrow";
-cb.TickLabels = {'Backward', 'Forward'};
+
+%cb.TickLabels = {'Backward', 'Forward'};
 linkaxes( findobj(gcf, "Type", "Axes"), "xy")
+%%
 saveFigure(fig, fullfile(figure_path, ...
     "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
     "All trials all body parts normalised"), true, true)
