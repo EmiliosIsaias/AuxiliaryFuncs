@@ -738,15 +738,15 @@ end
 if respWin_aux(2) > vwin(2)
     respWin_aux(2) = vwin(2);
 end
-respWin = [respWin_aux; repmat( respWin, 3, 1)];
+respWin = [repmat(respWin_aux,2,1); repmat( respWin, Nb-2, 1)];
 
-evokFlags = arrayfun(@(x) txb > respWin(x,:), 1:4, fnOpts{:} );
+evokFlags = arrayfun(@(x) txb > respWin(x,:), 1:Nb, fnOpts{:} );
 evokFlags = cellfun(@(x) xor(x(:,1), x(:,2) ), evokFlags, fnOpts{:} );
 evokFlags = cat( 2, evokFlags{:} );
 
 myRMS = @(x,l) vecnorm(x, l, 1);% ./ size( x, 1 );
 funcs = {@(x) x, @(x) diff(x, 1, 1) };
-app = [ repmat("", 1,4); repmat( "diff", 1, 4) ];
+app = [ repmat("", 1,Nb); repmat( "diff", 1, Nb) ];
 
 Nfgs = numel(funcs);
 figs = gobjects(Nfgs, 2);
@@ -756,15 +756,15 @@ for l = [1, 2, inf]
     for cf = 1:Nfgs
         figs(cf, 1) = figure( "Color", "w" );
         figs(cf, 2) = figure( "Color", "w" );
-        for bpi = 1:size( behData.Data, 3 )
+        for bpi = 1:Nb
 
             rwSub = 1;
-            ax = subplot( 2, 2, bpi, "Box", "off", ...
+            ax = subplot( 4, 2, bpi, "Box", "off", ...
                 "Color", "none", "Parent", figs(cf, 1) );
-            if bpi == 1
+            if bpi == 1 || bpi == 2
                 ylabel(ax, 'Evoked')
                 rwSub = 2;
-            elseif bpi == 4
+            elseif bpi == Nb
                 xlabel(ax, 'Spontaneous')
             end
 
@@ -792,7 +792,7 @@ for l = [1, 2, inf]
             Dyx = [aux_x(:), aux_y(:)] * n;
             [~, d_centre, d_scale] = zscore( double( Dyx(pairedStimFlags(:,1)) ) );
 
-            ax = subplot(2, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
+            ax = subplot(4, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
             % boxchart(ax, pairedStimFlags * (1:Nccond)', Dyx, "Notch", "on" )
             trFlag = any( pairedStimFlags, 2 );
             boxchart( ax, pairedStimFlags(trFlag,:) * (1:Nccond)', ...
@@ -833,9 +833,9 @@ clrMap = lines(Nccond);
 figs = gobjects(4, 1);
 Na = sum( pairedStimFlags );
 
-for cb = 1:size( behData.Data, 3 )
+for cb = 1:Nb
     w_smu = reshape( sponWeight*behData.Data(sponFlag,:,cb), [], 1 );
-    if cb == 1
+    if cb == 1 || cb == 2
         rwi = 2;
     end
     w_emu = reshape( evokWeight*behData.Data( ...
@@ -964,8 +964,9 @@ ellipse_bodyparts = cellfun(@(c) ~isempty(c), ...
     regexp( dlcTables{2}.Properties.VariableNames, '([lr]w\d|^[n])' ) );
 proj_bodyparts = contains( dlcTables{2}.Properties.VariableNames, ...
     {'nose', 'ueye'} );
+eyelids = contains( dlcTables{2}.Properties.VariableNames, 'eye' );
 %%
-Nframes = uint32( size( dlcTables{2}, 1 ) );
+Nframes = uint32( size( dlcTables{1}, 1 ) );
 rotMat = @(theta) [cos(theta), -sin(theta); sin(theta), cos(theta)];
 rotateBy = @(A, theta) rotMat(theta) * A;
 %%
@@ -1020,7 +1021,8 @@ sseval = @(theta, xdata, ydata) sum( ( sqrt( (xdata - theta(1)).^2 + ...
 parfor cf = 1:Nframes
 
     circTheta = fminsearch( @(x) sseval( x, x_ell_coord(cf,:)', ...
-        y_ell_coord(cf,:)' ), [x_hp_coord(cf), y_hp_coord(cf), 40] );
+        y_ell_coord(cf,:)' ), [mean( x_ell_coord(cf,:) ), ...
+        mean( y_ell_coord(cf,:) ), 40] );
 
     c_coords = circTheta(1:2);
 
