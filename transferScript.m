@@ -548,7 +548,7 @@ set( get( gca, "ZAxis"), "visible", "off")
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch2_ephys\MC\GAD17\211203_C" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch13_beh\PTX\WT1\230328_PiTX" );
 
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
@@ -588,7 +588,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = [3,4];
+consCond = [2,3];
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
@@ -634,6 +634,7 @@ arrayfun(@(f) set( f, 'UserData', behRes ), behAreaFig);
 
 biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), 1:numel(behMeasures) );
 
+%%
 trMvFlag = arrayfun(@(cr) behRes(1).Results(cr).MovStrucure.MovmentFlags, ...
     1:size(behRes(1).Results,2), fnOpts{:}); trMvFlag = cat(3, trMvFlag{:});
 BIscaleMat = sum(trMvFlag,3);
