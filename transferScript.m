@@ -745,7 +745,7 @@ evokFlags = arrayfun(@(x) txb > respWin(x,:), 1:Nb, fnOpts{:} );
 evokFlags = cellfun(@(x) xor(x(:,1), x(:,2) ), evokFlags, fnOpts{:} );
 evokFlags = cat( 2, evokFlags{:} );
 
-myRMS = @(x,l) vecnorm(x, l, 1);% ./ size( x, 1 );
+myNorm = @(x, l) vecnorm(x, l, 1);
 funcs = {@(x) x, @(x) diff(x, 1, 1) };
 app = [ repmat("", 1,Nb); repmat( "diff", 1, Nb) ];
 
