@@ -634,6 +634,9 @@ arrayfun(@(f) set( f, 'UserData', behRes ), behAreaFig);
 
 biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), 1:numel(behMeasures) );
 
+arrayfun(@(f, fn) saveFigure(f, fullfile(behFig_path, fn), true, true), ...
+    behAreaFig(:), biFN(:) );
+
 %%
 trMvFlag = arrayfun(@(cr) behRes(1).Results(cr).MovStrucure.MovmentFlags, ...
     1:size(behRes(1).Results,2), fnOpts{:}); trMvFlag = cat(3, trMvFlag{:});
@@ -673,8 +676,6 @@ ylabel(ax(1),'Trial proportion')
 countFigName = sprintf("Count distributions P%s", ...
     sprintf(" %.3f", p(:)));
 
-arrayfun(@(f, fn) saveFigure(f, fullfile(behFig_path, fn), true), ...
-    behAreaFig(:), biFN(:) );
 saveFigure(countFig, fullfile(behFig_path, countFigName), true);
 
 %%
