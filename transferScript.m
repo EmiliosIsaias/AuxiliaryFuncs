@@ -752,6 +752,11 @@ app = [ repmat("", 1,Nb); repmat( "diff", 1, Nb) ];
 Nfgs = numel(funcs);
 figs = gobjects(Nfgs, 2);
 
+possCols = [2,3,5];
+
+Ncols = possCols( find( mod( Nb, possCols ) == 0, 1, 'first' ) );
+Nrows = Nb / Ncols;
+
 for l = [1, 2, inf]
 
     for cf = 1:Nfgs
@@ -759,19 +764,17 @@ for l = [1, 2, inf]
         figs(cf, 2) = figure( "Color", "w" );
         for bpi = 1:Nb
 
-            rwSub = 1;
-            ax = subplot( 4, 2, bpi, "Box", "off", ...
+            ax = subplot( Nrows, Ncols, bpi, "Box", "off", ...
                 "Color", "none", "Parent", figs(cf, 1) );
-            if bpi == 1 || bpi == 2
+            if bpi == 1
                 ylabel(ax, 'Evoked')
-                rwSub = 2;
             elseif bpi == Nb
                 xlabel(ax, 'Spontaneous')
             end
 
-            aux_x = myRMS( funcs{cf}(behData.Data( sponFlag, :, bpi ) ), l );
-            aux_y = myRMS( funcs{cf}( ...
-                behData.Data( evokFlags(:, rwSub), :, bpi ) ), l );
+            aux_x = myNorm( funcs{cf}(behData.Data( sponFlag, :, bpi ) ), l );
+            aux_y = myNorm( funcs{cf}( ...
+                behData.Data( evokFlags(:, bpi), :, bpi ) ), l );
 
             scObj = arrayfun(@(c) line(ax, aux_x(pairedStimFlags(:,c)), ...
                 aux_y(pairedStimFlags(:,c)), "LineStyle", "none", "Marker", "." ), ...
@@ -793,7 +796,8 @@ for l = [1, 2, inf]
             Dyx = [aux_x(:), aux_y(:)] * n;
             [~, d_centre, d_scale] = zscore( double( Dyx(pairedStimFlags(:,1)) ) );
 
-            ax = subplot(4, 2, bpi, "Box", "off", "Parent", figs(cf, 2) );
+            ax = subplot( Nrows, Ncols, bpi, "Box", "off", ...
+                "Parent", figs(cf, 2) );
             % boxchart(ax, pairedStimFlags * (1:Nccond)', Dyx, "Notch", "on" )
             trFlag = any( pairedStimFlags, 2 );
             boxchart( ax, pairedStimFlags(trFlag,:) * (1:Nccond)', ...
@@ -814,7 +818,8 @@ for l = [1, 2, inf]
 
         saveFigure( figs(cf, 2), fullfile(figure_path, ...
             "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
-            join([sprintf("L%d norm", l), app(cf,2), "boxplots"]) ), true, true )
+            regexprep( join( [sprintf( "L%d norm", l ), app(cf,2), ...
+            "boxplots"] ), ' +', ' ' ) ), true, true )
     end
     clearvars aux_* ax figs
 end
