@@ -703,7 +703,7 @@ isendrow = @(ix) ( (ix/Ncols) + 1) > Nrows;
 fig = figure("Color", "w", "Position", ...
             [0, 1.8, pxHeight/sqrt(2), pxHeight]);
 for bpi = 1:Nb
-    ax = subplot(4,2,bpi);
+    ax = newAx(bpi, fig);
     auxStack = squeeze( behData.Data(:,:,bpi) )';
     if bpi ~= 6
         auxStack = ( auxStack - median( auxStack, 2) );
@@ -886,6 +886,8 @@ for cb = 1:Nb
     w_emu = reshape( evokWeight*behData.Data( ...
         evokFlags(:,rwi), :, cb ), [], 1 );
 
+    
+    ax = newAx( cb, figs(1) );
     scObj = arrayfun(@(c) scatter(ax, w_smu(pairedStimFlags(:,c)), ...
         w_emu(pairedStimFlags(:,c)), '.', "MarkerEdgeColor", clrMap(c,:) ), ...
         1:Nccond);
@@ -904,6 +906,7 @@ for cb = 1:Nb
     bxObj = boxchart(ax, repmat( pairedStimFlags(trFlag,:) * (1:Nccond)', 2, 1 ) , ...
         cat(1, [w_smu(trFlag), w_emu(trFlag)] * n, ...
         vecnorm( [w_smu(trFlag), w_emu(trFlag)], 2, 2) ), ...
+    ax = newAx( cb, figs(2) );
         "Notch", "on", "JitterOutlier", "on", "MarkerStyle", ".", ...
         "GroupByColor", reshape( ones( sum(Na), 1) * [1, 2], [], 1 ) );
     legend( ax, bxObj, {'x\timesn + d', 'L-2 norm'}, ...
@@ -926,6 +929,13 @@ for cb = 1:Nb
     set( ax, axOpts{:} ); yline( ax, 0, 'Color', 0.75*ones(1,3), ...
         'LineWidth', 1/3);
 
+    ax = newAx( cb, figs(3) );
+    if cb == Nb
+        legend( ax, bxObj, 'L-2 norm', ...
+            lgOpts{:}, "AutoUpdate", "off", "interpreter", "latex" );
+    elseif cb == 1
+        ylabel( ax, 'Distance from origin', 'fontsize', 8)
+    end
 
     xticks( ax, 1:Nccond ); 
     if isendrow(cb)
