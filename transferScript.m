@@ -691,6 +691,15 @@ cbLabels(7,:) = ["Puff", "Away"];
 cbLabels(8,:) = ["Backward", "Forward"];
 screen_size = get(0, 'ScreenSize' );
 pxHeight = screen_size(4)*0.9;
+
+possCols = [2,3,5];
+Ncols = possCols( find( mod( Nb, possCols ) == 0, 1, 'first' ) );
+Nrows = Nb / Ncols;
+
+newAx = @(ix, f) subplot( Nrows, Ncols, ix, "NextPlot", "add", "Parent", f );
+
+isendrow = @(ix) ( (ix/Ncols) + 1) > Nrows;
+
 fig = figure("Color", "w", "Position", ...
             [0, 1.8, pxHeight/sqrt(2), pxHeight]);
 for bpi = 1:Nb
@@ -702,15 +711,27 @@ for bpi = 1:Nb
     end
     imagesc( txb*1e3, [],  auxStack ); xline(0, 'k');
     xline( [20, 120], 'LineWidth', 1, 'Color', 'b')
-    xlabel('Time [ms]'); ylabel('Trials'); title( behNames(bpi) )
-    set( ax, "Box", "off", "Color", "none" )
+    title( behNames(bpi) )
+    if mod( bpi, Ncols ) == 1
+        ylabel('Trials'); 
+    else
+        ax.YAxis.Visible = 'off';
+    end
+    if isendrow( bpi )
+        xlabel('Time [ms]'); 
+    else
+        ax.XAxis.Visible = 'off';
+    end
+    set( ax, axOpts{:} )
+    
     cb = colorbar(ax, "Box", "off", "Location", "west");
     cb.Ticks = [min(auxStack(:)), max(auxStack(:))] * 0.85;
     cb.Label.String = yLabels(bpi);
     cb.TickLabels = cellstr(cbLabels(bpi,:));
     cb.TickDirection = "none";
 end
-
+axis( findobj( fig, "Type", "Axes" ), ...
+    [1e3*txb([1,end])', [1,Nt] + [-1,1]*(1/2)] )
 %cb.TickLabels = {'Backward', 'Forward'};
 linkaxes( findobj(gcf, "Type", "Axes"), "xy")
 %%
@@ -774,6 +795,8 @@ for l = [1, 2, inf]
                 ylabel(ax, 'Evoked')
             elseif bpi == Nb
                 xlabel(ax, 'Spontaneous')
+                lgObj = legend( ax, scObj, consCondNames, lgOpts{:}, ...
+                "AutoUpdate", "off" );
             end
 
             aux_x = myNorm( funcs{cf}(behData.Data( sponFlag, :, bpi ) ), l );
@@ -783,8 +806,7 @@ for l = [1, 2, inf]
             scObj = arrayfun(@(c) line(ax, aux_x(pairedStimFlags(:,c)), ...
                 aux_y(pairedStimFlags(:,c)), "LineStyle", "none", "Marker", "." ), ...
                 1:Nccond);
-            lgObj = legend( ax, scObj, consCondNames, lgOpts{:}, ...
-                "AutoUpdate", "off" );
+            
             title(ax, join( [sprintf("L%d", l), behNames(bpi), ...
                 app(cf,bpi)] ) );
             set( get(ax, "XAxis"), "Scale", "log");
@@ -813,7 +835,12 @@ for l = [1, 2, inf]
             title(ax, join( [sprintf("L%d", l), ...
                 behNames(bpi), app(cf,bpi)] ) );
             set( ax, axOpts{:} ); % set( ax.YAxis, "Scale", "log" )
-            xticks(ax, 1:Nccond ); xticklabels( ax, consCondNames )
+            xticks(ax, 1:Nccond ); 
+            if isendrow( bpi )
+                xticklabels( ax, consCondNames )
+            else
+                ax.XAxis.Visible = 'off';
+            end
 
         end
         saveFigure( figs(cf, 1), fullfile(figure_path, ...
@@ -862,10 +889,13 @@ for cb = 1:Nb
     scObj = arrayfun(@(c) scatter(ax, w_smu(pairedStimFlags(:,c)), ...
         w_emu(pairedStimFlags(:,c)), '.', "MarkerEdgeColor", clrMap(c,:) ), ...
         1:Nccond);
-    legend(ax, scObj, consCondNames, lgOpts{:}, "AutoUpdate", "off");
-    xlabel( ax, 'Spontaneous', 'FontSize', 8 );
-    ylabel( ax, 'Evoked', 'FontSize', 8 );
-    line(ax, xlim, xlim, 'LineStyle', '--', 'Color', 0.45*ones(1,3))
+
+    if cb == Nb
+        xlabel( ax, 'Spontaneous', 'FontSize', 8 );
+        legend(ax, scObj, consCondNames, lgOpts{:}, "AutoUpdate", "off");
+    elseif cb == 1
+        ylabel( ax, 'Evoked', 'FontSize', 8 );
+    end
 
     title(ax, behNames(cb) );
     set( ax, axOpts{:}, "XAxisLocation", "origin", ...
@@ -879,12 +909,34 @@ for cb = 1:Nb
     legend( ax, bxObj, {'x\timesn + d', 'L-2 norm'}, ...
         lgOpts{:}, "AutoUpdate", "off" );
 
-    xticks( ax, 1:Nccond ); xticklabels( ax, consCondNames )
-    title( ax, "Condition effect" ); axis( ax, 'square' )
-    set( ax, axOpts{:} ); yline( ax, 0, 'k', 'LineWidth', 1/3)
-    ylabel( ax, 'Decreased \leftrightarrow Increased')
-    rwi = 1;
+    if cb == Nb
+        legend( ax, bxObj, '$\vec{x} \cdot n + d$', ...
+            'Interpreter' ,'latex' , lgOpts{:}, "AutoUpdate", "off" );
+    elseif cb == 1
+        ylabel( ax, 'Distance from line', 'fontsize', 8)
+    end
+    xticks( ax, 1:Nccond ); 
+    if isendrow(cb)
+        xticklabels( ax, consCondNames )
+    else
+        xticklabels( ax, {} )
+    end
+    
+    title(ax, behNames(cb) ); %axis( ax, 'square' )
+    set( ax, axOpts{:} ); yline( ax, 0, 'Color', 0.75*ones(1,3), ...
+        'LineWidth', 1/3);
 
+
+    xticks( ax, 1:Nccond ); 
+    if isendrow(cb)
+        xticklabels( ax, consCondNames )
+    else
+        xticklabels( ax, {} )
+    end
+
+    title(ax, behNames(cb) ); %axis( ax, 'square' )
+    set( ax, axOpts{:} );
+    
 end
 arrayfun(@(x, y) saveFigure( x, fullfile( fullfile(figure_path, ...
     "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
