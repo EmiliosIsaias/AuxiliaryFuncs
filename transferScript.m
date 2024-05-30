@@ -930,6 +930,9 @@ for cb = 1:Nb
         'LineWidth', 1/3);
 
     ax = newAx( cb, figs(3) );
+    bxObj = boxchart(ax, pairedStimFlags(trFlag,:) * (1:Nccond)', ...
+        vecnorm( [w_smu(trFlag), w_emu(trFlag)], 2, 2 ), ...
+        "Notch", "on", "JitterOutlier", "on", "MarkerStyle", "." );
     if cb == Nb
         legend( ax, bxObj, 'L-2 norm', ...
             lgOpts{:}, "AutoUpdate", "off", "interpreter", "latex" );
