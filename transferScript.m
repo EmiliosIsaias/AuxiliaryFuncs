@@ -691,6 +691,10 @@ cbLabels(7,:) = ["Puff", "Away"];
 cbLabels(8,:) = ["Backward", "Forward"];
 %%  Normalised amplitud by absolute maximum
 fig = figure("Color", "w");
+screen_size = get(0, 'ScreenSize' );
+pxHeight = screen_size(4)*0.9;
+fig = figure("Color", "w", "Position", ...
+            [0, 1.8, pxHeight/sqrt(2), pxHeight]);
 for bpi = 1:Nb
     ax = subplot(4,2,bpi);
     auxStack = squeeze( behData.Data(:,:,bpi) )';
@@ -760,8 +764,10 @@ Nrows = Nb / Ncols;
 for l = [1, 2, inf]
 
     for cf = 1:Nfgs
-        figs(cf, 1) = figure( "Color", "w" );
-        figs(cf, 2) = figure( "Color", "w" );
+        figs(cf, 1) = figure( "Color", "w", "Position", ...
+            [0, 1.8, pxHeight/sqrt(2), pxHeight] );
+        figs(cf, 2) = figure( "Color", "w", "Position", ...
+            [pxHeight/sqrt(2), 1.8, pxHeight/sqrt(2), pxHeight] );
         for bpi = 1:Nb
 
             ax = subplot( Nrows, Ncols, bpi, "Box", "off", ...
@@ -836,8 +842,16 @@ evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
 rwi = 1;
 
 clrMap = lines(Nccond);
-figs = gobjects(4, 1);
+
 Na = sum( pairedStimFlags );
+figs(1) = figure( "Color", "w", "Position", ...
+    [0, 1.8, pxHeight/sqrt(2), pxHeight], "Name", "Weighted mean" );
+figs(2) = figure( "Color", "w", "Position", ...
+    [pxHeight/sqrt(2), 1.8, pxHeight/sqrt(2), pxHeight], ...
+    "Name", "Line distance boxplots" );
+figs(3) = figure( "Color", "w", "Position", ...
+    [2*pxHeight/sqrt(2), 1.8, pxHeight/sqrt(2), pxHeight], ...
+    "Name", "Vector magnitude boxplots" );
 
 for cb = 1:Nb
     w_smu = reshape( sponWeight*behData.Data(sponFlag,:,cb), [], 1 );
@@ -847,8 +861,6 @@ for cb = 1:Nb
     w_emu = reshape( evokWeight*behData.Data( ...
         evokFlags(:,rwi), :, cb ), [], 1 );
 
-    figs(cb) = figure( "Color", "w" );
-    ax = subplot(1, 2, 1, "NextPlot", "add", "Parent", figs(cb) );
     scObj = arrayfun(@(c) scatter(ax, w_smu(pairedStimFlags(:,c)), ...
         w_emu(pairedStimFlags(:,c)), '.', "MarkerEdgeColor", clrMap(c,:) ), ...
         1:Nccond);
