@@ -689,8 +689,6 @@ cbLabels([2,4,5],:) = repmat(["Closed", "Opened"],3,1);
 cbLabels(6,:) = ["Away", "Puff"];
 cbLabels(7,:) = ["Puff", "Away"];
 cbLabels(8,:) = ["Backward", "Forward"];
-%%  Normalised amplitud by absolute maximum
-fig = figure("Color", "w");
 screen_size = get(0, 'ScreenSize' );
 pxHeight = screen_size(4)*0.9;
 fig = figure("Color", "w", "Position", ...
