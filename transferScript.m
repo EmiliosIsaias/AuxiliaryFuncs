@@ -598,7 +598,7 @@ pairedStimFlags = arrayfun(@(c) any( ...
 pairedStimFlags = cat(2, pairedStimFlags{:});
 
 consCondNames = string( { Conditions( consCond ).name  } );
-%%
+
 [behRes, behFig_path, behData, aInfo] = analyseBehaviour(beh_path, ...
     "ConditionsNames", cellstr(consCondNames), ...
     "PairedFlags", pairedStimFlags, ...
@@ -618,7 +618,7 @@ mdlt = fit_poly( [1, Ns], vwin + [1,-1] * (1/(2 * fr) ), 1);
 txb = ( (1:Ns)'.^[1,0] ) * mdlt;
 behNames = string( { behRes(1).Results.BehSigName } );
 
-%%
+
 [pAreas, ~, behAreaFig] = createBehaviourIndex(behRes);
 behMeasures = string({behAreaFig.Name});
 biFigPttrn = behMeasures+"%s";
@@ -637,7 +637,7 @@ biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), 1:numel(behMeasures)
 arrayfun(@(f, fn) saveFigure(f, fullfile(behFig_path, fn), true, true), ...
     behAreaFig(:), biFN(:) );
 
-%%
+% Count figure
 trMvFlag = arrayfun(@(cr) behRes(1).Results(cr).MovStrucure.MovmentFlags, ...
     1:size(behRes(1).Results,2), fnOpts{:}); trMvFlag = cat(3, trMvFlag{:});
 BIscaleMat = sum(trMvFlag,3);
@@ -678,7 +678,8 @@ countFigName = sprintf("Count distributions P%s", ...
 
 saveFigure(countFig, fullfile(behFig_path, countFigName), true);
 
-%%
+%% Normalised amplitud by absolute maximum
+
 rollYL = "Roller speed [cm/s]";
 yLabels = [repmat("Angle [°]", 1, Nb-1), rollYL];
 sym_flag = contains( behNames, "symmetry", "IgnoreCase", true );
@@ -702,6 +703,7 @@ isendrow = @(ix) ( (ix/Ncols) + 1) > Nrows;
 
 fig = figure("Color", "w", "Position", ...
             [0, 1.8, pxHeight/sqrt(2), pxHeight]);
+
 for bpi = 1:Nb
     ax = newAx(bpi, fig);
     auxStack = squeeze( behData.Data(:,:,bpi) )';
@@ -733,8 +735,8 @@ end
 axis( findobj( fig, "Type", "Axes" ), ...
     [1e3*txb([1,end])', [1,Nt] + [-1,1]*(1/2)] )
 %cb.TickLabels = {'Backward', 'Forward'};
-linkaxes( findobj(gcf, "Type", "Axes"), "xy")
-%%
+linkaxes( findobj(fig, "Type", "Axes"), "xy")
+
 saveFigure(fig, fullfile(figure_path, ...
     "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
     "All trials all body parts normalised"), true, true)
@@ -775,10 +777,6 @@ app = [ repmat("", 1,Nb); repmat( "diff", 1, Nb) ];
 Nfgs = numel(funcs);
 figs = gobjects(Nfgs, 2);
 
-possCols = [2,3,5];
-
-Ncols = possCols( find( mod( Nb, possCols ) == 0, 1, 'first' ) );
-Nrows = Nb / Ncols;
 
 for l = [1, 2, inf]
 
@@ -855,16 +853,11 @@ for l = [1, 2, inf]
     clearvars aux_* ax figs
 end
 
-%%
+%% Weigthed mean
 sponWeight = (1:sum(sponFlag))/sum(1:sum(sponFlag));
-
-% ln1 = 1:(round( sum( evokFlag )/3 ) );
-% ln1 = padarray(ln1, [0, sum( evokFlag ) - numel( ln1 )], "replicate", "post");
 ln1 = log10( 1:sum(evokFlags(:,1)) );
-
 ln2 = sum( evokFlags(:,1) ):-1:1;
 evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
-rwi = 1;
 
 clrMap = lines(Nccond);
 
@@ -880,11 +873,9 @@ figs(3) = figure( "Color", "w", "Position", ...
 
 for cb = 1:Nb
     w_smu = reshape( sponWeight*behData.Data(sponFlag,:,cb), [], 1 );
-    if cb == 1 || cb == 2
-        rwi = 2;
-    end
+    
     w_emu = reshape( evokWeight*behData.Data( ...
-        evokFlags(:,rwi), :, cb ), [], 1 );
+        evokFlags(:,cb), :, cb ), [], 1 );
 
     
     ax = newAx( cb, figs(1) );
@@ -901,16 +892,19 @@ for cb = 1:Nb
 
     title(ax, behNames(cb) );
     set( ax, axOpts{:}, "XAxisLocation", "origin", ...
-        "YAxisLocation", "origin" ); grid( ax, "on" ); axis( ax, 'square' )
-    ax = subplot( 1, 2, 2, "NextPlot", "add", "Parent", figs(cb) );
-    bxObj = boxchart(ax, repmat( pairedStimFlags(trFlag,:) * (1:Nccond)', 2, 1 ) , ...
-        cat(1, [w_smu(trFlag), w_emu(trFlag)] * n, ...
-        vecnorm( [w_smu(trFlag), w_emu(trFlag)], 2, 2) ), ...
+        "YAxisLocation", "origin" ); grid( ax, "on" ); %axis( ax, 'square' )
+    line(ax, xlim(ax), xlim(ax), 'LineStyle', '--', 'Color', 0.45*ones(1,3))
+
     ax = newAx( cb, figs(2) );
+    % bxObj = boxchart(ax, repmat( pairedStimFlags(trFlag,:) * (1:Nccond)', 2, 1 ) , ...
+    %     cat(1, [w_smu(trFlag), w_emu(trFlag)] * n, ...
+    %     vecnorm( [w_smu(trFlag), w_emu(trFlag)], 2, 2) ), ...
+    %     "Notch", "on", "JitterOutlier", "on", "MarkerStyle", ".", ...
+    %     "GroupByColor", reshape( ones( sum(Na), 1) * (1:Nccond), [], 1 ) );
+    bxObj = boxchart(ax, pairedStimFlags(trFlag,:) * (1:Nccond)', ...
+        [w_smu(trFlag), w_emu(trFlag)] * n, ...
         "Notch", "on", "JitterOutlier", "on", "MarkerStyle", ".", ...
-        "GroupByColor", reshape( ones( sum(Na), 1) * [1, 2], [], 1 ) );
-    legend( ax, bxObj, {'x\timesn + d', 'L-2 norm'}, ...
-        lgOpts{:}, "AutoUpdate", "off" );
+        "Boxfacecolor", "k", "Markercolor", "k" );
 
     if cb == Nb
         legend( ax, bxObj, '$\vec{x} \cdot n + d$', ...
