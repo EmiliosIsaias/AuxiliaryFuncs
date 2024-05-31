@@ -703,6 +703,12 @@ isendrow = @(ix) ( (ix/Ncols) + 1) > Nrows;
 
 fig = figure("Color", "w", "Position", ...
             [0, 1.8, pxHeight/sqrt(2), pxHeight]);
+t = tiledlayout(, 2, 'TileSpacing', 'Compact', 'Padding', 'Compact');
+nexttile; plot([0 1]);
+nexttile; plot([1 0]);
+nexttile; plot([0 1 0 1]);
+nexttile; plot([1 0 1 0]);
+exportgraphics(t, 'fourplots.pdf', 'BackgroundColor', 'none');
 
 for bpi = 1:Nb
     ax = newAx(bpi, fig);
