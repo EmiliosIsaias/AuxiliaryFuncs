@@ -13,8 +13,11 @@ absBaseFilePath = string(absBaseFilePath); fileExt = [".fig";".pdf";".emf"];
 eidff = arrayfun(@(x) ~exist(absBaseFilePath + x,'file'),...
     fileExt);
 questionOpts = {'Overwrite?','Yes','No','No'};
-funCell = {@savefig, @print, @print};
-savingOpts = {{},{'-dpdf','-fillpage'},{'-dmeta'}};
+funCell = {@savefig, @exportgraphics, @exportgraphics};
+savingOpts = { {}, ...
+    ... {'-dpdf','-fillpage'}, ...
+    {'BackgroundColor', 'none', 'ContentType', 'Vector'}, ...
+    {'BackgroundColor', 'none', 'ContentType', 'Vector'} };
 for cft = 1:3
     if eidff(cft) || ovrWriteFlag
         if askOvr && ~eidff(cft)
@@ -25,10 +28,10 @@ for cft = 1:3
             end
         end
         if isempty(savingOpts{cft})
-            funCell{cft}(figSave, absBaseFilePath + fileExt(cft))
+            funCell{cft}( figSave, absBaseFilePath + fileExt(cft) )
         else
-            funCell{cft}(figSave, absBaseFilePath + fileExt(cft),...
-                savingOpts{cft}{:})
+            funCell{cft}( figSave, absBaseFilePath + fileExt(cft),...
+                savingOpts{cft}{:} )
         end
     end
     if vectorFlag && cft == 1 
