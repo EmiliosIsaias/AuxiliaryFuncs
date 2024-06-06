@@ -5,14 +5,15 @@ fnOpts = {'UniformOutput', false};
 expandPath = @(x) fullfile( x.folder, x.name );
 pathHere = @(x) fullfile( beh_path, x );
 varsInFile = {'lsrInt', 'delta_tiv', 'Texp_vid', 'Texp_ephys'};
+out_path = pathHere( "VideoLaserIntensity_shuffle2.mat" );
 
 fprintf( 1, "Working directory: %s\n", beh_path )
 
-if exist(pathHere( "VideoLaserIntensity_shuffle2.mat" ), "file")
+if exist( out_path, "file" )
     fprintf(1, "Laser signal file exists!\n")
     fprintf(1, "Loading... ")
     try
-        load( pathHere( "VideoLaserIntensity.mat" ) , varsInFile{:} )
+        load( out_path , varsInFile{:} )
         fprintf(1, "Ready\n")
     catch
         fprintf(1, "Error while loading!\n")
@@ -46,7 +47,6 @@ end
 
 fprintf(1, "Sampling frequency file: %s\n", fsf_path.name)
 
-
 vidTx = arrayfun(@(x) readCSV( expandPath( x ) ), fid_paths, fnOpts{:} );
 vidTx = cellfun(@(x) x.Var2 ./ 1e9, vidTx, fnOpts{:} ); % nanoseconds
 
@@ -61,12 +61,12 @@ else
     Texp_vid = 0; delta_tiv = 0;
 end
 
-dlcTables = arrayfun(@(x) readDLCData(expandPath(x)), ...
-    dlc_paths, fnOpts{:});
+dlcTables = arrayfun(@(x) readDLCData( expandPath(x) ), ...
+    dlc_paths, fnOpts{:} );
 
 lsrInt = cellfun(@(v,t) getLaserIntensitySignalFromVideo(v, t), ...
     vidObj(:), dlcTables(:), fnOpts{:} );
 
-save( pathHere( "VideoLaserIntensity_shuffle2.mat" ), varsInFile{:} )
+save( out_path, varsInFile{:} )
 
 end
