@@ -53,6 +53,13 @@ vidTx = cellfun(@(x) x.Var2 ./ 1e9, vidTx, fnOpts{:} ); % nanoseconds
 fs_ephys = load( expandPath( fsf_path ), "fs" ); fs_ephys = fs_ephys.fs;
 Ns_intan = [tf_paths.bytes]' ./ 4; % 2 signals x 2 bytes per sample.
 Texp_ephys = Ns_intan ./ fs_ephys;
+
+fIDs = arrayfun(@(x) fopen( expandPath( x ), "r" ), tf_paths );
+trig = arrayfun(@(x) fread( x, [2, inf], "uint16=>uint16" ), fIDs, fnOpts{:} );
+arrayfun(@fclose, fIDs); 
+testObj = cellfun(@(c) StepWaveform(c(2,:), fs_ephys ), trig);
+testSubs = arrayfun(@(x) x.subTriggers, testObj );
+
 if ~isempty(vidTx) && all( cellfun(@(c) ~isempty( c ), vidTx ) )
     Texp_vid = cellfun(@(x) diff( x([1,end]) ), vidTx );
     delta_tiv = Texp_ephys - Texp_vid;
