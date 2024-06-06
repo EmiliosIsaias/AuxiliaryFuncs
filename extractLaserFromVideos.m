@@ -1,4 +1,4 @@
-function [lsrInt, delta_tiv, Texp_vid, Texp_ephys] = ...
+function [lsrInt, delta_tiv, Texp_vid, Texp_ephys, trig, dlcTables, fs_ephys] = ...
     extractLaserFromVideos( beh_path )
 
 fnOpts = {'UniformOutput', false};
@@ -53,13 +53,6 @@ vidTx = cellfun(@(x) x.Var2 ./ 1e9, vidTx, fnOpts{:} ); % nanoseconds
 fs_ephys = load( expandPath( fsf_path ), "fs" ); fs_ephys = fs_ephys.fs;
 Ns_intan = [tf_paths.bytes]' ./ 4; % 2 signals x 2 bytes per sample.
 Texp_ephys = Ns_intan ./ fs_ephys;
-
-fIDs = arrayfun(@(x) fopen( expandPath( x ), "r" ), tf_paths );
-trig = arrayfun(@(x) fread( x, [2, inf], "uint16=>uint16" ), fIDs, fnOpts{:} );
-arrayfun(@fclose, fIDs); 
-testObj = cellfun(@(c) StepWaveform(c(2,:), fs_ephys ), trig);
-testSubs = arrayfun(@(x) x.subTriggers, testObj );
-
 if ~isempty(vidTx) && all( cellfun(@(c) ~isempty( c ), vidTx ) )
     Texp_vid = cellfun(@(x) diff( x([1,end]) ), vidTx );
     delta_tiv = Texp_ephys - Texp_vid;
@@ -68,11 +61,22 @@ else
     Texp_vid = 0; delta_tiv = 0;
 end
 
-dlcTables = arrayfun(@(x) readDLCData( expandPath(x) ), ...
-    dlc_paths, fnOpts{:} );
-
-lsrInt = cellfun(@(v,t) getLaserIntensitySignalFromVideo(v, t), ...
-    vidObj(:), dlcTables(:), fnOpts{:} );
+fIDs = arrayfun(@(x) fopen( expandPath( x ), "r" ), tf_paths );
+trig = arrayfun(@(x) fread( x, [2, inf], "uint16=>uint16" ), fIDs, fnOpts{:} );
+arrayfun(@fclose, fIDs); 
+testObj = cellfun(@(c) StepWaveform(c(2,:), fs_ephys, ...
+    'verbose', false ), trig);
+testSubs = arrayfun(@(x) x.subTriggers, testObj, fnOpts{:} );
+if ~isempty(testSubs)
+    dlcTables = arrayfun(@(x) readDLCData( expandPath(x) ), ...
+        dlc_paths, fnOpts{:} );
+    lsrInt = cellfun(@(v,t) getLaserIntensitySignalFromVideo(v, t), ...
+        vidObj(:), dlcTables(:), fnOpts{:} );
+else
+    fprintf(1, 'No laser found in this experiment!\n')
+    fprintf(1, 'You could run ''getLaserIntensitySignalFromVideo'' to get a signal anyway\n')
+    lsrInt = nan;
+end
 
 save( out_path, varsInFile{:} )
 
