@@ -1,7 +1,7 @@
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\eOPN3\WT66\221130_C_2100" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\eOPN3\WT67\221202_C_2240" );
 
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
