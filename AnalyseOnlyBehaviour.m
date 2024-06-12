@@ -1,7 +1,7 @@
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\eOPN3\WT67\221202_C_2240" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\eOPN3\WT66\221201_C+mus_2000" );
 
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
@@ -41,7 +41,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = [3,4];
+consCond = [3,6];
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
@@ -144,7 +144,7 @@ cbLabels(6,:) = ["Away", "Puff"];
 cbLabels(7,:) = ["Puff", "Away"];
 cbLabels(8,:) = ["Backward", "Forward"];
 screen_size = get(0, 'ScreenSize' );
-pxHeight = screen_size(4)*0.9;
+pxHeight = screen_size(4)*0.7;
 
 possCols = [2,3,5];
 Ncols = possCols( find( mod( Nb, possCols ) == 0, 1, 'first' ) );
@@ -158,7 +158,7 @@ createtiles = @(f) tiledlayout( f, Nrows, Ncols, ...
 isendrow = @(ix) ( (ix/Ncols) + 1) > Nrows;
 
 fig = figure("Color", "w", "Position", ...
-            [0, 1.8, pxHeight/sqrt(2), pxHeight]);
+            [0, 10, pxHeight/sqrt(2), pxHeight]);
 
 t = createtiles( fig );
 for bpi = 1:Nb
@@ -195,7 +195,7 @@ axis( findobj( fig, "Type", "Axes" ), ...
 linkaxes( findobj(fig, "Type", "Axes"), "xy")
 
 saveFigure(fig, fullfile( behFig_path, ...
-    "All trials all body parts normalised" ), true, true)
+    "All trials all body parts normalised" ), true)
 
 clearvars auxStack
 
@@ -238,9 +238,9 @@ for l = [1, 2, inf]
 
     for cf = 1:Nfgs
         figs(cf, 1) = figure( "Color", "w", "Position", ...
-            [0, 1.8, pxHeight/sqrt(2), pxHeight] );
+            [0, 10, pxHeight/sqrt(2), pxHeight] );
         figs(cf, 2) = figure( "Color", "w", "Position", ...
-            [pxHeight/sqrt(2), 1.8, pxHeight/sqrt(2), pxHeight] );
+            [pxHeight/sqrt(2), 10, pxHeight/sqrt(2), pxHeight] );
         t1 = createtiles( figs(cf, 1) );
         t2 = createtiles( figs(cf, 2) );
         for bpi = 1:Nb
@@ -320,14 +320,14 @@ clrMap = lines(Nccond);
 
 Na = sum( pairedStimFlags );
 figs(1) = figure( "Color", "w", "Position", ...
-    [0, 1.8, pxHeight/sqrt(2), pxHeight], "Name", "Weighted mean" );
+    [0, 10, pxHeight/sqrt(2), pxHeight], "Name", "Weighted mean" );
 t1 = createtiles( figs(1) );
 figs(2) = figure( "Color", "w", "Position", ...
-    [pxHeight/sqrt(2), 1.8, pxHeight/sqrt(2), pxHeight], ...
+    [pxHeight/sqrt(2), 10, pxHeight/sqrt(2), pxHeight], ...
     "Name", "Line distance boxplots" );
 t2 = createtiles( figs(2) );
 figs(3) = figure( "Color", "w", "Position", ...
-    [2*pxHeight/sqrt(2), 1.8, pxHeight/sqrt(2), pxHeight], ...
+    [2*pxHeight/sqrt(2), 10, pxHeight/sqrt(2), pxHeight], ...
     "Name", "Vector magnitude boxplots" );
 t3 = createtiles( figs(3) );
 
