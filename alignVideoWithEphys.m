@@ -17,15 +17,19 @@ trig = cellfun(@(x) x', trig, fnOpts{:} );
 
 lsrInt = cellfun(@(c) c - movmedian( c, round( 3*fr ) ), ...
     lsrInt, fnOpts{:} );
-mean_delay = zeros( numel( lsrInt ), 1, "single" );
+mean_delay = zeros( numel( lsrInt ), 1, "double" );
 parfor cli = 1:numel(lsrInt)
-    lsrInt_loop = interp1( (0:length(lsrInt{cli})-1)/fr, ...
-        zscore( lsrInt{cli}(:) ), (0:length(trig{cli})-1)/fs, ...
-        "pchip", "extrap");
-    [r, lags] = xcorr( zscore( single( trig{cli}(:,2) ) ), lsrInt_loop(:), ...
-    round( fs ) , "normalized" );
-    [~, mean_delay_sub] = max( r );
-    mean_delay(cli) = lags( mean_delay_sub )/fs;
+    swObj = StepWaveform( trig{cli}(:,2), fs );
+    testSubs = swObj.subTriggers;
+    if numel(testSubs)
+        lsrInt_loop = interp1( (0:length(lsrInt{cli})-1)/fr, ...
+            zscore( lsrInt{cli}(:) ), (0:length(trig{cli})-1)/fs, ...
+            "pchip", "extrap");
+        [r, lags] = xcorr( zscore( single( trig{cli}(:,2) ) ), lsrInt_loop(:), ...
+            round( fs ) , "normalized" );
+        [~, mean_delay_sub] = max( r );
+        mean_delay(cli) = double(lags( mean_delay_sub ))/fs;
+    end
 end
 
 
