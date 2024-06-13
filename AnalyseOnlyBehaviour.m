@@ -1,7 +1,7 @@
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\eOPN3\WT66\221201_C+mus_2000" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\eRNs\vGlut2\221206_F+C_2100" );
 
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
@@ -41,7 +41,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = [3,6];
+consCond = [3,4,5];
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
