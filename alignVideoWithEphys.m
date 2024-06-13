@@ -19,7 +19,7 @@ lsrInt = cellfun(@(c) c - movmedian( c, round( 3*fr ) ), ...
     lsrInt, fnOpts{:} );
 mean_delay = zeros( numel( lsrInt ), 1, "double" );
 parfor cli = 1:numel(lsrInt)
-    swObj = StepWaveform( trig{cli}(:,2), fs );
+    swObj = StepWaveform( trig{cli}(:,2), fs, 'verbose', false );
     testSubs = swObj.subTriggers;
     if numel(testSubs)
         lsrInt_loop = interp1( (0:length(lsrInt{cli})-1)/fr, ...
