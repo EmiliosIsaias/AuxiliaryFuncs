@@ -77,15 +77,12 @@ end
 testObj = cellfun(@(c) StepWaveform(c(2,:), fs_ephys, ...
     'verbose', false ), trig);
 testSubs = arrayfun(@(x) x.subTriggers, testObj, fnOpts{:} );
+laser_flag = ~cellfun(@isempty, testSubs);
 
-if ~isempty(testSubs)
-    
-    lsrInt = cellfun(@(v,t) getLaserIntensitySignalFromVideo(v, t), ...
-        vidObj(:), dlcTables(:), fnOpts{:} );
-else
-    fprintf(1, 'No laser found in this experiment!\n')
-    fprintf(1, 'You could run ''getLaserIntensitySignalFromVideo'' to get a signal anyway\n')
-    lsrInt = nan;
+lsrInt = cell( numel( vidObj ), 1 );
+for cvid = find( laser_flag(:)' )
+    lsrInt{cvid} = getLaserIntensitySignalFromVideo(vidObj{cvid}, ...
+        dlcTables{cvid});
 end
 
 save( out_path, varsInFile{:} )
