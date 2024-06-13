@@ -195,7 +195,7 @@ axis( findobj( fig, "Type", "Axes" ), ...
 linkaxes( findobj(fig, "Type", "Axes"), "xy")
 
 saveFigure(fig, fullfile( behFig_path, ...
-    "All trials all body parts normalised" ), true)
+    "All trials all body parts normalised" ), true, true)
 
 clearvars auxStack
 
