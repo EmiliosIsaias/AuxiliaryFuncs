@@ -238,9 +238,9 @@ for l = [1, 2, inf]
 
     for cf = 1:Nfgs
         figs(cf, 1) = figure( "Color", "w", "Position", ...
-            [0, 10, pxHeight/sqrt(2), pxHeight] );
+            [0, 20, pxHeight/sqrt(2), pxHeight] );
         figs(cf, 2) = figure( "Color", "w", "Position", ...
-            [pxHeight/sqrt(2), 10, pxHeight/sqrt(2), pxHeight] );
+            [pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight] );
         t1 = createtiles( figs(cf, 1) );
         t2 = createtiles( figs(cf, 2) );
         for bpi = 1:Nb
@@ -320,14 +320,14 @@ clrMap = lines(Nccond);
 
 Na = sum( pairedStimFlags );
 figs(1) = figure( "Color", "w", "Position", ...
-    [0, 10, pxHeight/sqrt(2), pxHeight], "Name", "Weighted mean" );
+    [0, 20, pxHeight/sqrt(2), pxHeight], "Name", "Weighted mean" );
 t1 = createtiles( figs(1) );
 figs(2) = figure( "Color", "w", "Position", ...
-    [pxHeight/sqrt(2), 10, pxHeight/sqrt(2), pxHeight], ...
+    [pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight], ...
     "Name", "Line distance boxplots" );
 t2 = createtiles( figs(2) );
 figs(3) = figure( "Color", "w", "Position", ...
-    [2*pxHeight/sqrt(2), 10, pxHeight/sqrt(2), pxHeight], ...
+    [2*pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight], ...
     "Name", "Vector magnitude boxplots" );
 t3 = createtiles( figs(3) );
 
