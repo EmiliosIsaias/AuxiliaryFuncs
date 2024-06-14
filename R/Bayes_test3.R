@@ -14,6 +14,17 @@ d <- list(
   Hx =   dat$psth.u
   )
 
+triggered_firing_rate <- function( n_steps , init , theta , dt=0.001 ) {
+  Y <- rep(NA,n_steps)
+  X <- theta[3:length(theta)]
+  
+  Y[1] <- init[1]
+  for ( i in 2:n_steps ) {
+    Y[i] <- Y[i-1] + dt * ( theta[1] + Y[i-1]*theta[2]*(1 + X[i]) )
+  }
+  return( cbind(L,H) )
+}
+
 mRes <- ulam(
   alist(
     Hy ~ dzipois( f, lambda ),
