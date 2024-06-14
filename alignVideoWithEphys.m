@@ -17,6 +17,10 @@ trig = cellfun(@(x) x', trig, fnOpts{:} );
 
 lsrInt = cellfun(@(c) c - movmedian( c, round( 3*fr ) ), ...
     lsrInt, fnOpts{:} );
+lsrInt = cellfun(@(c) iirCombFilter( c, fr, 'Q', 17.5, 'W0', 9 ), ...
+    lsrInt, fnOpts{:} );
+lsrInt = cellfun(@(c) iirCombFilter( c, fr, 'Q', 35, 'W0', 50 ), ...
+    lsrInt, fnOpts{:} );
 mean_delay = zeros( numel( lsrInt ), 1, "double" );
 parfor cli = 1:numel(lsrInt)
     swObj = StepWaveform( trig{cli}(:,2), fs, 'verbose', false );
@@ -25,8 +29,6 @@ parfor cli = 1:numel(lsrInt)
         lsrInt_loop = interp1( (0:length(lsrInt{cli})-1)' / fr, ...
             zscore( lsrInt{cli}(:) ), (0:length(trig{cli})-1)/fs, ...
             "pchip", "extrap");
-        lsrInt_loop = iirCombFilter( lsrInt_loop, fs, 'Q', 17.5, 'W0', 9 );
-        lsrInt_loop = iirCombFilter( lsrInt_loop, fs, 'Q', 35, 'W0', 50 );
         [r, lags] = xcorr( zscore( single( trig{cli}(:,2) ) ), lsrInt_loop(:), ...
             round( fs ) , "normalized" );
         [~, mean_delay_sub] = max( r );
