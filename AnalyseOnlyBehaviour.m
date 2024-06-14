@@ -148,6 +148,7 @@ cbLabels(7,:) = ["Puff", "Away"];
 cbLabels(8,:) = ["Backward", "Forward"];
 screen_size = get(0, 'ScreenSize' );
 pxHeight = screen_size(4)*0.7;
+lowBound = screen_size(4)*1/5;
 
 possCols = [2,3,5];
 Ncols = possCols( find( mod( Nb, possCols ) == 0, 1, 'first' ) );
@@ -160,8 +161,10 @@ createtiles = @(f) tiledlayout( f, Nrows, Ncols, ...
 
 isendrow = @(ix) ( (ix/Ncols) + 1) > Nrows;
 
-fig = figure("Color", "w", "Position", ...
-            [0, 10, pxHeight/sqrt(2), pxHeight]);
+newFigure = @(x,y,fn) figure( "Color", "w", "Position", ...
+    [x, y, pxHeight/sqrt(2), pxHeight], "Name", fn );
+
+fig = newFigure(0, lowBound, "");
 
 t = createtiles( fig );
 for bpi = 1:Nb
@@ -240,10 +243,11 @@ figs = gobjects(Nfgs, 2);
 for l = [1, 2, inf]
 
     for cf = 1:Nfgs
-        figs(cf, 1) = figure( "Color", "w", "Position", ...
-            [0, 20, pxHeight/sqrt(2), pxHeight] );
-        figs(cf, 2) = figure( "Color", "w", "Position", ...
-            [pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight] );
+        figs(cf, 1) = newFigure(0, lowBound, "");
+        %figure( "Color", "w", "Position", ...
+         %   [0, 20, pxHeight/sqrt(2), pxHeight] );
+        figs(cf, 2) = newFigure(pxHeight/sqrt(2), lowBound, "");... figure( "Color", "w", "Position", ...
+            %[pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight] );
         t1 = createtiles( figs(cf, 1) );
         t2 = createtiles( figs(cf, 2) );
         for bpi = 1:Nb
@@ -318,19 +322,29 @@ evokWeight = ln1 .* ln2; evokWeight = evokWeight / sum( evokWeight );
 
 clrMap = lines(Nccond);
 
-
+xPos = (0:2)*pxHeight/sqrt(2);
 Na = sum( pairedStimFlags );
-figs(1) = figure( "Color", "w", "Position", ...
-    [0, 20, pxHeight/sqrt(2), pxHeight], "Name", "Weighted mean" );
-t1 = createtiles( figs(1) );
-figs(2) = figure( "Color", "w", "Position", ...
-    [pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight], ...
-    "Name", "Line distance boxplots" );
-t2 = createtiles( figs(2) );
-figs(3) = figure( "Color", "w", "Position", ...
-    [2*pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight], ...
-    "Name", "Vector magnitude boxplots" );
-t3 = createtiles( figs(3) );
+figs = gobjects( 3, 1 );
+ts = figs;
+figNames = ["Weighted mean"; "Line distance boxplots"; 
+    "Vector magnitude boxplots"];
+
+for cf = 1:numel(figs)
+    figs(cf) = newFigure( xPos(cf), lowBound, figNames(cf) );
+    ts(cf) = createtiles( figs( cf ) );
+end
+% figs(1) = figure( "Color", "w", "Position", ...
+%     [0, 20, pxHeight/sqrt(2), pxHeight], "Name", "Weighted mean" );
+% t1 = createtiles( figs(1) );
+% figs(2) = newFigure(0, lowBound);
+% figure( "Color", "w", "Position", ...
+%     [pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight], ...
+%     "Name", "Line distance boxplots" );
+% t2 = createtiles( figs(2) );
+% figs(3) = figure( "Color", "w", "Position", ...
+%     [2*pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight], ...
+%     "Name", "Vector magnitude boxplots" );
+% t3 = createtiles( figs(3) );
 
 for cb = 1:Nb
     w_smu = reshape( sponWeight*behData.Data(sponFlag,:,cb), [], 1 );
@@ -339,7 +353,7 @@ for cb = 1:Nb
         evokFlags(:,cb), :, cb ), [], 1 );
 
     
-    ax = nexttile( t1 ); set(ax, 'NextPlot', 'add' );
+    ax = nexttile( ts(1) ); set(ax, 'NextPlot', 'add' );
     scObj = arrayfun(@(c) scatter(ax, w_smu(pairedStimFlags(:,c)), ...
         w_emu(pairedStimFlags(:,c)), '.', "MarkerEdgeColor", clrMap(c,:) ), ...
         1:Nccond);
@@ -356,7 +370,7 @@ for cb = 1:Nb
         "YAxisLocation", "origin" ); grid( ax, "on" ); %axis( ax, 'square' )
     line(ax, xlim(ax), xlim(ax), 'LineStyle', '--', 'Color', 0.45*ones(1,3))
 
-    ax = nexttile( t2 ); set(ax, 'NextPlot', 'add' );
+    ax = nexttile( ts(2) ); set(ax, 'NextPlot', 'add' );
     % bxObj = boxchart(ax, repmat( pairedStimFlags(trFlag,:) * (1:Nccond)', 2, 1 ) , ...
     %     cat(1, [w_smu(trFlag), w_emu(trFlag)] * n, ...
     %     vecnorm( [w_smu(trFlag), w_emu(trFlag)], 2, 2) ), ...
@@ -384,7 +398,7 @@ for cb = 1:Nb
     set( ax, axOpts{:} ); yline( ax, 0, 'Color', 0.75*ones(1,3), ...
         'LineWidth', 1/3);
 
-    ax = nexttile( t3 ); set(ax, 'NextPlot', 'add' );
+    ax = nexttile( ts(3) ); set(ax, 'NextPlot', 'add' );
     bxObj = boxchart(ax, pairedStimFlags(trFlag,:) * (1:Nccond)', ...
         vecnorm( [w_smu(trFlag), w_emu(trFlag)], 2, 2 ), ...
         "Notch", "on", "JitterOutlier", "on", "MarkerStyle", "." );
