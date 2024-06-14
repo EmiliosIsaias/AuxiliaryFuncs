@@ -598,10 +598,3 @@ for cbp = 1:4
         join( [consCondNames(c), string( z_auc{c}(cbp) )]), 1:Nccond ), ...
         lgOpts{:})
 end
-%%
-wo = 50; lsrInt_f = lsrInt;
-for cf = 1:6
-    wo_aux = (2*wo*cf)/fr;
-    [b, a] = iirnotch( wo_aux, (2*wo_aux)/35 );
-    lsrInt_f = cellfun(@(x) filtfilt( b, a, x ), lsrInt_f, fnOpts{:} );
-end
