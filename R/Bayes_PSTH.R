@@ -2,6 +2,7 @@ library(rethinking)
 library(R.matlab)
 
 fpath <- "Z:\\Jesus\\Jittering\\FULLYCurated\\09_190702_Jittering_3720_1520_1520 yes VPM- good\\KS2_newChanMap\\BI_tryout\\psth_control.mat"
+"Z:\Jesus\Jittering\FULLYCurated\18_191211ProbeE1_Jesus_Emilio_Jittering_3436_1500_1500_2mW yes VPM good\KS2_newChanMap\Stan\linear_psth2.data.json"
 
 dat <- R.matlab::readMat(fpath)
 
