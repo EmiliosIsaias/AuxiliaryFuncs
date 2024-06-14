@@ -1,7 +1,9 @@
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\eRNs\vGlut2\221206_F+C_2100" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\ChR2\Rb69\221129_C+F+Mus_2000" );
+% Figure overwrite flag
+fowFlag = false;
 
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
@@ -41,7 +43,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = [3,4,5];
+consCond = [3,6];
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
@@ -57,7 +59,8 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "PairedFlags", pairedStimFlags, ...
     "FigureDirectory", figure_path, ...
     "ResponseWindow", [25, 350] * m, ...
-    "ViewingWindow", [-450, 500] * m);
+    "ViewingWindow", [-450, 500] * m, ...
+    "figOverWrite", fowFlag);
 
 [Ns, Nt, Nb] = size( behData.Data );
 
@@ -87,7 +90,7 @@ arrayfun(@(f) set( f, 'UserData', behRes ), behAreaFig);
 
 biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), 1:numel(behMeasures) );
 
-arrayfun(@(f, fn) saveFigure(f, fullfile(behFig_path, fn), true, true), ...
+arrayfun(@(f, fn) saveFigure(f, fullfile(behFig_path, fn), true, fowFlag), ...
     behAreaFig(:), biFN(:) );
 
 %% Count figure
@@ -129,7 +132,7 @@ ylabel(ax(1),'Trial proportion')
 countFigName = sprintf("Count distributions P%s", ...
     sprintf(" %.3f", p(:)));
 
-saveFigure(countFig, fullfile(behFig_path, countFigName), true, true);
+saveFigure(countFig, fullfile(behFig_path, countFigName), true, fowFlag);
 
 %% Normalised amplitud by absolute maximum
 
@@ -195,7 +198,7 @@ axis( findobj( fig, "Type", "Axes" ), ...
 linkaxes( findobj(fig, "Type", "Axes"), "xy")
 
 saveFigure(fig, fullfile( behFig_path, ...
-    "All trials all body parts normalised" ), true, true)
+    "All trials all body parts normalised" ), true, fowFlag)
 
 clearvars auxStack
 
@@ -297,14 +300,12 @@ for l = [1, 2, inf]
             end
 
         end
-        saveFigure( figs(cf, 1), fullfile(figure_path, ...
-            "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
-            join([sprintf("L%d norm", l), app(cf,1)]) ), true, true )
+        saveFigure( figs(cf, 1), fullfile(behFig_path, ...
+            join([sprintf("L%d norm", l), app(cf,1)]) ), true, fowFlag )
 
-        saveFigure( figs(cf, 2), fullfile(figure_path, ...
-            "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", ...
+        saveFigure( figs(cf, 2), fullfile(behFig_path, ...
             regexprep( join( [sprintf( "L%d norm", l ), app(cf,2), ...
-            "boxplots"] ), ' +', ' ' ) ), true, true )
+            "boxplots"] ), ' +', ' ' ) ), true, fowFlag )
     end
     clearvars aux_* ax figs
 end
@@ -409,8 +410,7 @@ end
 wmFigNames = ["Weighted mean scatter"; "Line distance boxplots"; ...
     "Origin distance"];
 
-arrayfun(@(x, f) saveFigure( x, fullfile( fullfile( figure_path, ...
-    "Beh V-0.45 - 0.50 s R25.00 - 350.00 ms", f ) ), true, true), ...
+arrayfun(@(x, f) saveFigure( x, fullfile( behFig_path, f ), true, fowFlag), ...
     figs(:), wmFigNames(:))
 
 clearvars ax figs
