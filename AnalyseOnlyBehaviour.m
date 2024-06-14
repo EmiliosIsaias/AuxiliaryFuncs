@@ -1,9 +1,9 @@
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\ChR2\Rb69\221129_C+F+Mus_2000" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\eRNs\vGlut2\221207_F+C+PTX_2150" );
 % Figure overwrite flag
-fowFlag = false;
+fowFlag = true;
 
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
