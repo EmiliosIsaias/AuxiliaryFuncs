@@ -598,3 +598,41 @@ for cbp = 1:4
         join( [consCondNames(c), string( z_auc{c}(cbp) )]), 1:Nccond ), ...
         lgOpts{:})
 end
+%% Pooling script (Muscimol and PTX)
+% Muscimol mice
+load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch6_beh+Muscimol\Batch6_BehaviourIndex.mat')
+mice6 = mice;
+load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\Batch11_BehaviourIndex.mat')
+mice11 = mice;
+
+% PTX mice
+load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\Batch12_BehaviourIndex.mat')
+mice12 = mice;
+load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch13_beh\Batch13_BehaviourIndex.mat')
+mice13 = mice;
+load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\RNs\WTg63\221109_PTX100microM_2000\Batch10_BehaviourIndex.mat')
+mice10 = mice;
+
+mice_mus = [mice6; mice11]; Nmm = numel( mice_mus );
+mice_ptx = [mice10; mice12; mice13]; Nmp = numel( mice_ptx );
+getSessPerBatch = @(ms) arrayfun(@(m) numel(m.Sessions) , ms );
+
+Ncondm = arrayfun(@(m) arrayfun(@(s) size( s.DataTable, 1), m.Sessions), mice_mus );
+musAreas = zeros( max(Ncondm), Nmm, 2 );
+for cmm = 1:Nmm
+    for cs = 1:numel(mice_mus(cmm).Sessions)
+        musAreas(:, cmm, :) = reshape( ...
+            mice_mus(cmm).Sessions(cs).DataTable.Trial_and_Amp_Indices, ...
+            Ncondm(cmm), 1 , 2 );
+    end
+end
+
+Ncondp = arrayfun(@(m) arrayfun(@(s) size( s.DataTable, 1), m.Sessions), mice_ptx );
+ptxAreas = zeros( max(Ncondp), Nmp, 2 );
+for cmm = 1:Nmp
+    for cs = 1:numel(mice_ptx(cmm).Sessions)
+        ptxAreas(:, cmm, :) = reshape( ...
+            mice_ptx(cmm).Sessions(cs).DataTable.Trial_and_Amp_Indices, ...
+            Ncondp(cmm), 1 , 2 );
+    end
+end
