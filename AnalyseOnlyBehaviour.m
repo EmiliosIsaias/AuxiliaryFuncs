@@ -11,6 +11,7 @@ m = 1e-3;
 eph_path = dir( fullfile( exp_path, "ephys*" ) );
 eph_path( ~[eph_path.isdir] ) = [];
 beh_path = fullfile( exp_path, "Behaviour" );
+
 if ~isempty( eph_path )
     eph_path = expandPath( eph_path );
     figure_path = fullfile( eph_path, "Figures" );
