@@ -1,7 +1,7 @@
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\eRNs\vGlut2\221207_F+C+PTX_2150" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\eRNs\vGlut5\221211_C+F+PTX_2620" );
 % Figure overwrite flag
 fowFlag = true;
 
