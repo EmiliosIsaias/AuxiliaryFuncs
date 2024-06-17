@@ -333,18 +333,7 @@ for cf = 1:numel(figs)
     figs(cf) = newFigure( xPos(cf), lowBound, figNames(cf) );
     ts(cf) = createtiles( figs( cf ) );
 end
-% figs(1) = figure( "Color", "w", "Position", ...
-%     [0, 20, pxHeight/sqrt(2), pxHeight], "Name", "Weighted mean" );
-% t1 = createtiles( figs(1) );
-% figs(2) = newFigure(0, lowBound);
-% figure( "Color", "w", "Position", ...
-%     [pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight], ...
-%     "Name", "Line distance boxplots" );
-% t2 = createtiles( figs(2) );
-% figs(3) = figure( "Color", "w", "Position", ...
-%     [2*pxHeight/sqrt(2), 20, pxHeight/sqrt(2), pxHeight], ...
-%     "Name", "Vector magnitude boxplots" );
-% t3 = createtiles( figs(3) );
+
 
 for cb = 1:Nb
     w_smu = reshape( sponWeight*behData.Data(sponFlag,:,cb), [], 1 );
