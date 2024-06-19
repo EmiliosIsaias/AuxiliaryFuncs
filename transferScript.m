@@ -610,29 +610,58 @@ load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\Batch12_Beh
 mice12 = mice;
 load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch13_beh\Batch13_BehaviourIndex.mat')
 mice13 = mice;
-load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\RNs\WTg63\221109_PTX100microM_2000\Batch10_BehaviourIndex.mat')
+load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\Batch10_BehaviourIndex.mat')
 mice10 = mice;
+
+getSessPerBatch = @(ms) arrayfun(@(m) numel(m.Sessions) , ms );
+unpackTbl = @(tbl) table( tbl.Conditions{:}, tbl.Trial_and_Amp_Indices{:}, ...
+    tbl.PolygonUnfold{:}, 'VariableNames', tbl.Properties.VariableNames );
+getCondsInBatch = @(mc) arrayfun(@(m) arrayfun(@(s) ...
+    size( s.DataTable, 1), m.Sessions), mc );
 
 mice_mus = [mice6; mice11]; Nmm = numel( mice_mus );
 mice_ptx = [mice10; mice12; mice13]; Nmp = numel( mice_ptx );
-getSessPerBatch = @(ms) arrayfun(@(m) numel(m.Sessions) , ms );
 
-Ncondm = arrayfun(@(m) arrayfun(@(s) size( s.DataTable, 1), m.Sessions), mice_mus );
+
+Ncondm = getCondsInBatch( mice_mus );
 musAreas = zeros( max(Ncondm), Nmm, 2 );
 for cmm = 1:Nmm
     for cs = 1:numel(mice_mus(cmm).Sessions)
-        musAreas(:, cmm, :) = reshape( ...
+        musAreas(1:Ncondm, cmm, :) = reshape( ...
             mice_mus(cmm).Sessions(cs).DataTable.Trial_and_Amp_Indices, ...
             Ncondm(cmm), 1 , 2 );
     end
 end
 
-Ncondp = arrayfun(@(m) arrayfun(@(s) size( s.DataTable, 1), m.Sessions), mice_ptx );
-ptxAreas = zeros( max(Ncondp), Nmp, 2 );
+Ncondp = getCondsInBatch( mice_ptx );
+ptxAreas = nan( max(Ncondp), Nmp, 2 );
 for cmm = 1:Nmp
     for cs = 1:numel(mice_ptx(cmm).Sessions)
-        ptxAreas(:, cmm, :) = reshape( ...
-            mice_ptx(cmm).Sessions(cs).DataTable.Trial_and_Amp_Indices, ...
-            Ncondp(cmm), 1 , 2 );
+        aux_table = mice_ptx(cmm).Sessions(cs).DataTable;
+        ptxAreas(1:Ncondp(cmm), cmm, :) = reshape( ...
+            aux_table.Trial_and_Amp_Indices, Ncondp(cmm), 1 , 2 );
     end
 end
+
+
+ptx_vals = arrayfun(@(m) cellfun(@(p) permute( p', 3:-1:1 ), ...
+    m.Sessions.DataTable.PolygonUnfold', fnOpts{:} ), mice_ptx, fnOpts{:} );
+p_p = arrayfun(@(c) signrank( ptx_vals2{1}(:,c,1), ptx_vals2{2}(:,c,1) ), 1:8 );
+ptx_vals2 = cell( size( ptx_vals, 1), 3 );
+for cr = 1:size( ptx_vals, 1)
+    ptx_vals2(cr,1:size(ptx_vals{cr},2)) = ptx_vals{cr,:};
+end
+ptx_vals = ptx_vals2;
+ptx_vals2 = arrayfun(@(c) cat(1, ptx_vals{:,c} ), 1:2, fnOpts{:} );
+p_p = arrayfun(@(c) signrank( ptx_vals2{1}(:,c,1), ptx_vals2{2}(:,c,1) ), 1:8 );
+
+bp_idx = tocol( repmat( ones( Nmp , 1) * (1:8), 1, 2 ) );
+treat_idx = tocol( ones( 8*Nmp, 1)*(1:2) );
+
+bxObj = boxchart(ax, bp_idx, bpa_ptx_vec, 'Notch', 'on', 'JitterOutliers', 'on', 'GroupByColor', treat_idx, 'MarkerStyle', '.' );
+xticks( 1:8 )
+xlim(ax, [0.5, 8.5] )
+xticklabels( ax, bp_names )
+bxObj(2).BoxFaceColor = ones(1, 3);
+bxObj(2).BoxEdgeColor = zeros(1, 3);
+bxObj(1).BoxFaceColor = zeros(1,3 );
