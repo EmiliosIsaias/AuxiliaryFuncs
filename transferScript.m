@@ -613,11 +613,18 @@ mice13 = mice;
 load('Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys.e\Batch10_BehaviourIndex.mat')
 mice10 = mice;
 
+dom = -5:0.05:5;
+mpdf = @(x) pdf( x, dom );
 getSessPerBatch = @(ms) arrayfun(@(m) numel(m.Sessions) , ms );
 unpackTbl = @(tbl) table( tbl.Conditions{:}, tbl.Trial_and_Amp_Indices{:}, ...
     tbl.PolygonUnfold{:}, 'VariableNames', tbl.Properties.VariableNames );
 getCondsInBatch = @(mc) arrayfun(@(m) arrayfun(@(s) ...
     size( s.DataTable, 1), m.Sessions), mc );
+total_var_dist = @(dmat) integral( @(x) ...
+    abs( pdf( dmat(1), x ) - pdf( dmat(2), x ) ), dom(1), dom(end) );
+kl_div = @(dmat) KullbackLeiblerDivergence( mpdf( dmat(1) ), mpdf( dmat(2) ) );
+fnOpts = {'UniformOutput', false}; 
+
 
 mice_mus = [mice6; mice11]; Nmm = numel( mice_mus );
 mice_ptx = [mice10; mice12; mice13]; Nmp = numel( mice_ptx );
@@ -642,7 +649,34 @@ for cmm = 1:Nmp
             aux_table.Trial_and_Amp_Indices, Ncondp(cmm), 1 , 2 );
     end
 end
+%%
+tvp_mus = arrayfun(@(bp) arrayfun(@(m) total_var_dist( bDist_mus(:, bp, m) ), 1:Nmm), 1:Nbs, fnOpts{:} );
+tvp_mus = cat( 1, tvp_mus{:} );
+kl_mus = arrayfun(@(bp) arrayfun(@(m) kl_div( bDist_mus(:, bp, m) ), 1:Nmm), 1:Nbs, fnOpts{:} );
+kl_mus = cat( 1, kl_mus{:} );
+%%
+Nconds_mus = arrayfun(@(m) arrayfun(@(s) size( s.DataTable, 1 ), m.Sessions), mice_mus );
+Nconds_ptx = arrayfun(@(m) arrayfun(@(s) size( s.DataTable, 1 ), m.Sessions), mice_ptx );
+prmSubs_mus = arrayfun(@(x) nchoosek(1:x,2), Nconds_mus, fnOpts{:} );
+prmSubs_ptx = arrayfun(@(x) nchoosek(1:x,2), Nconds_ptx, fnOpts{:} );
+Ncombs_mus = cellfun(@(pr) size( pr, 1 ), prmSubs_mus );
+Ncombs_ptx = cellfun(@(pr) size( pr, 1 ), prmSubs_ptx );
 
+Nbs = cellfun(@(d) size( d, 2), bDist );
+tvd = cell( Nbr, 1);
+for cc = 1:Nbr
+    if Nconds(cc) > 1
+        tvd{cc} = zeros( Nbs(cc), Ncombs(cc) );
+        for cr = 1:Ncombs(cc)
+            ps = prmSubs{cc}(cr,:);
+            for cbp = 1:Nbs(cc)
+                tvd{cc}(cbp, cr) = total_var_dist( bDist{cc}(cbp, ps) );
+            end
+        end
+    else
+        fprintf(1, 'Unsure what to do\n')
+    end
+end
 
 ptx_vals = arrayfun(@(m) cellfun(@(p) permute( p', 3:-1:1 ), ...
     m.Sessions.DataTable.PolygonUnfold', fnOpts{:} ), mice_ptx, fnOpts{:} );
@@ -665,3 +699,65 @@ xticklabels( ax, bp_names )
 bxObj(2).BoxFaceColor = ones(1, 3);
 bxObj(2).BoxEdgeColor = zeros(1, 3);
 bxObj(1).BoxFaceColor = zeros(1,3 );
+%%
+figs = gobjects( 8, 1 );
+newFig = @(n) figure('Color', 'w', 'Name', n);
+tiles = @(x,r,c) tiledlayout(x, r, c, 'TileSpacing','tight','Padding', 'tight');
+lnOpts = {'LineStyle', 'none', 'Marker', 'o', ...
+    'MarkerFaceColor', 0.35*ones(1,3), 'MarkerEdgeColor', 'none'};
+catCols = @(x) cat(2, x{:});
+fetchValues = @(m, b, s) catCols( cellfun(@(x) x(:,b,s), m, fnOpts{:} ) );
+my_scatt = @(aax, mat) line( aax, mat(:,1), mat(:,2), lnOpts{:});
+yeqxLine = @(x) line(x, xlim(x), xlim(x), 'LineStyle', '--', ...
+            'Color', 0.15*ones( 1, 3 ) );
+yLabels = {'Trial proportion', 'Amplitude index'};
+drug_names = {'Muscimol', 'Picrotoxin'};
+cleanAxis = @(x) set( x, "Box", "off", "Color", "none" );
+for cf = 1:8
+    figs(cf) = newFig( cf, bp_names(cf) );
+    t = tiles( figs(cf) );
+    for cc = 1:4
+        ax = cleanAxis( nexttile(t) ); ax.NextPlot = 'add';
+        cm = ceil( cc/2 );
+        if cm == 1
+            title( ax, drug_names{cc} )
+        end
+        if mod(cc,2)
+            aux_mat = fetchValues( musc_vals, cf, cm );
+            ylabel(ax, join( [string( yLabels{cm} ), "drug"] ) )
+        else
+            aux_mat = fetchValues( ptx_vals2, cf, cm );
+            if cm == 2
+                xlabel(ax, "Control" )
+            end
+        end
+        my_scatt(ax, aux_mat); yeqxLine(ax)
+    end
+    title( t, bp_names(cf) )
+end
+
+%%
+dotOutliers = @(x) set( x, 'MarkerStyle', '.', 'MarkerColor', 'k' );
+fig = newFig( "Baseline PTX" ); t = tiles( fig, 2, 1 );
+ax = nexttile( t ); cleanAxis( ax );
+bp_idx = ones( size( bDist_ptx, 1), 1 ) * (1:Nbp );
+bp_idx = bp_idx(:);
+treat_idx = ones( numel( bp_idx ), 1) * (1:2);
+treat_idx = treat_idx(:);
+bxObj = boxchart( ax, repmat( bp_idx, 2, 1), disp_ptx(:), 'GroupByColor', treat_idx, 'Notch', 'on', 'JitterOutliers', 'on' );
+bxObj(1).BoxFaceColor = 'k';
+bxObj(2).BoxFaceColor = 'none';
+bxObj(2).BoxEdgeColor = zeros(1, 3);
+arrayfun(dotOutliers, bxObj );
+ylabel(ax, 'Norm. IQR')
+ax.XAxis.Visible = "off";
+lgObj = legend({'Control', 'PTX'}, lgOpts{:} );
+ax = nexttile( t ); cleanAxis( ax );
+bxObj = boxchart( ax, repmat( bp_idx, 2, 1), med_ptx(:), 'GroupByColor', treat_idx, 'Notch', 'on', 'JitterOutliers', 'on' );
+ylabel(ax, 'Norm. median')
+bxObj(1).BoxFaceColor = 'k';
+bxObj(2).BoxFaceColor = 'none';
+bxObj(2).BoxEdgeColor = zeros(1, 3);
+arrayfun(dotOutliers, bxObj );
+xticks(ax, 1:Nbp )
+xticklabels(ax, bp_names )
