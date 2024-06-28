@@ -50,6 +50,9 @@ else
     fprintf(1, 'No DLC data found!\n')
     return
 end
+if isempty( vidTx )
+    fprintf(1, 'No FrameID files in folder\n')
+end
 
 fs_ephys = load( expandPath( fsf_path ), "fs" ); fs_ephys = fs_ephys.fs;
 
