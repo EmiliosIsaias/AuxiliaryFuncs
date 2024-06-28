@@ -80,7 +80,8 @@ testSubs = arrayfun(@(x) x.subTriggers, testObj, fnOpts{:} );
 laser_flag = ~cellfun(@isempty, testSubs);
 
 lsrInt = cell( numel( vidObj ), 1 );
-for cvid = find( laser_flag(:)' )
+% for cvid = find( laser_flag(:)' )
+parfor cvid = 1:numel( vidObj )
     lsrInt{cvid} = getLaserIntensitySignalFromVideo(vidObj{cvid}, ...
         dlcTables{cvid});
 end
