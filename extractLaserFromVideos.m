@@ -33,15 +33,20 @@ fid_paths = dir( pathHere( "FrameID*.csv" ) );
 
 fIDs = arrayfun(@(x) fopen( expandPath( x ), "r" ), tf_paths );
 trig = arrayfun(@(x) fread( x, [2, inf], "uint16=>uint16" ), fIDs, fnOpts{:} );
-arrayfun(@fclose, fIDs); 
+arrayfun(@fclose, fIDs);
 
 Ndlc = numel(dlc_paths);
 dlcTables = cell( Ndlc, 1 );
 vidTx = cell( Ndlc, 1 );
-parfor cdlc = 1:Ndlc
-    dlcTables{cdlc} = readDLCData( expandPath( dlc_paths(cdlc) ) );
-    vidTx{cdlc} = readCSV( expandPath( fid_paths(cdlc) ) ) ;
-    vidTx{cdlc} = vidTx{cdlc}.Var2 * 1e-9; % nanoseconds
+if Ndlc
+    parfor cdlc = 1:Ndlc
+        dlcTables{cdlc} = readDLCData( expandPath( dlc_paths(cdlc) ) );
+        vidTx{cdlc} = readCSV( expandPath( fid_paths(cdlc) ) ) ;
+        vidTx{cdlc} = vidTx{cdlc}.Var2 * 1e-9; % nanoseconds
+    end
+else
+    fprintf(1, 'No DLC data found!\n')
+    return
 end
 
 fs_ephys = load( expandPath( fsf_path ), "fs" ); fs_ephys = fs_ephys.fs;
