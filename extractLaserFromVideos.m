@@ -41,8 +41,10 @@ vidTx = cell( Ndlc, 1 );
 if Ndlc
     parfor cdlc = 1:Ndlc
         dlcTables{cdlc} = readDLCData( expandPath( dlc_paths(cdlc) ) );
-        vidTx{cdlc} = readCSV( expandPath( fid_paths(cdlc) ) ) ;
-        vidTx{cdlc} = vidTx{cdlc}.Var2 * 1e-9; % nanoseconds
+        if ~isempty( fid_paths ) && numel( fid_paths ) == Ndlc
+            vidTx{cdlc} = readCSV( expandPath( fid_paths(cdlc) ) ) ;
+            vidTx{cdlc} = vidTx{cdlc}.Var2 * 1e-9; % nanoseconds
+        end
     end
 else
     fprintf(1, 'No DLC data found!\n')
