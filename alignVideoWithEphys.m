@@ -1,4 +1,4 @@
-function mean_delay = alignVideoWithEphys( lsrInt, trig, fs, beh_path )
+function [mean_delay, lsrInt] = alignVideoWithEphys( lsrInt, trig, fs, beh_path )
 
 expandPath = @(x) fullfile( x.folder, x.name);
 fnOpts = {'UniformOutput', false};
@@ -30,7 +30,7 @@ parfor cli = 1:numel(lsrInt)
             zscore( lsrInt{cli}(:) ), (0:length(trig{cli})-1)/fs, ...
             "pchip", "extrap");
         [r, lags] = xcorr( zscore( single( trig{cli}(:,2) ) ), lsrInt_loop(:), ...
-            round( fs ) , "normalized" );
+            round( fs * 0.3 )  , "normalized" );
         [~, mean_delay_sub] = max( r );
         mean_delay(cli) = double(lags( mean_delay_sub ))/fs;
     end
