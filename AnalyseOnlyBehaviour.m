@@ -1,7 +1,7 @@
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\eRNs\vGlut1\221206_C+F_2100" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\eRNs\vGlut1\221207_C+F+PTX_1910" );
 % Figure overwrite flag
 fowFlag = true;
 
@@ -44,7 +44,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = 3:4;
+consCond = 3:5;
 Nccond = length( consCond );
 prmSubs = nchoosek(1:Nccond,2);
 
