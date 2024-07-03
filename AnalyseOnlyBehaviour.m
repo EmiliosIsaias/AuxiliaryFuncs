@@ -1,7 +1,7 @@
 %% Analysing behaviour alone
 
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch12_ephys.e\eRNs\vGlut1\221207_C+F+PTX_1910" );
+    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch16_ephys\iRNs\GADi23\231123_C+F_2450" );
 % Figure overwrite flag
 fowFlag = true;
 
@@ -424,5 +424,3 @@ countFigName = sprintf("Count distributions P%s", ...
     sprintf(" %.3f", p(:)));
 
 saveFigure(countFig, fullfile(behFig_path, countFigName), true, fowFlag);
-
-
