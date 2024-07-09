@@ -64,6 +64,9 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "ViewingWindow", [-450, 500] * m, ...
     "figOverWrite", fowFlag );
 
+if ldFlag
+    load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
+end
 [Ns, Nt, Nb] = size( behData.Data );
 
 vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
