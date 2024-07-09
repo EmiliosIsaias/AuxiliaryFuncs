@@ -1,7 +1,8 @@
 %% Analysing behaviour alone
 
+roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 exp_path = ...
-    fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\iRNs\GADi42\240216_C+F_2400" );
+    fullfile( roller_path, "Batch2_ephys/MC/GADi17/211228_F+C" );
 % Figure overwrite flag
 fowFlag = true;
 
@@ -46,27 +47,27 @@ end
 % User input!!
 consCond = 3:5;
 Nccond = length( consCond );
-prmSubs = nchoosek(1:Nccond,2);
+prmSubs = nchoosek( 1:Nccond, 2 );
 
 pairedStimFlags = arrayfun(@(c) any( ...
     Conditions(1).Triggers(:,1) == ...
-    reshape( Conditions(c).Triggers(:,1), 1, []), 2), consCond, fnOpts{:} );
-pairedStimFlags = cat(2, pairedStimFlags{:});
+    reshape( Conditions(c).Triggers(:,1), 1, [] ), 2 ), consCond, fnOpts{:} );
+pairedStimFlags = cat( 2, pairedStimFlags{:} );
 
 consCondNames = string( { Conditions( consCond ).name  } );
 
-[behRes, behFig_path, behData, aInfo] = analyseBehaviour(beh_path, ...
-    "ConditionsNames", cellstr(consCondNames), ...
+[behRes, behFig_path, behData, aInfo] = analyseBehaviour( beh_path, ...
+    "ConditionsNames", cellstr( consCondNames ), ...
     "PairedFlags", pairedStimFlags, ...
     "FigureDirectory", figure_path, ...
     "ResponseWindow", [25, 350] * m, ...
     "ViewingWindow", [-450, 500] * m, ...
-    "figOverWrite", fowFlag);
+    "figOverWrite", fowFlag );
 
 [Ns, Nt, Nb] = size( behData.Data );
 
 vwin = sscanf( aInfo.VieWin, "V%f - %f s")';
-mdlt = fit_poly( [1, Ns], vwin + [1,-1] * (1/(2 * fr) ), 1);
+mdlt = fit_poly( [1, Ns], vwin + [1,-1] * (1/(2 * fr) ), 1 );
 txb = ( (1:Ns)'.^[1,0] ) * mdlt;
 behNames = string( { behRes(1).Results.BehSigName } );
 
