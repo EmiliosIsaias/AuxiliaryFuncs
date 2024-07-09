@@ -761,3 +761,26 @@ bxObj(2).BoxEdgeColor = zeros(1, 3);
 arrayfun(dotOutliers, bxObj );
 xticks(ax, 1:Nbp )
 xticklabels(ax, bp_names )
+%%
+roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
+bp_paths = dir( fullfile( roller_path, "\Batch*\Batch*_BehaviourIndex.mat" ) );
+bp_names = string( {bp_paths.name} )';
+b_num = regexp( bp_names, '\d+', 'match' );
+b_num = cat(1, b_num{:} ); b_num = str2double( b_num );
+expandPath = @(x) fullfile( x.folder, x.name);
+fnOpts = {'UniformOutput', false};
+
+mc_subs = [1, 2, 7, 8, 10, 12, 15, 16, 18];
+bc_subs = [1, 2, 19];
+bs_subs = 2;
+mt_subs = [11, 14, 17];
+
+exp_type_subs_cell = {mc_subs, bc_subs, bs_subs, mt_subs};
+clearvars *_subs -except exp_type_subs_cell
+
+mice_bulk = arrayfun( @(x) load( expandPath( x ), "mice" ), ...
+    bp_paths );
+mice_exp_sub = cellfun(@(x) any(b_num == x, 2), exp_type_subs_cell, ...
+    fnOpts{:} );
+arrayfun(@(x) summariseMiceBeh( cat(1, mice_bulk(x).mice ) ), ...
+    mice_exp_sub, fnOpts{:} );
