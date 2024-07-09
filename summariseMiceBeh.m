@@ -23,9 +23,12 @@ for cm = multiMice(:)'
         Nnt = size(currTbl,1); % Number of new tables
         auxTbls = cell(Nnt,1);
         for cc = 1:size(currTbl,1)
-            auxVars = cellfun(@(v) v(:), currTbl{cc,:}, fnOpts{:});
-            auxTbls{cc} = table(auxVars{:}, ...
-                'VariableNames',currTbl.Properties.VariableNames);
+            auxVars = cellfun(@(v) v, currTbl{cc,:}, fnOpts{:});
+            if size( auxVars{1}, 1 ) ~= size( auxVars{end}, 1 )
+                auxVars{end} = auxVars{end}';
+            end
+            auxTbls{cc} = table( auxVars{:}, ...
+                'VariableNames', currTbl.Properties.VariableNames );
         end
         auxC = 1;
         for ces = [cs, (1:Nnt-1)+numel(miceStruct(cm).Sessions)]
@@ -61,7 +64,8 @@ ctrllCond = contains(uallCondNames_aux, 'laser', 'IgnoreCase', true);
 [udels, ~, udSubs] = uniquetol([dels{:}], 0.02 / max([dels{:}]));
 udSubs2 = nan(size(dels)); udSubs2(~cellfun(@isempty, dels)) = udSubs;
 udSubs2(ctrllCond) = -1; udSubs2(ctrlpCond) = 0; 
-udSubs2(isnan(udSubs2)) = find(isnan(udSubs2));
+udSubs2(isnan(udSubs2)) = (1:sum( isnan( udSubs2 ) ) )' + ...
+    max( udSubs2, [], "omitmissing" );
 
 
 % Assuming the same frequency for all
@@ -78,8 +82,11 @@ sessNames = cell(Nm, 1);
 sessDepth = sessNames;
 miceNames = arrayfun(@(x) cat(1, miceStruct(expTypeMbrshp==x).Name), ...
     unique(expTypeMbrshp), fnOpts{:});
-miceMats = cell(Nm, 1);
-miceConds = miceMats;
+miceMatsTP = cell(Nm, 1);
+miceMatsAI = miceMatsTP;
+miceMatsPT = miceMatsTP;
+miceMatsPA = miceMatsPT;
+miceConds = miceMatsTP;
 idxTh = cumsum(cellfun(@sum, Ncpspm)); cidx = 1;
 % Organising the data per conditions taking into account the experiment
 % type
@@ -88,28 +95,57 @@ for cm = 1:Nm
     sessNames{cm} = mSessNames;
     mSessDepth = string({miceStruct(cm).Sessions.Depth})';
     sessDepth{cm} = mSessDepth;
-    mBI = arrayfun(@(s) s.DataTable.Trial_and_Amp_Indices, ...
-        miceStruct(cm).Sessions, fnOpts{:}); mBI = cat(1, mBI{:});
+    for cs = 1:numel( miceStruct(cm).Sessions )
+        if iscell( miceStruct(cm).Sessions(cs).DataTable.Trial_and_Amp_Indices )
+            miceStruct(cm).Sessions(cs).DataTable.Trial_and_Amp_Indices = ...
+                cat(1, miceStruct(cm).Sessions(cs).DataTable.Trial_and_Amp_Indices{:} );
+        end
+    end
     % mBI = arrayfun(@(s) s.DataTable.BehaviourIndices, ...
     %     miceStruct(cm).Sessions, fnOpts{:}); mBI = cat(1, mBI{:});
+    mTP = arrayfun(@(s) s.DataTable.Trial_and_Amp_Indices(:,1), ...
+        miceStruct(cm).Sessions, fnOpts{:}); mTP = cat(1, mTP{:});
+    mAI = arrayfun(@(s) s.DataTable.Trial_and_Amp_Indices(:,2), ...
+        miceStruct(cm).Sessions, fnOpts{:}); mAI = cat(1, mAI{:});
+
+    % Polygon unfolding for trial proportions
+    mPT = arrayfun(@(s) cellfun(@(c) c(:,1)', s.DataTable.PolygonUnfold, ...
+        fnOpts{:}), miceStruct(cm).Sessions, fnOpts{:} );
+    mPT = cellfun(@(c) cat( 1, c{:} ), mPT, fnOpts{:} ); 
+    mPT = cat( 1, mPT{:} );
+    % Polygon unfolding for amplitude index
+    mPA = arrayfun(@(s) cellfun(@(c) c(:,2)', s.DataTable.PolygonUnfold, ...
+        fnOpts{:}), miceStruct(cm).Sessions, fnOpts{:} );
+    mPA = cellfun(@(c) cat( 1, c{:} ), mPA, fnOpts{:} );
+    mPA = cat( 1, mPA{:} );
+
     csCondNames = asCondNames{cm};
     mCondClass = dfSubs(acnSubs(cidx:idxTh(cm)));
     cidx = idxTh(cm) + 1;
     [uAux, ~, muc] = unique(mCondClass); Ncpm_as = numel(uAux);
-    mouseMat = nan(Ncpm_as, Nspm(cm));
+    mouseMat_TP = nan(Ncpm_as, Nspm(cm));
+    mouseMat_AI = mouseMat_TP;
+    mouseMat_PP = nan( Ncpm_as, Nspm(cm), 8 );
+    mouseMat_PA = mouseMat_PP;
     csCondNames2 = strings(Nspm(cm), Ncpm_as); cidx2 = 1;
     for cc = 1:Nspm(cm)
         cidx3 = cidx2:cidx2-1+Ncpspm{cm}(cc);
         sIdx = muc(cidx3);
-        mouseMat(sIdx, cc) = mBI(cidx3);
+        mouseMat_TP(sIdx, cc) = mTP(cidx3);
+        mouseMat_AI(sIdx, cc) = mAI(cidx3);
+        mouseMat_PP(sIdx, cc, :) = mPT(cidx3, :);
+        mouseMat_PA(sIdx, cc, :) = mPA(cidx3, :);
         csCondNames2(cc, sIdx) = csCondNames(cidx3);
         cidx2 = cidx2 + Ncpspm{cm}(cc);
     end
-    miceMats{cm} = mouseMat';
+    miceMatsTP{cm} = mouseMat_TP';
+    miceMatsAI{cm} = mouseMat_AI';
+    miceMatsPT{cm} = mouseMat_PP;
+    miceMatsPA{cm} = mouseMat_PA;
     miceConds{cm} = csCondNames2;
 end
 
-Nc_s = cellfun(@size, miceMats, fnOpts{:}); Nc_s = cat(1, Nc_s{:});
+Nc_s = cellfun(@size, miceMatsTP, fnOpts{:}); Nc_s = cat(1, Nc_s{:});
 mxC = arrayfun(@(x) max(Nc_s(expTypeMbrshp == x,:),[],1), ...
     unique(expTypeMbrshp), fnOpts{:});
 
@@ -121,7 +157,7 @@ sessDepth = arrayfun(@(x) {sessDepth(expTypeMbrshp == x)}, ...
 homMiceMat = arrayfun(@(x) ...
     cellfun(@(m) ...
     padarray(m, mxC{x} - size(m), NaN, "post"), ...
-    miceMats(expTypeMbrshp == x), fnOpts{:}), ...
+    miceMatsTP(expTypeMbrshp == x), fnOpts{:}), ...
     unique(expTypeMbrshp), fnOpts{:});
 homMiceMat = cellfun(@(x) cat(3, x{:}), homMiceMat, fnOpts{:});
 
