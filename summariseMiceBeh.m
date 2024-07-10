@@ -81,7 +81,7 @@ allCondNames_aux = cat(1, allCondNames_aux{:});
 dels = arrayfun(@(x) textscan(x, 'Delay %.3f s'), uallCondNames_aux);
 ctrlpCond = contains(uallCondNames_aux, 'control puff', 'IgnoreCase', true);
 ctrllCond = contains(uallCondNames_aux, 'laser', 'IgnoreCase', true);
-[udels, ~, udSubs] = uniquetol([dels{:}], 0.02 / max([dels{:}]));
+[~, ~, udSubs] = uniquetol([dels{:}], 0.02 / max([dels{:}]));
 udSubs2 = nan(size(dels)); udSubs2(~cellfun(@isempty, dels)) = udSubs;
 udSubs2(ctrllCond) = -1; udSubs2(ctrlpCond) = 0; 
 udSubs2(isnan(udSubs2)) = (1:sum( isnan( udSubs2 ) ) )' + ...
@@ -110,6 +110,7 @@ miceConds = miceMatsTP;
 idxTh = cumsum(cellfun(@sum, Ncpspm)); cidx = 1;
 % Organising the data per conditions taking into account the experiment
 % type
+Ncpm_as = max(dfSubs);
 for cm = 1:Nm
     mSessNames = string({miceStruct(cm).Sessions.Date})';
     sessNames{cm} = mSessNames;
@@ -142,7 +143,7 @@ for cm = 1:Nm
     csCondNames = asCondNames{cm};
     mCondClass = dfSubs(acnSubs(cidx:idxTh(cm)));
     cidx = idxTh(cm) + 1;
-    [uAux, ~, muc] = unique(mCondClass); Ncpm_as = numel(uAux);
+    %[uAux, ~, muc] = unique(mCondClass); %Ncpm_as = numel(uAux);
     mouseMat_TP = nan(Ncpm_as, Nspm(cm));
     mouseMat_AI = mouseMat_TP;
     mouseMat_PP = nan( Ncpm_as, Nspm(cm), 8 );
