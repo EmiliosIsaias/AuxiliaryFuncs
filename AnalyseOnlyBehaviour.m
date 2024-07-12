@@ -2,7 +2,7 @@
 
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 exp_path = ...
-    fullfile( roller_path, "Batch2_ephys/MC/GADi17/211228_F+C" );
+    fullfile( roller_path, "Mock/GADm22/231219_F+C_2450" );
 % Figure overwrite flag
 fowFlag = true;
 
