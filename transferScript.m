@@ -695,7 +695,7 @@ treat_idx = tocol( ones( 8*Nmp, 1)*(1:2) );
 bxObj = boxchart(ax, bp_idx, bpa_ptx_vec, 'Notch', 'on', 'JitterOutliers', 'on', 'GroupByColor', treat_idx, 'MarkerStyle', '.' );
 xticks( 1:8 )
 xlim(ax, [0.5, 8.5] )
-xticklabels( ax, bp_names )
+xticklabels( ax, bodypart_names )
 bxObj(2).BoxFaceColor = ones(1, 3);
 bxObj(2).BoxEdgeColor = zeros(1, 3);
 bxObj(1).BoxFaceColor = zeros(1,3 );
@@ -714,7 +714,7 @@ yLabels = {'Trial proportion', 'Amplitude index'};
 drug_names = {'Muscimol', 'Picrotoxin'};
 cleanAxis = @(x) set( x, "Box", "off", "Color", "none" );
 for cf = 1:8
-    figs(cf) = newFig( cf, bp_names(cf) );
+    figs(cf) = newFig( cf, bodypart_names(cf) );
     t = tiles( figs(cf) );
     for cc = 1:4
         ax = cleanAxis( nexttile(t) ); ax.NextPlot = 'add';
@@ -733,7 +733,7 @@ for cf = 1:8
         end
         my_scatt(ax, aux_mat); yeqxLine(ax)
     end
-    title( t, bp_names(cf) )
+    title( t, bodypart_names(cf) )
 end
 
 %%
@@ -760,12 +760,12 @@ bxObj(2).BoxFaceColor = 'none';
 bxObj(2).BoxEdgeColor = zeros(1, 3);
 arrayfun(dotOutliers, bxObj );
 xticks(ax, 1:Nbp )
-xticklabels(ax, bp_names )
+xticklabels(ax, bodypart_names )
 %%
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 bp_paths = dir( fullfile( roller_path, "\Batch*\Batch*_BehaviourIndex.mat" ) );
-bp_names = string( {bp_paths.name} )';
-b_num = regexp( bp_names, '\d+', 'match' );
+bodypart_names = string( {bp_paths.name} )';
+b_num = regexp( bodypart_names, '\d+', 'match' );
 b_num = cat(1, b_num{:} ); b_num = str2double( b_num );
 expandPath = @(x) fullfile( x.folder, x.name);
 fnOpts = {'UniformOutput', false};
