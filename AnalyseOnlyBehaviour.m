@@ -2,7 +2,7 @@
 
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 exp_path = ...
-    fullfile( roller_path, "Mock/GADm22/231219_F+C_2450" );
+    fullfile( roller_path, "Batch14_ephys.MC/ChR2/WTd9/230703_C_SC2600" );
 % Figure overwrite flag
 fowFlag = true;
 
@@ -45,7 +45,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = 3:5;
+consCond = 3:4;
 Nccond = length( consCond );
 prmSubs = nchoosek( 1:Nccond, 2 );
 
