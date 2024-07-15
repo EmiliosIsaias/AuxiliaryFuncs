@@ -623,7 +623,7 @@ getCondsInBatch = @(mc) arrayfun(@(m) arrayfun(@(s) ...
 total_var_dist = @(dmat) integral( @(x) ...
     abs( pdf( dmat(1), x ) - pdf( dmat(2), x ) ), dom(1), dom(end) );
 kl_div = @(dmat) KullbackLeiblerDivergence( mpdf( dmat(1) ), mpdf( dmat(2) ) );
-fnOpts = {'UniformOutput', false}; 
+fnOpts = {'UniformOutput', false};
 
 
 mice_mus = [mice6; mice11]; Nmm = numel( mice_mus );
@@ -709,7 +709,7 @@ catCols = @(x) cat(2, x{:});
 fetchValues = @(m, b, s) catCols( cellfun(@(x) x(:,b,s), m, fnOpts{:} ) );
 my_scatt = @(aax, mat) line( aax, mat(:,1), mat(:,2), lnOpts{:});
 yeqxLine = @(x) line(x, xlim(x), xlim(x), 'LineStyle', '--', ...
-            'Color', 0.15*ones( 1, 3 ) );
+    'Color', 0.15*ones( 1, 3 ) );
 yLabels = {'Trial proportion', 'Amplitude index'};
 drug_names = {'Muscimol', 'Picrotoxin'};
 cleanAxis = @(x) set( x, "Box", "off", "Color", "none" );
