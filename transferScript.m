@@ -786,11 +786,13 @@ mice_exp_sub = cellfun(@(x) any(b_num == x, 2), exp_type_subs_cell, ...
 summMice = cellfun(@(x) summariseMiceBeh( cat(1, mice_bulk(x).mice ) ), ...
     mice_exp_sub, fnOpts{:} );
 %%
-
-%exp_subtype = {'iRNs', 'eRNs', 'RNs'};
-exp_subtype = {'terminal inhib'};
+fnOpts = {'UniformOutput', false};
+exp_subtype = {'iRNs', 'eRNs', 'RNs'};
+% exp_subtype = {'terminal inhib'};
 % name_keys = {'GADi', {'GADe', 'vGlut'}, 'WTg'};
-name_keys = {{'Rb', 'WT'}};
+% name_keys = {'GADi', 'vGlut', 'WTg'};
+name_keys = {'GADi', 'GADe', 'WTg'};
+% name_keys = {{'Rb', 'WT'}};
 bodypart_names = ["Stim-whisker mean", "Stim-whisker fan arc", ...
     "Nonstim-whisker mean", "Nonstim-whisker fan arc", "Interwhisk arc", ...
     "Symmetry", "Nose", "Roller speed"];
@@ -806,16 +808,19 @@ fig_path = fullfile( ...
     "Z:\Emilio\SuperiorColliculusExperiments\Roller\PoolFigures" );
 load( fullfile( fig_path, "MC, BC, BS, MCterminals pool.mat" ), "summMice" );
 
-expMice = summMice{4}(2);
+expMice = summMice{1}(3);
 ovwtFlag = false;
 %xLabels = ["Control", "C100", "F100"];
+% xLabels = ["Control", "C30", "F30", "C100", "F100", ...
+    % "C400", "F400", "C600", "Musc", "Musc" ];
 xLabels = ["Control", "C30", "F30", "C100", "F100", ...
-    "C400", "F400", "C600", "Musc", "Musc" ];
+    "C400", "F400", "Dead", "PTX", "PTX" ];
 exp_subtype_flags = cellfun(@(x) contains( expMice.MiceNames, x ), ...
     name_keys, fnOpts{:} );
 exp_subtype_flags = cat( 2, exp_subtype_flags{:} );
 figs = gobjects( numel( exp_subtype ), 1 );
-exp_type = join( ['MC-', expMice.ExperimentalGroup] );
+% exp_type = join( ['MC-', expMice.ExperimentalGroup] );
+exp_type = expMice.ExperimentalGroup;
 for cest = 1:numel(exp_subtype)
     if sum( exp_subtype_flags(:,cest) )
         figs(cest) = figure( "Color", "w" );
@@ -867,12 +872,22 @@ for cest = 1:numel(exp_subtype)
             text( 2:size(aux,2), 1.15*max( aux(:,2:end), [], 1 ), ...
                 arrayfun(@(x) sprintf("p=%.3f", x), p(:) ), txOpts{:} )
             title(t2, sprintf( "%s/%s", bodypart_names(cbp), exp_subtype{cest} ) )
+
+            % saveFigure( fig, fullfile( fig_path, join( [bodypart_names(cbp), ...
+            %     exp_type, exp_subtype{cest}, "all mice pool" ] ) ), ...
+            %     true, ovwtFlag )
             saveFigure( fig, fullfile( fig_path, join( [bodypart_names(cbp), ...
-                exp_type, exp_subtype{cest}, "all mice pool"] ) ), true, ovwtFlag )
+                exp_type, exp_subtype{cest}, sum( exp_subtype_flags(:,cest) ) ] ) ), ...
+                true, ovwtFlag )
         end
     end
 end
 
+% arrayfun(@(f) saveFigure( figs(f), fullfile( fig_path, ...
+%     join( ["Areas", exp_type, exp_subtype{f}, "all mice pool"] ) ), true, ovwtFlag ), ...
+%     find( arrayfun(@(f) ~isa( f, 'matlab.graphics.GraphicsPlaceholder'), figs ) ) );
+
 arrayfun(@(f) saveFigure( figs(f), fullfile( fig_path, ...
-    join( ["Areas", exp_type, exp_subtype{f}, "all mice pool"] ) ), true, ovwtFlag ), ...
+    join( ["Areas", exp_type, exp_subtype{f}, ...
+    sum( exp_subtype_flags(:,f) ) ] ) ), true, ovwtFlag ), ...
     find( arrayfun(@(f) ~isa( f, 'matlab.graphics.GraphicsPlaceholder'), figs ) ) );
