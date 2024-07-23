@@ -2,7 +2,7 @@
 
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 exp_path = ...
-    fullfile( roller_path, "Batch14_ephys.MC/ChR2/WTd9/230703_C_SC2600" );
+    fullfile( roller_path, "Batch1_ephys/MC/WTg8/210716" );
 % Figure overwrite flag
 fowFlag = true;
 
