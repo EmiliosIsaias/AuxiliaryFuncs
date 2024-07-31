@@ -809,24 +809,29 @@ fig_path = fullfile( ...
 load( fullfile( fig_path, "MC, BC, BS, MCterminals pool.mat" ), "summMice" );
 
 expMice = summMice{1}(3);
-ovwtFlag = false;
-%xLabels = ["Control", "C100", "F100"];
+ovwtFlag = true;
+% xLabels = ["Control", "C100", "F100"];
 % xLabels = ["Control", "C30", "F30", "C100", "F100", ...
     % "C400", "F400", "C600", "Musc", "Musc" ];
 xLabels = ["Control", "C30", "F30", "C100", "F100", ...
     "C400", "F400", "Dead", "PTX", "PTX" ];
 exp_subtype_flags = cellfun(@(x) contains( expMice.MiceNames, x ), ...
     name_keys, fnOpts{:} );
+exclude_names = {'GADi13', 'GADi15', 'GADi53'};
+exclude_mice = contains(expMice.MiceNames, exclude_names);
 exp_subtype_flags = cat( 2, exp_subtype_flags{:} );
 figs = gobjects( numel( exp_subtype ), 1 );
 % exp_type = join( ['MC-', expMice.ExperimentalGroup] );
 exp_type = expMice.ExperimentalGroup;
 for cest = 1:numel(exp_subtype)
-    if sum( exp_subtype_flags(:,cest) )
+    cons_mice = exp_subtype_flags(:,cest) & ~exclude_mice;
+    exp_subtype_flags(:,cest) = exp_subtype_flags(:,cest) & ~exclude_mice;
+    if sum( cons_mice )
+        
         figs(cest) = figure( "Color", "w" );
         t = createtiles( figs(cest), 2, 1 ); ax = nexttile(t);
         aux = squeeze( mean( expMice.AmplitudeIndex(:,:, ...
-            exp_subtype_flags(:,cest)), 1, "omitmissing" ) )';
+            cons_mice), 1, "omitmissing" ) )';
         boxchart( ax, aux, bxOpts{:} );
         ylabel( ax, 'Amplitude index' ); xticklabels( ax, xLabels );
         ylim(ax, [0,1]); cleanAxis(ax); ax.XAxis.Visible = "off";
@@ -838,7 +843,7 @@ for cest = 1:numel(exp_subtype)
 
         ax = nexttile(t);
         aux = squeeze( mean( expMice.TrialProportions(:,:, ...
-            exp_subtype_flags(:,cest)), 1, "omitmissing" ) )';
+            cons_mice), 1, "omitmissing" ) )';
         boxchart(ax, aux, bxOpts{:} );
         ylabel( ax, 'Trial proportions' )
         xticklabels( xLabels ); ylim([0,2]); cleanAxis( ax );
@@ -852,7 +857,7 @@ for cest = 1:numel(exp_subtype)
             fig = figure("Color", "w"); t2 = createtiles( fig, 2, 1 );
             ax = nexttile(t2);
             aux = squeeze( mean( expMice.PolygonUnfoldAmplIndx(:,:, ...
-                cbp, exp_subtype_flags(:,cest)), 2, "omitmissing" ) )';
+                cbp, cons_mice), 2, "omitmissing" ) )';
             boxchart( ax, aux, bxOpts{:} );
             ylabel( ax, 'Amplitude index' ); xticklabels( ax, xLabels );
             ylim(ax, [0,1]); cleanAxis(ax); ax.XAxis.Visible = "off";
@@ -863,7 +868,7 @@ for cest = 1:numel(exp_subtype)
 
             ax = nexttile(t2);
             aux = squeeze( mean( expMice.PolygonUnfoldTrialProp(:,:, ...
-                cbp, exp_subtype_flags(:,cest)), 2, "omitmissing" ) )';
+                cbp, cons_mice), 2, "omitmissing" ) )';
             boxchart(ax, aux, bxOpts{:} );
             ylabel( ax, 'Trial proportions' )
             xticklabels( xLabels ); ylim([0,2]); cleanAxis( ax );
@@ -877,7 +882,7 @@ for cest = 1:numel(exp_subtype)
             %     exp_type, exp_subtype{cest}, "all mice pool" ] ) ), ...
             %     true, ovwtFlag )
             saveFigure( fig, fullfile( fig_path, join( [bodypart_names(cbp), ...
-                exp_type, exp_subtype{cest}, sum( exp_subtype_flags(:,cest) ) ] ) ), ...
+                exp_type, exp_subtype{cest}, sum( cons_mice ) ] ) ), ...
                 true, ovwtFlag )
         end
     end
