@@ -6,7 +6,7 @@ fnOpts = {'UniformOutput', false};
 % tf_paths = dir( fullfile( beh_path, "TriggerSignals*.bin") );
 % fsf_path = dir( fullfile( exp_path, "ephys*", "*_sampling_frequency.mat") );
 rs_path = dir( fullfile( beh_path, "RollerSpeed*.mat" ) );
-load( expandPath( rs_path ), "fr")
+load( expandPath( rs_path ), "fr" )
 
 
 % fIDs = arrayfun(@(x) fopen( expandPath( x ), "r" ), tf_paths );
@@ -25,7 +25,7 @@ if any(no_laser_flag)
         'verbose', false ), lsrInt(no_laser_flag), fnOpts{:} );
     lsrInt = cellfun(@(c) iirCombFilter( c, fr, 'Q', 35, 'W0', 50, ...
         'verbose', false ), lsrInt(no_laser_flag), fnOpts{:} );
-    
+
     parfor cli = 1:numel(lsrInt)
         swObj = StepWaveform( trig{cli}(:,2), fs, 'verbose', false );
         testSubs = swObj.subTriggers;
