@@ -8,7 +8,8 @@
 dataPttrn = "Z:\Emilio\SuperiorColliculusExperiments\Roller\" + ...
     "Batch4_beh\WT*\*\*bar*";
 barFlds = dir(dataPttrn);
-fn = @(x) fullfile(x.folder, x.name);
+fn = @(x) fullfile(x.folder, x.name); m = 1e-3;
+fowFlag = false;
 
 oldSess = ""; oldMouse = "";
 mice = [];
@@ -16,48 +17,66 @@ mice = [];
 mc = 0; sc = 0;
 for cf = barFlds'
     fprintf("Processing %s\n", fn(cf))
-    puffInt = str2double(extractBefore(cf.name, "bar"));
+    % puffInt = str2double(extractBefore(cf.name, "bar", ""));
+    puffInt = str2double( string( regexp(cf.name, '\d+\.\d+', 'match') ) );
     [restPath, currSess] = fileparts(cf.folder);
     [restPath, currMouse] = fileparts(restPath);
     if string(oldMouse) ~= string(currMouse)
         oldMouse = currMouse;
-        mice = [mice; struct('Name', currMouse, 'Sessions',[])]; 
+        mice = [mice; struct('Name', currMouse, 'Sessions',[])];
         mc = mc + 1;
         sc = 0; oldSess = "";
     end
     if string(oldSess) ~= string(currSess)
         oldSess = currSess;
+        aux_sess = struct( 'Date', currSess, 'Intensities', [], ...
+            'BehIndex', [], 'MaxVals', [] );
         if ~isfield(mice, 'Sessions')
-            mice(mc).Sessions =...
-                struct('Date',currSess,'Intensities',[],'BehIndex',[]);
+            mice(mc).Sessions = aux_sess;
         else
-            mice(mc).Sessions = [mice(mc).Sessions; ...
-                struct('Date',currSess,'Intensities',[],'BehIndex',[])];
+            mice(mc).Sessions = [mice(mc).Sessions; aux_sess];
         end
         sc = sc + 1;
     end
     try
-        [outStr, behFigDir] = analyseBehaviour(fn(cf), 'verbose', false,...
-            'showPlots', false);
+        [behRes, behFigDir, behData] = analyseBehaviour(fn(cf), ...
+            "verbose", false,...
+            "showPlots", true, ...
+            "ResponseWindow", [25, 350] * m, ...
+            "ViewingWindow", [-450, 500] * m, ...
+            "figOverWrite", fowFlag);
+        consCondNames = string({behRes.ConditionName});
+        [pAreas, ~, behAreaFig] = createBehaviourIndex(behRes);
+        behMeasures = string({behAreaFig.Name});
+        biFigPttrn = behMeasures+"%s";
+        biFigPttrn = arrayfun(@(s) sprintf(s, sprintf(" %s (%%.3f)", ...
+            consCondNames ) ), biFigPttrn );
+
+        for it = 1:numel(behMeasures)
+            behRes = arrayfun(@(bs, ba) setfield( bs, ...
+                strrep( behMeasures(it), " ", "_" ), ba), behRes(:), pAreas(:,it) );
+        end
+
+        arrayfun(@(f) set( f, 'UserData', behRes ), behAreaFig );
+
+        biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), 1:numel(behMeasures) );
+
+        arrayfun(@(f, fn) saveFigure(f, fullfile(behFigDir, fn), true, fowFlag), ...
+            behAreaFig(:), biFN(:) );
+
     catch ME
         %dbstop in ProcessingAnkisData.m at 39
         fprintf(1, "Something went wrong with %s\n", fn(cf));
         continue
     end
-    consCondNames = arrayfun(@(c) string(c.ConditionName), outStr);
-    biFigPttrn = "BehIndex%s";
-    biFigPttrn = sprintf(biFigPttrn, sprintf(" %s (%%.3f)", consCondNames));
-    [pAreas, ~, behAreaFig] = createBehaviourIndex(outStr);
-    outStr = arrayfun(@(bs, ba) setfield(bs,'BehIndex', ba), outStr, pAreas);
-    set(behAreaFig, 'UserData', outStr)
-
-    biFN = sprintf(biFigPttrn, pAreas);
-    saveFigure(behAreaFig, fullfile(behFigDir, biFN), true);
     mice(mc).Sessions(sc).Intensities = ...
         [mice(mc).Sessions(sc).Intensities; puffInt];
     mice(mc).Sessions(sc).BehIndex = ...
         [mice(mc).Sessions(sc).BehIndex; ...
-        outStr.BehIndex];
+        behRes.Amplitude_index];
+    mice(mc).Sessions(sc).MaxVals = ...
+        [mice(mc).Sessions(sc).MaxVals; ...
+        behData.MaxVals];
     close('all')
 end
 
