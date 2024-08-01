@@ -54,7 +54,14 @@ if isempty( vidTx )
     fprintf(1, 'No FrameID files in folder\n')
 end
 
-fs_ephys = load( expandPath( fsf_path ), "fs" ); fs_ephys = fs_ephys.fs;
+if ~isempty(fsf_path)
+    fs_ephys = load( expandPath( fsf_path ), "fs" ); 
+    fs_ephys = fs_ephys.fs;
+end
+
+if ~exist("fs_ephys", "var") || isempty(fs_ephys) || fs_ephys == 0
+    fs_ephys = 3e4;
+end
 
 if exist( out_path, "file" )
     fprintf(1, "Laser signal file exists!\n")
