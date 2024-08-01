@@ -81,7 +81,7 @@ for cf = barFlds'
 end
 
 %% Plotting data all together
-
+%{
 piFig = figure("Name","Puff intensity vs Movement", "Color","w");
 ax = axes("Parent",piFig,"NextPlot","add");
 fnOpts = {'UniformOutput', false};
@@ -90,7 +90,7 @@ clrMap = lines(size(mice,1)); x = []; y = x; scObj = gobjects(size(mice));
 jittNoise = makedist("Normal","mu",0,"sigma",0.025);
 for mc = 1:size(mice,1)
     for sc = 1:size(mice(mc).Sessions, 1)
-        x = [x; mice(mc).Sessions(sc).Intensities]; 
+        x = [x; mice(mc).Sessions(sc).Intensities];
         y = [y; mice(mc).Sessions(sc).BehIndex];
         scObj(mc) = scatter(ax, ...
             random(jittNoise,size(mice(mc).Sessions(sc).Intensities)) + ...
@@ -117,7 +117,7 @@ jittNoise = makedist("Normal","mu",0,"sigma",0.025);
 ax = axes("Parent",piFig,"NextPlot","add");
 for mc = 1:size(mice,1)
     for sc = 1:size(mice(mc).Sessions, 1)
-        x = [x; mice(mc).Sessions(sc).Intensities]; 
+        x = [x; mice(mc).Sessions(sc).Intensities];
         y = [y; mice(mc).Sessions(sc).BehIndex];
         scObj(mc) = scatter(ax, ...
             random(jittNoise,size(mice(mc).Sessions(sc).Intensities)) + ...
@@ -141,3 +141,4 @@ lObj = plot(ax, [0;3],([0;3].^[0,1])*mdl', "k");
 lgObj = legend([scObj; lObj], ...
     cat(1, arrayfun(@(x) x.Name, mice, "UniformOutput",false), 'Trend'));
 set(lgObj, "Box", "off", "Location", "best", "NumColumnsMode", "auto")
+%}
