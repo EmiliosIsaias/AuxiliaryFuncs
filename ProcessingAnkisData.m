@@ -54,15 +54,17 @@ for cf = barFlds'
 
         for it = 1:numel(behMeasures)
             behRes = arrayfun(@(bs, ba) setfield( bs, ...
-                strrep( behMeasures(it), " ", "_" ), ba), behRes(:), pAreas(:,it) );
+                strrep( behMeasures(it), " ", "_" ), ba), ...
+                behRes(:), pAreas(:,it) );
         end
 
         arrayfun(@(f) set( f, 'UserData', behRes ), behAreaFig );
 
-        biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), 1:numel(behMeasures) );
+        biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), ...
+            1:numel(behMeasures) );
 
-        arrayfun(@(f, fn) saveFigure(f, fullfile(behFigDir, fn), true, fowFlag), ...
-            behAreaFig(:), biFN(:) );
+        arrayfun(@(f, fn) saveFigure( f, fullfile( behFigDir, fn ), ...
+            true, fowFlag ), behAreaFig(:), biFN(:) );
 
     catch ME
         %dbstop in ProcessingAnkisData.m at 39
