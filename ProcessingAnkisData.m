@@ -30,7 +30,7 @@ for cf = barFlds'
     if string(oldSess) ~= string(currSess)
         oldSess = currSess;
         aux_sess = struct( 'Date', currSess, 'Intensities', [], ...
-            'BehIndex', [], 'MaxVals', [] );
+            'BehIndex', [], 'MaxVals', [], 'Vertices', [] );
         if ~isfield(mice, 'Sessions')
             mice(mc).Sessions = aux_sess;
         else
@@ -72,11 +72,11 @@ for cf = barFlds'
     mice(mc).Sessions(sc).Intensities = ...
         [mice(mc).Sessions(sc).Intensities; puffInt];
     mice(mc).Sessions(sc).BehIndex = ...
-        [mice(mc).Sessions(sc).BehIndex; ...
-        behRes.Amplitude_index];
+        [mice(mc).Sessions(sc).BehIndex; behRes.Amplitude_index];
     mice(mc).Sessions(sc).MaxVals = ...
-        [mice(mc).Sessions(sc).MaxVals; ...
-        behData.MaxVals];
+        [mice(mc).Sessions(sc).MaxVals; behData.MaxVals];
+    mice(mc).Sessions(sc).Vertices = ...
+        [mice(mc).Sessions(sc).Vertices; [behRes.Results.AmplitudeIndex] ];
     close('all')
 end
 
