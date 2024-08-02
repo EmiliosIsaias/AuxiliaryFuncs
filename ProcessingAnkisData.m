@@ -19,7 +19,8 @@ for cf = barFlds'
     fprintf("Processing %s\n", fn(cf))
     % puffInt = str2double(extractBefore(cf.name, "bar", ""));
     puffInt = str2double( string( regexp(cf.name, '\d+\.\d+', 'match') ) );
-    [restPath, currSess] = fileparts(cf.folder);
+    [restPath, currSess] = fileparts(cf.folder); 
+    currSess = string( regexp(currSess, '\d{6}', 'match') );
     [restPath, currMouse] = fileparts(restPath);
     if string(oldMouse) ~= string(currMouse)
         oldMouse = currMouse;
