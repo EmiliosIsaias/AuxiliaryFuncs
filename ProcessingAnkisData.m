@@ -6,7 +6,7 @@
 % dataPttrn = "Z:\Emilio\SuperiorColliculusExperiments\Roller\"+...
 %     "Batch13_beh\WT*\*\*bar*";
 dataPttrn = "Z:\Emilio\SuperiorColliculusExperiments\Roller\" + ...
-    "Batch4_beh\*\*\*bar*";
+    "Batch13_beh\*\*\*\*bar*";
 barFlds = dir(dataPttrn);
 fn = @(x) fullfile(x.folder, x.name); m = 1e-3;
 fowFlag = false;
