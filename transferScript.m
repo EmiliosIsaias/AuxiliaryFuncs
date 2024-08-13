@@ -809,7 +809,7 @@ fig_path = fullfile( ...
 load( fullfile( fig_path, "MC, BC, BS, MCterminals pool.mat" ), "summMice" );
 
 expMice = summMice{1}(3);
-ovwtFlag = true;
+ovwtFlag = false;
 % xLabels = ["Control", "C100", "F100"];
 % xLabels = ["Control", "C30", "F30", "C100", "F100", ...
     % "C400", "F400", "C600", "Musc", "Musc" ];
