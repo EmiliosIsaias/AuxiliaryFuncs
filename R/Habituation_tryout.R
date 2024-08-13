@@ -1,5 +1,6 @@
 library(rethinking)
 library(R.matlab)
+library(rstan)
 
 #fpath <- "C:\\Users\\neuro\\seadrive_root\\Emilio U\\Shared with groups\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
 #fpath <- "C:\\Users\\Puercos\\seadrive_root\\Emilio U\\Für meine Gruppen\\GDrive GrohLab\\Projects\\00 SC\\SC Behaviour\\Figures\\Figure 1\\Matlab figures\\Data\\Mice habituation.mat"
@@ -15,19 +16,28 @@ d <- list(
   B = B_z
 )
 
+d$tid[d$tid == 0L] = 1L
+
 dat <- R.matlab::readMat("C:/Users/neuro/seadrive_root/Emilio U/Shared with groups/GDrive GrohLab/Projects/00 SC/SC Behaviour/Figures/Figure 1/Matlab figures/Data/Habituation_data.mat")
 dat <- dat$hab.table
+cons.flag <- dat[,1]>3
 d <- list(
-  mouse = as.integer(dat[,1]),
-  day = as.integer(dat[,2]),
-  intensity = dat[dat[,1]>3,3],
-  B = standardize(dat[dat[,1]>3,4]),
-  N = sum(dat[,1]>3)
+  mouse = dat[cons.flag,1],
+  day = dat[cons.flag,2],
+  intensity = dat[cons.flag,3],
+  B = standardize(dat[cons.flag,4]),
+  N = sum(cons.flag)
   )
-centre <- mean(dat[dat[,1]>3,4])
-scale <- sd(dat[dat[,1]>3,4])
+centre <- mean(dat[cons.flag,4])
+scale <- sd(dat[cons.flag,4])
 
-d$tid[d$tid == 0L] = 1L
+
+d2 <- list(
+  x = cbind( dat[cons.flag,3], dat[cons.flag,2], dat[cons.flag,1] ),
+  y = standardize(dat[cons.flag,4]),
+  N = sum(cons.flag),
+  K = 3
+)
 
 # m1.1c <- ulam(
 #   alist(
@@ -73,7 +83,7 @@ plot( centre + scale*d$B ~ d$intensity )
 curve( (alpha + beta * x)*scale + centre, add=TRUE)
 shade(mu.PI, puff.seq, col = col.alpha("black", alpha = 1/3))
 
-
+m1mlr <- stan(file='C:/Users/neuro/seadrive_root/Emilio U/Shared with groups/GDrive GrohLab/Projects/00 SC/SC Behaviour/Figures/Figure 1/Matlab figures/Data/multiple_linear_regression.stan', data = d2, chains = 4, cores = 4)
 
 m1.1nc <- ulam( alist(
     B ~ normal( mu , sigma ),
