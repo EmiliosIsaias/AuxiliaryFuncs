@@ -32,7 +32,7 @@ sw_path = 'C:/Users/neuro/Documents/GitHub/spike_localization_registration'
 
 geom_path = data_path + '/CN_E1_chanMap.npy'
 path_nn_detector = sw_path + '/pretrained_detector/detect_np2.pt'
-path_nn_denoiser = sw_path + '/pretrained_denoiser/denoise.pt'
+path_nn_denoiser = './pretrained_denoiser/denoise.pt'
 standardized_path = data_path + '/GADi43_C+F_2200.bin'
 standardized_dtype = 'int16'
 len_recording = 1812.352
@@ -90,11 +90,11 @@ localizer_obj = LOCALIZER(bin_file, dtype_input, fname_spike_train, fname_templa
 # localizer_obj.get_offsets()
 # localizer_obj.compute_aligned_templates()
 localizer_obj.load_denoiser()
-output_directory = 'position_results_files'
+output_directory = data_path + '/position_results_files'
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 for i in tqdm(range(n_batches)):
-    localizer_obj.get_estimate(i, threshold = 6, output_directory = 'position_results_files')
+    localizer_obj.get_estimate(i, threshold = 6, output_directory = output_directory)
 
 
 
