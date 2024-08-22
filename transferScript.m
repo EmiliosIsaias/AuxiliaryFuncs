@@ -899,28 +899,75 @@ arrayfun(@(f) saveFigure( figs(f), fullfile( fig_path, ...
 %%
 
 [~, cst] = getStacks( false, round( fs * sortedData{9,2} ), 'on', [-0.5, 0.5], fs, fr, [], behDLCSignals' );
-
+%%
 data_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\MC\GADi43\240227_C+F_2200";
 eph_path = fullfile( data_path, "ephys_E1" );
 beh_path = fullfile( data_path, "Behaviour" );
 load( fullfile( beh_path, "BehaviourSignals2024-02-27T11_26_07+T11_43_01.mat" ) )
+load( fullfile( beh_path, "RollerSpeed2024-02-27T11_26_07+T11_43_01.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200_all_channels.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200 RW20.00-50.00 SW-180.00--150.00 VW-300.00-400.00 ms PuffAll (unfiltered) RelSpkTms.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200analysis.mat" ), "Conditions" )
-time_limits = [50, 56];
 load( fullfile( eph_path, "GADi43_C+F_2200_Spike_Times.mat" ) )
-spk_counts = histcounts( spike_times{6}, "BinLimits", time_limits, "BinWidth", bin_size );
-mdl_btx = fit_poly( [1, size( behDLCSignals, 1 )], [0, size( behDLCSignals, 1 )/fr] + [1,-1] * (1/fr), 1 );
-btx = (1:size( behDLCSignals, 1 ))'.^[1,0] * mdl_btx;
-my_xor = @(x) xor( x(:,1), x(:,2) );
-stim = behDLCSignals(my_xor( btx > time_limits ), :);
 %%
-td = round( 20*1e-3*fr );
-X = zeros( length( stim ), td, 'single' );
-init = (1:length(stim))' - td;
-init(init < 1) = 1;
-for t = 1:length(stim)
-    idx1 = init(t);
-    idx2 = t;
-    X(t,:) = stim( idx1:idx2, 1 );
+behSignals = [behDLCSignals, vf];
+mdl_btx = fit_poly( [1, size( behSignals, 1 )], [0, size( behSignals, 1 )/fr] + [1,-1] * (1/fr), 1 );
+btx = (1:size( behSignals, 1 ))'.^[1,0] * mdl_btx;
+my_xor = @(x) xor( x(:,1), x(:,2) );
+
+time_limits = [0, length(behSignals)/fr];
+bin_size = 5e-3;
+Nb = ceil( diff( time_limits ) / bin_size );
+Nu = numel( spike_times );
+cons_time = my_xor( btx > time_limits );
+stim = behSignals(cons_time, :);
+Ns = size( behSignals, 2 );
+%%
+mdl_y = [1; -1/2] * bin_size;
+ytx = (1:Nb)'.^[1,0] * mdl_y;
+d = 50e-3;
+Nd = ceil( d * fr );
+cwin = ytx + [-1,1]*d/2;
+
+btx2 = btx(cons_time);
+
+cwinit = cwin(:,1); cwend = cwin(:,2);
+
+theta_hat = zeros( Nd+1, Nu, Ns, 'single' );
+bin_edges = [ytx - bin_size/2; ytx(end) + bin_size/2];
+for b = 1:Ns
+    cstim = stim(:,b);
+    X = zeros( Nb, Nd, Ns, 'single' );
+    parfor t = 1:Nb
+        sidx = ( linspace( cwinit(t), cwend(t), Nd ) - mdl_btx(2) ) / ...
+            mdl_btx(1);
+        aux = interp1( btx2, cstim, sidx );
+        aux_idx = ~isnan(aux);
+        tempX = zeros(1, Nd, 'single');
+        tempX(aux_idx) = aux(aux_idx);
+        X(t, :, b) = tempX;
+        % X(t,aux_idx) = aux(aux_idx);
+    end
+    X = cat( 2, ones( size( X, 1 ), 1, Ns ), X );
 end
+%%
+for b = 1:Ns
+    X2 = X(:,:,b);
+    parfor c = 1:Nu
+        spk_counts = histcounts( spike_times{c}, bin_edges );
+        % 'Gaussian' GLM
+        theta_hat(:,c,b) = pinv( X2' * X2 ) * X2' * spk_counts';
+        % Poisson GLM
+        % theta_hat(:,c,b) = fminsearch(@(nu) neg_log_lik_lnp( nu, X, spk_counts ), ...
+        %     rand(Nd+1, 1)*0.2 - 0.1 );
+        % figure; plot( spk_counts )
+        % hold on; plot( X * theta_hat(:,c) )
+    end
+end
+%%
+cS = configStructure;
+cS.BinSize_s = 5e-3;
+PSTH_pupt = getPSTH_perU_perT( relativeSpkTmsStruct, cS );
+
+
+
