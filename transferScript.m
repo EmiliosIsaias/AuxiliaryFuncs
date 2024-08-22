@@ -812,7 +812,7 @@ expMice = summMice{1}(3);
 ovwtFlag = false;
 % xLabels = ["Control", "C100", "F100"];
 % xLabels = ["Control", "C30", "F30", "C100", "F100", ...
-    % "C400", "F400", "C600", "Musc", "Musc" ];
+% "C400", "F400", "C600", "Musc", "Musc" ];
 xLabels = ["Control", "C30", "F30", "C100", "F100", ...
     "C400", "F400", "Dead", "PTX", "PTX" ];
 exp_subtype_flags = cellfun(@(x) contains( expMice.MiceNames, x ), ...
@@ -827,7 +827,7 @@ for cest = 1:numel(exp_subtype)
     cons_mice = exp_subtype_flags(:,cest) & ~exclude_mice;
     exp_subtype_flags(:,cest) = exp_subtype_flags(:,cest) & ~exclude_mice;
     if sum( cons_mice )
-        
+
         figs(cest) = figure( "Color", "w" );
         t = createtiles( figs(cest), 2, 1 ); ax = nexttile(t);
         aux = squeeze( mean( expMice.AmplitudeIndex(:,:, ...
@@ -899,3 +899,28 @@ arrayfun(@(f) saveFigure( figs(f), fullfile( fig_path, ...
 %%
 
 [~, cst] = getStacks( false, round( fs * sortedData{9,2} ), 'on', [-0.5, 0.5], fs, fr, [], behDLCSignals' );
+
+data_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\MC\GADi43\240227_C+F_2200";
+eph_path = fullfile( data_path, "ephys_E1" );
+beh_path = fullfile( data_path, "Behaviour" );
+load( fullfile( beh_path, "BehaviourSignals2024-02-27T11_26_07+T11_43_01.mat" ) )
+load( fullfile( eph_path, "GADi43_C+F_2200_all_channels.mat" ) )
+load( fullfile( eph_path, "GADi43_C+F_2200 RW20.00-50.00 SW-180.00--150.00 VW-300.00-400.00 ms PuffAll (unfiltered) RelSpkTms.mat" ) )
+load( fullfile( eph_path, "GADi43_C+F_2200analysis.mat" ), "Conditions" )
+time_limits = [50, 56];
+load( fullfile( eph_path, "GADi43_C+F_2200_Spike_Times.mat" ) )
+spk_counts = histcounts( spike_times{6}, "BinLimits", time_limits, "BinWidth", bin_size );
+mdl_btx = fit_poly( [1, size( behDLCSignals, 1 )], [0, size( behDLCSignals, 1 )/fr] + [1,-1] * (1/fr), 1 );
+btx = (1:size( behDLCSignals, 1 ))'.^[1,0] * mdl_btx;
+my_xor = @(x) xor( x(:,1), x(:,2) );
+stim = behDLCSignals(my_xor( btx > time_limits ), :);
+%%
+td = round( 20*1e-3*fr );
+X = zeros( length( stim ), td, 'single' );
+init = (1:length(stim))' - td;
+init(init < 1) = 1;
+for t = 1:length(stim)
+    idx1 = init(t);
+    idx2 = t;
+    X(t,:) = stim( idx1:idx2, 1 );
+end
