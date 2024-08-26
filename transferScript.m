@@ -900,6 +900,7 @@ arrayfun(@(f) saveFigure( figs(f), fullfile( fig_path, ...
 
 [~, cst] = getStacks( false, round( fs * sortedData{9,2} ), 'on', [-0.5, 0.5], fs, fr, [], behDLCSignals' );
 %%
+fnOpts = {'UniformOutput', false};
 data_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\MC\GADi43\240227_C+F_2200";
 eph_path = fullfile( data_path, "ephys_E1" );
 beh_path = fullfile( data_path, "Behaviour" );
@@ -909,47 +910,104 @@ load( fullfile( eph_path, "GADi43_C+F_2200_all_channels.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200 RW20.00-50.00 SW-180.00--150.00 VW-300.00-400.00 ms PuffAll (unfiltered) RelSpkTms.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200analysis.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200_Spike_Times.mat" ) )
+stop_time = length( Triggers.Whisker )/ fs;
 %%
 behSignals = [behDLCSignals, vf];
 mdl_btx = fit_poly( [1, size( behSignals, 1 )], [0, size( behSignals, 1 )/fr] + [1,-1] * (1/fr), 1 );
 btx = (1:size( behSignals, 1 ))'.^[1,0] * mdl_btx;
 my_xor = @(x) xor( x(:,1), x(:,2) );
 
-time_limits = [0, length(behSignals)/fr];
+% time_limits = [0, length(behSignals)/fr];
+rel_win = [-0.3, 0.4];
+del_win = [-50, 50]*1e-3;
 bin_size = 5e-3;
-Nb = ceil( diff( time_limits ) / bin_size );
+cS.BinSize_s = bin_size;
+Nb = ceil( diff( rel_win )/ bin_size );
+% Nb = ceil( diff( time_limits ) / bin_size );
 Nu = numel( spike_times );
-cons_time = my_xor( btx > time_limits );
-stim = behSignals(cons_time, :);
+% cons_time = my_xor( btx > time_limits );
+stim = behSignals; %(cons_time, :);
 Ns = size( behSignals, 2 );
 %%
-mdl_y = [1; -1/2] * bin_size;
-ytx = (1:Nb)'.^[1,0] * mdl_y;
-d = 50e-3;
-Nd = ceil( d * fr );
-cwin = ytx + [-1,1]*d/2;
+bin_edges = 0:bin_size:stop_time;
+bin_centres = mean( [bin_edges(1:end-1); bin_edges(2:end)] );
+Ntb = length( bin_centres );
+hstOpts = {'Normalization', 'countdensity'};
+binned_spikes = cellfun(@(s) histcounts( s, bin_edges, hstOpts{:}), ...
+    spike_times, fnOpts{:} );
+binned_spikes = cat( 1, binned_spikes{:} );
 
-btx2 = btx(cons_time);
+time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
+Nr = size( time_limits, 1 );
 
-cwinit = cwin(:,1); cwend = cwin(:,2);
+binned_beh = zeros( Ntb, Ns );
+parfor b = 1:Ntb
+    idx = my_xor( btx(:) < bin_edges(b:b+1) );
+    binned_beh(b,:) = mean( behSignals( idx , : ), 1 );
+end
 
-theta_hat = zeros( Nd+1, Nu, Ns, 'single' );
-bin_edges = [ytx - bin_size/2; ytx(end) + bin_size/2];
-X = zeros( Nb, Nd, 'single' );
-parfor r = 1:size( time_limits, 1)
+%%
+Nd = ceil( diff( del_win ) / bin_size );
+auX = zeros( Nb*Nr, Nu, Nd );
+y = zeros( Nb*Nr, 1 );
+for r = 1:Nr
+    cb = time_limits(r,1);
+    for b = 1:Nb
+        cwin = cb + del_win;
+        bin_ax = linspace( cwin(1), cwin(2), Nd );
+        tempC = arrayfun(@(u) interp1( bin_centres, binned_spikes(u,:), ...
+            bin_ax ), 1:Nu, fnOpts{:} );
+        tempC = cat( 1, tempC{:} );
+        auX( (r-1)*Nb + b, :, :) = tempC;
+        cb = cb + bin_size;
+    end
+    y( (r-1)*Nb + (1:Nb) ) = interp1( bin_centres, binned_beh(:,1), ...
+        (1:Nb)*bin_size + time_limits(r,1) );
+end
+X = reshape( auX, [], Nu*Nd );
+
+%%
+y = zeros( Nb*Nr, 1);
+for r = 1:Nr
+    y( ((r-1)*Nb) + (1:Nb) ) = interp1( bin_centres, binned_beh(:,1), (1:Nb)*bin_size + time_limits(r,1) );
+end
+
+%%
+
+lmObj = fitlm( X, y );
+
+%%
+Nd = ceil( diff( del_win ) * fr );
+% cwin = ytx + [-1,1]*d/2;
+time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
+% btx2 = btx(cons_time);
+cwinit = time_limits(:,1); cwend = time_limits(:,2);
+Nr = size( Conditions(3).Triggers, 1 ) ;
+theta_hat = zeros( Nd+1, Nu, 'single' );
+X = zeros( Nb*Nr, Nd, 'single' );
+cstim = stim(:,1);
+
+for r = 1:Nr
+    ytx = linspace( cwinit(r) + bin_size/2, ...
+        cwend(r) - bin_size/2, Nb);
     for t = 1:Nb
-        sidx = ( linspace( cwinit(t), cwend(t), Nd ) - mdl_btx(2) ) / ...
-            mdl_btx(1);
-        aux = interp1( btx2, cstim, sidx );
+        cwin = ytx(t) + del_win;
+        ctx = linspace( cwin(1) , cwin(2), Nd );
+        aux = interp1( btx, cstim, ctx );
         aux_idx = ~isnan(aux);
         tempX = zeros(1, Nd, 'single');
         tempX(aux_idx) = aux(aux_idx);
-        X(t, :, b) = tempX;
+        X((r-1)*Nb + t, :) = tempX;
         % X(t,aux_idx) = aux(aux_idx);
     end
 end
-X = cat( 2, ones( size( X, 1 ), 1, Ns ), X );
+X = [ones( Nb*Nr, 1), X];
+% X = cat( 2, ones( size( X, 1 ), 1, Ns ), X );
 %%
+%{
+mdl_y = [1; -1/2] * bin_size;
+ytx = (1:Nb)'.^[1,0] * mdl_y;
+bin_edges = [ytx - bin_size/2; ytx(end) + bin_size/2];
 for b = 1:Ns
     X2 = X(:,:,b);
     parfor c = 1:Nu
@@ -963,6 +1021,7 @@ for b = 1:Ns
         % hold on; plot( X * theta_hat(:,c) )
     end
 end
+%}
 %%
 cS = configStructure;
 rel_win = [-0.3, 0.4];
