@@ -907,7 +907,7 @@ load( fullfile( beh_path, "BehaviourSignals2024-02-27T11_26_07+T11_43_01.mat" ) 
 load( fullfile( beh_path, "RollerSpeed2024-02-27T11_26_07+T11_43_01.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200_all_channels.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200 RW20.00-50.00 SW-180.00--150.00 VW-300.00-400.00 ms PuffAll (unfiltered) RelSpkTms.mat" ) )
-load( fullfile( eph_path, "GADi43_C+F_2200analysis.mat" ), "Conditions" )
+load( fullfile( eph_path, "GADi43_C+F_2200analysis.mat" ) )
 load( fullfile( eph_path, "GADi43_C+F_2200_Spike_Times.mat" ) )
 %%
 behSignals = [behDLCSignals, vf];
@@ -935,10 +935,9 @@ cwinit = cwin(:,1); cwend = cwin(:,2);
 
 theta_hat = zeros( Nd+1, Nu, Ns, 'single' );
 bin_edges = [ytx - bin_size/2; ytx(end) + bin_size/2];
-for b = 1:Ns
-    cstim = stim(:,b);
-    X = zeros( Nb, Nd, Ns, 'single' );
-    parfor t = 1:Nb
+X = zeros( Nb, Nd, 'single' );
+parfor r = 1:size( time_limits, 1)
+    for t = 1:Nb
         sidx = ( linspace( cwinit(t), cwend(t), Nd ) - mdl_btx(2) ) / ...
             mdl_btx(1);
         aux = interp1( btx2, cstim, sidx );
@@ -948,8 +947,8 @@ for b = 1:Ns
         X(t, :, b) = tempX;
         % X(t,aux_idx) = aux(aux_idx);
     end
-    X = cat( 2, ones( size( X, 1 ), 1, Ns ), X );
 end
+X = cat( 2, ones( size( X, 1 ), 1, Ns ), X );
 %%
 for b = 1:Ns
     X2 = X(:,:,b);
@@ -966,8 +965,44 @@ for b = 1:Ns
 end
 %%
 cS = configStructure;
-cS.BinSize_s = 5e-3;
-PSTH_pupt = getPSTH_perU_perT( relativeSpkTmsStruct, cS );
+rel_win = [-0.3, 0.4];
+del_win = [-15, 0]*1e-3;
+bin_size = 1e-3;
+cS.BinSize_s = bin_size;
+Nb = ceil( diff( rel_win )/ bin_size );
+mdl_stx = [1/fs; -0.5];
+stim_Ns = 1 + diff( [-0.5, 0.5] ) * fs;
+stim = false( stim_Ns, 1 ); 
+stim_tx = ((1:stim_Ns)'.^[1,0])*mdl_stx;
+stim( my_xor( stim_tx < [0, 0.1] ) ) = true;
+%%
+mdl_y = fit_poly( [1, Nb], rel_win + [1,-1]*bin_size/2, 1 );
+ytx = (1:Nb)'.^[1,0] * mdl_y;
+Nd = ceil( diff( del_win ) * fs );
+cwin = ytx + del_win;
+cwinit = cwin(:,1); cwend = cwin(:,2);
 
 
+%%
+X = zeros( Nb, Nd, 'single' );
+for b = 1:Nb
+    stx = linspace( cwinit(b), cwend(b), Nd );
+    aux_stim = interp1( stim_tx, stim*1, stx );
+    X(b,:) = aux_stim;
+end
+X = [ones( Nb, 1 ), X];
+%%
+PSTH_pupt = getPSTH_perU_perT( relativeSpkTmsStruct, cS);
+%%
+theta_hat(:,c,b) = pinv( X' * X ) * X' * spk_counts';
+%%
+time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
 
+for r = 1:size( Conditions(3).Triggers, 1 )
+    
+end
+%%
+
+for u = 1:size( relativeSpkTmsStruct(1).SpikeTimes, 1 )
+
+end
