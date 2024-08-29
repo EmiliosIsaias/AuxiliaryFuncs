@@ -897,9 +897,6 @@ arrayfun(@(f) saveFigure( figs(f), fullfile( fig_path, ...
     sum( exp_subtype_flags(:,f) ) ] ) ), true, ovwtFlag ), ...
     find( arrayfun(@(f) ~isa( f, 'matlab.graphics.GraphicsPlaceholder'), figs ) ) );
 %%
-
-[~, cst] = getStacks( false, round( fs * sortedData{9,2} ), 'on', [-0.5, 0.5], fs, fr, [], behDLCSignals' );
-%%
 fnOpts = {'UniformOutput', false};
 data_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\MC\GADi43\240227_C+F_2200";
 eph_path = fullfile( data_path, "ephys_E1" );
@@ -918,6 +915,7 @@ btx = (1:size( behSignals, 1 ))'.^[1,0] * mdl_btx;
 my_xor = @(x) xor( x(:,1), x(:,2) );
 
 % time_limits = [0, length(behSignals)/fr];
+cS = configStructure;
 rel_win = [-0.3, 0.4];
 del_win = [-50, 50]*1e-3;
 bin_size = 5e-3;
@@ -937,19 +935,18 @@ binned_spikes = cellfun(@(s) histcounts( s, bin_edges, hstOpts{:}), ...
     spike_times, fnOpts{:} );
 binned_spikes = cat( 1, binned_spikes{:} );
 
-time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
-Nr = size( time_limits, 1 );
-
 binned_beh = zeros( Ntb, Ns );
 parfor b = 1:Ntb
     idx = my_xor( btx(:) < bin_edges(b:b+1) );
     binned_beh(b,:) = mean( behSignals( idx , : ), 1 );
 end
 
-%%
+%% Design matrix for a set of trials
+time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
+Nr = size( time_limits, 1 );
 Nd = ceil( diff( del_win ) / bin_size );
 auX = zeros( Nb*Nr, Nu, Nd );
-y = zeros( Nb*Nr, 1 );
+% y = zeros( Nb*Nr, 1 );
 for r = 1:Nr
     cb = time_limits(r,1);
     for b = 1:Nb
@@ -961,21 +958,46 @@ for r = 1:Nr
         auX( (r-1)*Nb + b, :, :) = tempC;
         cb = cb + bin_size;
     end
-    y( (r-1)*Nb + (1:Nb) ) = interp1( bin_centres, binned_beh(:,1), ...
-        (1:Nb)*bin_size + time_limits(r,1) );
 end
 X = reshape( auX, [], Nu*Nd );
 
 %%
-y = zeros( Nb*Nr, 1);
-for r = 1:Nr
-    y( ((r-1)*Nb) + (1:Nb) ) = interp1( bin_centres, binned_beh(:,1), (1:Nb)*bin_size + time_limits(r,1) );
+X2 = [ ones( Nb*Nr, 1), X];
+lmObjs = cell( Ns, 1 );
+for s = 1:Ns
+    y = zeros( Nb*Nr, 1);
+    for r = 1:Nr
+        idx = (r-1)*Nb + (1:Nb);
+        y( idx ) = interp1( bin_centres, binned_beh(:,s), (1:Nb)*bin_size + time_limits(r,1) );
+    end
+    lmObjs{s,1}  = fitrlinear( X, y, 'KFold', 15, 'Lambda', logspace(-5,-1, 15) );
+    
+    figure; plot( [y(:), y_pred(:)] )
 end
 
-%%
-
-lmObj = fitlm( X, y );
-
+%% Multivariate regression response matrix
+%X2 = [ ones( Nb*Nr, 1), X];
+%lmObjs = cell( Ns, 1 );
+y = zeros( Nb*Nr, Ns);
+for r = 1:Nr
+    idx = (r-1)*Nb + (1:Nb);
+    aux = arrayfun(@(s) interp1( bin_centres, binned_beh(:,s), ...
+        (1:Nb)'*bin_size + time_limits(r,1) ), (1:Ns), fnOpts{:} );
+    aux = cat( 2, aux{:} );
+    y(idx,:) = aux;
+end
+%% Design matrix for the whole experiment
+Nb = ceil( diff( bin_edges([1,end]) )/ bin_size );
+auX = zeros( Nb, Nu, Nd );
+parfor b = 1:Nb
+    cwin = bin_centres(b) + del_win;
+    bin_ax = linspace( cwin(1), cwin(2), Nd );
+    tempC = arrayfun(@(u) interp1( bin_centres, binned_spikes(u,:), ...
+        bin_ax ), 1:Nu, fnOpts{:} );
+    tempC = cat( 1, tempC{:} );
+    tempC( isnan(tempC) ) = 0;
+    auX( b, :, :) = tempC;
+end
 %%
 Nd = ceil( diff( del_win ) * fr );
 % cwin = ytx + [-1,1]*d/2;
@@ -1031,7 +1053,7 @@ cS.BinSize_s = bin_size;
 Nb = ceil( diff( rel_win )/ bin_size );
 mdl_stx = [1/fs; -0.5];
 stim_Ns = 1 + diff( [-0.5, 0.5] ) * fs;
-stim = false( stim_Ns, 1 ); 
+stim = false( stim_Ns, 1 );
 stim_tx = ((1:stim_Ns)'.^[1,0])*mdl_stx;
 stim( my_xor( stim_tx < [0, 0.1] ) ) = true;
 %%
@@ -1058,7 +1080,7 @@ theta_hat(:,c,b) = pinv( X' * X ) * X' * spk_counts';
 time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
 
 for r = 1:size( Conditions(3).Triggers, 1 )
-    
+
 end
 %%
 
