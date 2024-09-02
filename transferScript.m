@@ -1042,65 +1042,21 @@ for r = 1:Nr
 end
 X = [ones( Nb*Nr, 1), X];
 % X = cat( 2, ones( size( X, 1 ), 1, Ns ), X );
-%%
-%{
-mdl_y = [1; -1/2] * bin_size;
-ytx = (1:Nb)'.^[1,0] * mdl_y;
-bin_edges = [ytx - bin_size/2; ytx(end) + bin_size/2];
-for b = 1:Ns
-    X2 = X(:,:,b);
-    parfor c = 1:Nu
-        spk_counts = histcounts( spike_times{c}, bin_edges );
-        % 'Gaussian' GLM
-        theta_hat(:,c,b) = pinv( X2' * X2 ) * X2' * spk_counts';
-        % Poisson GLM
-        % theta_hat(:,c,b) = fminsearch(@(nu) neg_log_lik_lnp( nu, X, spk_counts ), ...
-        %     rand(Nd+1, 1)*0.2 - 0.1 );
-        % figure; plot( spk_counts )
-        % hold on; plot( X * theta_hat(:,c) )
-    end
-end
-%}
-%%
-cS = configStructure;
-rel_win = [-0.3, 0.4];
-del_win = [-15, 0]*1e-3;
-bin_size = 1e-3;
-cS.BinSize_s = bin_size;
-Nb = ceil( diff( rel_win )/ bin_size );
-mdl_stx = [1/fs; -0.5];
-stim_Ns = 1 + diff( [-0.5, 0.5] ) * fs;
-stim = false( stim_Ns, 1 );
-stim_tx = ((1:stim_Ns)'.^[1,0])*mdl_stx;
-stim( my_xor( stim_tx < [0, 0.1] ) ) = true;
-%%
-mdl_y = fit_poly( [1, Nb], rel_win + [1,-1]*bin_size/2, 1 );
-ytx = (1:Nb)'.^[1,0] * mdl_y;
-Nd = ceil( diff( del_win ) * fs );
-cwin = ytx + del_win;
-cwinit = cwin(:,1); cwend = cwin(:,2);
 
+%% Spike localization
+eph_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch17_ephys.MC\eOPN3\Rb28\231104_C_2450\ephys_E1";
 
-%%
-X = zeros( Nb, Nd, 'single' );
-for b = 1:Nb
-    stx = linspace( cwinit(b), cwend(b), Nd );
-    aux_stim = interp1( stim_tx, stim*1, stx );
-    X(b,:) = aux_stim;
-end
-X = [ones( Nb, 1 ), X];
-%%
-PSTH_pupt = getPSTH_perU_perT( relativeSpkTmsStruct, cS);
-%%
-theta_hat(:,c,b) = pinv( X' * X ) * X' * spk_counts';
-%%
-time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
+load( fullfile( eph_path, 'Rb28_C_2450_Spike_Times.mat' ) )
+load('Kilosort-2.0.2\configFiles\CambridgeNeuroTechE0x2D1Corrected_kilosortChanMap.mat')
 
-for r = 1:size( Conditions(3).Triggers, 1 )
+cwf = getClusterWaveforms64Channels( ...
+    fullfile( eph_path, "Rb28_C_2450.bin" ), round( sortedData{2,2}*fs ) );
 
-end
-%%
+ptp = squeeze( range( cwf, 2 ) );
 
-for u = 1:size( relativeSpkTmsStruct(1).SpikeTimes, 1 )
+obj_func = @(idx,theta) ptp(:,idx) - (theta(4) ./ sqrt( sum( ([xcoords, ycoords] - theta([2,3])).^2, 2 ) + theta(1).^2 ) );
 
+loc_hat = zeros( size( ptp, 2 ), 4 );
+parfor x = 1:size(ptp, 2)
+    loc_hat(x,:) = fminsearch(@(w) sum( obj_func(x, w).^2 ), theta, optimset('Display', 'none') );
 end
