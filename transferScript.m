@@ -933,20 +933,37 @@ Ntb = length( bin_centres );
 hstOpts = {'Normalization', 'countdensity'};
 binned_spikes = cellfun(@(s) histcounts( s, bin_edges, hstOpts{:}), ...
     spike_times, fnOpts{:} );
-binned_spikes = cat( 1, binned_spikes{:} );
+binned_spikes = gpuArray( cat( 1, binned_spikes{:} ) );
 
 binned_beh = zeros( Ntb, Ns );
 parfor b = 1:Ntb
     idx = my_xor( btx(:) < bin_edges(b:b+1) );
     binned_beh(b,:) = mean( behSignals( idx , : ), 1 );
 end
+binned_beh = gpuArray( binned_beh );
 
 %% Design matrix for a set of trials
 time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
 Nr = size( time_limits, 1 );
 Nd = ceil( diff( del_win ) / bin_size );
 auX = zeros( Nb*Nr, Nu, Nd );
-% y = zeros( Nb*Nr, 1 );
+
+cwin = arrayfun(@(x) linspace( time_limits(x,1) + (bin_size/2), ...
+    time_limits(x,2) - (bin_size/2), Nb )', (1:Nr)', fnOpts{:} );
+cwin = cat( 1, cwin{:} );
+
+bin_ax = cwin + linspace( del_win(1)+(bin_size/2), ...
+    del_win(2)-(bin_size/2), Nd );
+
+parfor r = 1:(Nr*Nb)
+    tempC = arrayfun(@(u) interp1( bin_centres, binned_spikes(u,:), ...
+        bin_ax(r,:) ), 1:Nu, fnOpts{:} );
+    tempC = cat( 1, tempC{:} );
+    auX( r, :, :) = tempC;
+end
+
+X = reshape( auX, [], Nu*Nd );
+%{
 for r = 1:Nr
     cb = time_limits(r,1);
     for b = 1:Nb
@@ -960,7 +977,7 @@ for r = 1:Nr
     end
 end
 X = reshape( auX, [], Nu*Nd );
-
+%}
 %%
 X2 = [ ones( Nb*Nr, 1), X];
 lmObjs = cell( Ns, 1 );
