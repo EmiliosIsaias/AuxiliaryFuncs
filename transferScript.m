@@ -1015,6 +1015,9 @@ parfor b = 1:Nb
     tempC( isnan(tempC) ) = 0;
     auX( b, :, :) = tempC;
 end
+X = reshape( auX, [], Nu*Nd );
+X2 = [ ones( Nb*Nr, 1), X];
+Xa = X2;
 %%
 Nd = ceil( diff( del_win ) * fr );
 % cwin = ytx + [-1,1]*d/2;
