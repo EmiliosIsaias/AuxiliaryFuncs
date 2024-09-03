@@ -1046,17 +1046,18 @@ X = [ones( Nb*Nr, 1), X];
 %% Spike localization
 eph_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch17_ephys.MC\eOPN3\Rb28\231104_C_2450\ephys_E1";
 
-load( fullfile( eph_path, 'Rb28_C_2450_Spike_Times.mat' ) )
+load( fullfile( eph_path, 'Rb28_C_2450_all_channels.mat' ) )
 load('Kilosort-2.0.2\configFiles\CambridgeNeuroTechE0x2D1Corrected_kilosortChanMap.mat')
 
 cwf = getClusterWaveforms64Channels( ...
     fullfile( eph_path, "Rb28_C_2450.bin" ), round( sortedData{2,2}*fs ) );
 
 ptp = squeeze( range( cwf, 2 ) );
-
-obj_func = @(idx,theta) ptp(:,idx) - (theta(4) ./ sqrt( sum( ([xcoords, ycoords] - theta([2,3])).^2, 2 ) + theta(1).^2 ) );
+% obj_func = @(theta_hat) ptp - theta_hat(4,:) ./ sqrt( squeeze( sum( (pg_test - permute( theta_hat([2,3],:), [3, 1, 2] ) ).^2, 2 ) ) + theta_hat(1,:).^2 );
+obj_func = @(idx,theta) ptp(:,idx) - (theta(4) ./ ...
+    sqrt( sum( ([xcoords, ycoords] - theta([2,3])).^2, 2 ) + theta(1).^2 ) );
 
 loc_hat = zeros( size( ptp, 2 ), 4 );
 parfor x = 1:size(ptp, 2)
-    loc_hat(x,:) = fminsearch(@(w) sum( obj_func(x, w).^2 ), theta, optimset('Display', 'none') );
+    loc_hat(x,:) = fminsearch(@(w) sum( obj_func(x, w).^2 ), theta );
 end
