@@ -943,7 +943,7 @@ end
 binned_beh = gpuArray( binned_beh );
 
 %% Design matrix for a set of trials
-time_limits = Conditions(3).Triggers(:,1)./fs + rel_win;
+time_limits = Conditions(4).Triggers(:,1)./fs + rel_win;
 Nr = size( time_limits, 1 );
 Nd = ceil( diff( del_win ) / bin_size );
 auX = zeros( Nb*Nr, Nu, Nd );
@@ -963,6 +963,8 @@ parfor r = 1:(Nr*Nb)
 end
 
 X = reshape( auX, [], Nu*Nd );
+X2 = [ ones( Nb*Nr, 1), X];
+Xl = X2;
 %{
 for r = 1:Nr
     cb = time_limits(r,1);
@@ -979,7 +981,7 @@ end
 X = reshape( auX, [], Nu*Nd );
 %}
 %%
-X2 = [ ones( Nb*Nr, 1), X];
+
 lmObjs = cell( Ns, 1 );
 for s = 1:Ns
     y = zeros( Nb*Nr, 1);
@@ -1015,6 +1017,9 @@ parfor b = 1:Nb
     tempC( isnan(tempC) ) = 0;
     auX( b, :, :) = tempC;
 end
+X = reshape( auX, [], Nu*Nd );
+X2 = [ ones( Nb*Nr, 1), X];
+Xa = X2;
 %%
 Nd = ceil( diff( del_win ) * fr );
 % cwin = ytx + [-1,1]*d/2;
