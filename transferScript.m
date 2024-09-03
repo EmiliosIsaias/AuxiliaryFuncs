@@ -898,7 +898,7 @@ arrayfun(@(f) saveFigure( figs(f), fullfile( fig_path, ...
     find( arrayfun(@(f) ~isa( f, 'matlab.graphics.GraphicsPlaceholder'), figs ) ) );
 %%
 fnOpts = {'UniformOutput', false};
-data_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch18_ephys\MC\GADi43\240227_C+F_2200";
+data_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch17_ephys.MC\eOPN3\Rb28\231104_C_2450";
 eph_path = fullfile( data_path, "ephys_E1" );
 beh_path = fullfile( data_path, "Behaviour" );
 load( fullfile( beh_path, "BehaviourSignals2024-02-27T11_26_07+T11_43_01.mat" ) )
