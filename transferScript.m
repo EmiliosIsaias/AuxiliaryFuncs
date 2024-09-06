@@ -955,3 +955,16 @@ loc_hat = zeros( size( ptp, 2 ), 4 );
 parfor x = 1:size(ptp, 2)
     loc_hat(x,:) = fminsearch(@(w) sum( obj_func(x, w).^2 ), theta );
 end
+
+%%
+
+clrMap = viko(8);
+figure;
+for pj = 1:8
+    subplot( 2,4, pj )
+    semilogx( tx*1e3, mean( X(clusterIdx == pj, :), 1 ), ...
+        "Color", clrMap(pj,:), "DisplayName", string( pj ) )
+    title( pj )
+    ylim([0,1])
+    set( gca, 'box', 'off', 'color', 'none' );
+end
