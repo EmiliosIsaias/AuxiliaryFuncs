@@ -945,15 +945,40 @@ load('Kilosort-2.0.2\configFiles\CambridgeNeuroTechE0x2D1Corrected_kilosortChanM
 
 cwf = getClusterWaveforms64Channels( ...
     fullfile( eph_path, "Rb28_C_2450.bin" ), round( sortedData{2,2}*fs ) );
+figure; line( (xcoords(gch) + linspace(-20, 20, 74))', ...
+    (ycoords(gch) + 20*( mean( cwf_norm(gch,:,:)./max( abs( cwf_norm(gch,:,:) ), [], 2 ), 3 ) ) )', ...
+    'color', 'k')
 
-ptp = squeeze( range( cwf, 2 ) );
+% ptp = squeeze( range( cwf, 2 ) );
 % obj_func = @(theta_hat) ptp - theta_hat(4,:) ./ sqrt( squeeze( sum( (pg_test - permute( theta_hat([2,3],:), [3, 1, 2] ) ).^2, 2 ) ) + theta_hat(1,:).^2 );
-obj_func = @(idx,theta) ptp(:,idx) - (theta(4) ./ ...
-    sqrt( sum( ([xcoords, ycoords] - theta([2,3])).^2, 2 ) + theta(1).^2 ) );
 
-loc_hat = zeros( size( ptp, 2 ), 4 );
+obj_func = @(idx,theta) ptp(:,idx) - (theta(1) ./ ...
+    sqrt( sum( ([xcoords, ycoords] - theta([2,3])).^2, 2 ) + theta(4).^2 ) );
+
+cwf_norm = ( cumsum( diff( cwf, 1, 2 ), 2 ) ./ ...
+    max( abs( cwf ), [], [2,3] ) ).* ...
+    tocol(blackman( size( cwf, 2) - 1, "symmetric" ))';
+probe_geometry = [xcoords, ycoords];
+near_electrodes = pdist( probe_geometry );
+near_electrodes = squareform( near_electrodes );
+[~, mindist] = sort( near_electrodes(12,:) ); % Electrode 12
+cch = sort( gch(mindist(1:13)) );
+probe_geometry = [xcoords(cch), ycoords(cch)];
+ptp = squeeze( range( cwf_norm(cch,:,:), 2 ) );
+
+loc_hat = zeros( size( ptp, 2 ), 4 ); cnvg_flag = false( size( ptp, 2 ), 1 );
 parfor x = 1:size(ptp, 2)
-    loc_hat(x,:) = fminsearch(@(w) sum( obj_func(x, w).^2 ), theta );
+    [loc_hat(x,:), ~, cnvg_flag(x)] = fminsearch(@(w) sum( obj_func(x, w).^2 ), ...
+        theta_init, optimset('Display', 'none', 'MaxIter', 4*2e4) );
+end
+%%
+theta_hat = [];
+csp = 1; sl_win = 99;
+while (csp + sl_win) < Nspks
+    theta_hat = cat( 1, theta_hat, ...
+        fminsearch( @(w) sum( obj_func(csp:csp+sl_win, w).^2, "all" ), ...
+        theta_init ) );
+    csp = csp + sl_win;
 end
 
 %%
@@ -962,9 +987,24 @@ clrMap = viko(8);
 figure;
 for pj = 1:8
     subplot( 2,4, pj )
-    semilogx( tx*1e3, mean( X(clusterIdx == pj, :), 1 ), ...
-        "Color", clrMap(pj,:), "DisplayName", string( pj ) )
-    title( pj )
+    lObj = semilogx( tx*1e3, X(clusterIdx == pj, :)', "Color", clrMap(pj,:) );
+    title( pj ); xticklabels( xticks )
     ylim([0,1])
     set( gca, 'box', 'off', 'color', 'none' );
+    legend(lObj, string( find(clusterIdx == pj) )', 'Box', 'off', ...
+        'Location', 'best', 'Color', 'none' )
 end
+
+figure('Color', 'w'); titls = {'Sensory part (20-50 ms)', 'Motor part( 50-200 ms)'};
+for w = 1:2
+    subplot( 2, 1, w); hold on; 
+    arrayfun(@(x) boxchart( repmat( x, sum( clusterIdx == x ), 1 ), ...
+        miMat( clusterIdx == x, w+2 ), 'Notch', 'on', ...
+        'JitterOutliers', 'on', 'MarkerStyle', '.', ...
+        'MarkerColor', clrMap(x,:), 'BoxFaceColor', clrMap(x,:) ), ...
+        unique( clusterIdx ) )
+    title( titls{w} )
+    ylabel('Modulation index'); yline( 0, 'k--'); ylim([-0.5,0.5])
+end
+arrayfun(@(x) set( x, 'Box', 'off', 'Color', 'none' ), get( gcf, 'Children' ) )
+arrayfun(@(x) xlim( x, [0,8]+0.5 ), get( gcf, 'Children' ) )
