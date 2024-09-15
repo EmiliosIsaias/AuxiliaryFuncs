@@ -10,8 +10,8 @@ import numpy as np
 import pathlib as pl
 import matplotlib.pyplot as plt
 
-imgs_dir = pl.Path(r"D:\\Photos")
-pSub = 302
+imgs_dir = pl.Path(r"G:\\2024\\05\\16-19 Bled")
+pSub = 564
 rng = 2
 imgs_nm = ["/_MG_0{}.png".format(x) for x in range(pSub,pSub+rng)]
 #imgs_nm = ["/_MG_9209.png","/_MG_9210.png","/_MG_9211.png"]
