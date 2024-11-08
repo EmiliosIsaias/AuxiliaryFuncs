@@ -9,7 +9,11 @@ else
     askOvr = false;
 end
 
-absBaseFilePath = string(absBaseFilePath); fileExt = [".fig";".pdf";".emf"];
+absBaseFilePath = string(absBaseFilePath); 
+fileExt = [".fig";".pdf"];
+if strcmp( computer, 'PCWIN64' )
+    fileExt = cat(1, ".emf");
+end
 eidff = arrayfun(@(x) ~exist(absBaseFilePath + x,'file'),...
     fileExt);
 questionOpts = {'Overwrite?','Yes','No','No'};
@@ -18,7 +22,7 @@ savingOpts = { {}, ...
     ... {'-dpdf','-fillpage'}, ...
     {'BackgroundColor', 'none', 'ContentType', 'Vector'}, ...
     {'BackgroundColor', 'none', 'ContentType', 'Vector'} };
-for cft = 1:3
+for cft = 1:numel(fileExt)
     if eidff(cft) || ovrWriteFlag
         if askOvr && ~eidff(cft)
             ovrAns = questdlg(sprintf('Overwrite %s?', absBaseFilePath(cft)),...
