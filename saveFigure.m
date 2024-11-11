@@ -12,7 +12,7 @@ end
 absBaseFilePath = string(absBaseFilePath); 
 fileExt = [".fig";".pdf"];
 if strcmp( computer, 'PCWIN64' )
-    fileExt = cat(1, ".emf");
+    fileExt = cat(1, fileExt, ".emf");
 end
 eidff = arrayfun(@(x) ~exist(absBaseFilePath + x,'file'),...
     fileExt);
