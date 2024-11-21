@@ -8,14 +8,18 @@ exp_path = ...
     fullfile( roller_path, "behavior/" );
 % Figure overwrite flag
 fowFlag = false;
-
+% Annonymus function
 expandPath = @(x) fullfile( x.folder, x.name);
+% Milli factor
 m = 1e-3;
-
+% Looks in the experiment path for objects called ephys* (* is a wild card)
 eph_path = dir( fullfile( exp_path, "ephys*" ) );
+% Delete everything that is not a folder
 eph_path( ~[eph_path.isdir] ) = [];
+% Looking folder 'Behaviour'
 beh_path = fullfile( exp_path, "Behaviour" );
-
+% If the ephys path is empty, look for *analysis.mat file in the behaviour
+% folder.
 if ~isempty( eph_path )
     eph_path = expandPath( eph_path );
     figure_path = fullfile( eph_path, "Figures" );
@@ -25,6 +29,8 @@ elseif exist( beh_path, "dir" )
     af_path = expandPath( dir( fullfile( beh_path, "*analysis.mat") ) );
     figure_path = fullfile( beh_path, "Figures" );
 else
+    % If there is no organisation in the folders, look for the file in the
+    % 'root' folder a.k.a. experiment folder. Then give up.
     beh_path = exp_path;
     af_path = expandPath( dir( fullfile( beh_path, "*analysis.mat") ) );
     figure_path = fullfile( beh_path, "Figures" );
@@ -396,6 +402,8 @@ biFN = arrayfun(@(s) sprintf( biFigPttrn(s), pAreas(:,s) ), 1:numel(behMeasures)
 
 arrayfun(@(f, fn) saveFigure(f, fullfile(behFig_path, fn), true, fowFlag), ...
     behAreaFig(:), biFN(:) );
+
+
 
 %% Count figure
 trMvFlag = arrayfun(@(cr) behRes(1).Results(cr).MovStrucure.MovmentFlags, ...
