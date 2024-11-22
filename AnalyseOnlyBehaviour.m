@@ -2,12 +2,10 @@
 
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 exp_path = ...
-    fullfile( roller_path, "Batch7_ephys\MC\GADi52\220808_C+F_2100" );
-% roller_path = fullfile("Z:\James\Practice Data\m7 (training)\");
-% exp_path = ...
-%     fullfile( roller_path, "behavior/" );
+    fullfile( roller_path, "Batch18_ephys/MC/GADi42/240216_F+C_2200" );
+
 % Figure overwrite flag
-fowFlag = false;
+fowFlag = true;
 
 expandPath = @(x) fullfile( x.folder, x.name);
 m = 1e-3;
