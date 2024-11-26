@@ -1,6 +1,7 @@
 function [f, z_axis, poly_coords] = createPolarPlotPolygons( ai )
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
+%CREATEPOLARPLOTPOLYGONS returns figure object, N complex vector axes, and
+%the coordinates for the given matrix ai. 
+%   [f, z_axis, poly_coords] = createPolarPlotPolygons( ai )
 
 figOpts = checkSystem4Figures();
 createtiles = @(f,r,c) tiledlayout( f, r, c, ...
