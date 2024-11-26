@@ -4,7 +4,7 @@ function [figOpts, ofgOpts] = checkSystem4Figures()
 %   When running MATLAB code in the HPC, it's not a good idea to display
 %   figures or any graphic object.
 figOpts = {'Visible', 'on'};
-ofgOpts = {'visible'};
+ofgOpts = {'new','visible'};
 if ~strcmp( computer, 'PCWIN64')
     figOpts{2} = {'off'};
     ofgOpts{2} = {'invisible'};
