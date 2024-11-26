@@ -28,10 +28,7 @@ vaxOpts = cellstr( ["HorizontalAlignment", "center", ...
 bodypart_names = ["Stim-whisker mean", "Stim-whisker fan arc", ...
 "Nonstim-whisker mean", "Nonstim-whisker fan arc", "Interwhisk arc", ...
 "Symmetry", "Nose", "Roller speed"];
-figOpts = {'Visible', 'on'};
-if ~strcmp( computer, 'PCWIN64' )
-    figOpts{2} = 'off';
-end
+
 expandName = @(x) fullfile( x.folder, x.name );
 m = 1e-3; k = 1e3;
 %% Load regression file
@@ -44,7 +41,7 @@ else
     return
 end
 % Colormap: grey for original and PCB-green for reconstructed
-clrMap = flip([0.15*ones(1,3); 0, 51/255, 0], 1);
+clrMap = flip([0.15*ones(1,3); 0, 60/255, 0], 1);
 % Getting parameter values
 rel_win = params.relative_window; % [-1, 1]*0.8;
 del_win = params.delay_window;
@@ -110,14 +107,18 @@ ai = squeeze( mean( mvpt ./ mvps, 2 ) );
 [pchObj, ax] = plotPolygons( poly_coords, f, 'clrMap', clrMap );
 
 ai_tot = arrayfun(@(x) area( polyshape( x.Vertices ) ), pchObj );
+polLegend = {'Reconstructed', 'Observed'};
+polLegend = arrayfun(@(x,y) sprintf([x{:},' %.3f'], y), ...
+    polLegend(:), ai_tot(:), fnOpts{:} );
 
-legend( ax, pchObj, {'Reconstructed', 'Observed'}, lgOpts{:} );
+legend( ax, pchObj, polLegend, lgOpts{:} );
 
 arrayfun(@(v,b,y) text( ax, real( z_axis(v) ), ...
     imag( z_axis(v) ), b, vaxOpts{:}, y ), 1:Nb, bodypart_names, ...
     (180*angle( transp( z_axis ) )/pi) - 90 )
 
-results = struct('AmplitudeIndex_pbp', ai, 'AmplitudeIndex', ai_tot );
+results = struct('AmplitudeIndex_pbp', ai, 'AmplitudeIndex', ai_tot, ...
+    'AI_perCond', string(polLegend) );
 set( f, 'UserData', results )
 
 end
