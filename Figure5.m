@@ -33,7 +33,7 @@ f = figure( "Color", "w" ); t = createtiles( f, 1, 1 );
 ax = nexttile( t ); 
 biplot( ax, coeff(:,1:2), "Scores", score(:,1:2), "VarLabels", bpn_abb )
 cleanAxis( ax ); title(ax, 'PCA of $R^2$ for all body parts', 'Interpreter', 'latex' )
-%%
+%% 
 f = figure( "Color", "w" ); t = createtiles( f, 2, 1 );
 ax = gobjects(2,1); ax(1) = nexttile( t ); hold( ax(1), 'on' );
 rsq_dr = (rsq_dt(:,3:end) * coeff(:,1))/2;
@@ -42,19 +42,24 @@ line(ax(1), rst_reg_dt(:,4), rsq_dr,...
     'Marker', '.', 'Color', 'k', 'LineStyle', 'none', 'MarkerSize', 16 )
 mdl1 = fit_poly( rst_reg_dt(:,4), rsq_dr , 1 );
 mdl2 = fit_poly( rst_reg_dt(:,4), rsq_dr , 2 );
-prop_ax = 0:0.1:1;
+prop_ax = 0:0.01:1;
 line( ax(1), prop_ax(:), (prop_ax(:).^[2,1,0])*mdl2, 'Color', 'r' );
 line( ax(1), prop_ax(:), (prop_ax(:).^[1,0])*mdl1, 'Color', 'b' );
 set( get( ax(1), 'XAxis' ), 'Visible', 'off' ); ylabel(ax(1), 'PC1_{R² of all signals}')
-ytickangle( ax(1), 90 )
-mdl2_lm = fitlm( rst_reg_dt(:,4), rsq_dr , "quadratic" );
-coeffDist = getCDFromLM( mdl2_lm );
-CI = createCIfromCD( coeffDist, 0:0.01:1 );
-line( ax(1), (0:0.01:1), CI, 'Color', 'r', 'LineStyle', '--' )
+ytickangle( ax(1), 90 ); cleanAxis(ax(1));
+% mdl2_lm = fitlm( rst_reg_dt(:,4), rsq_dr , "quadratic" );
+% coeffDist = getCDFromLM( mdl2_lm );
+% CI = createCIfromCD( coeffDist, 0:0.01:1 );
+% line( ax(1), (0:0.01:1), CI, 'Color', 'r', 'LineStyle', '--' )
 ax(2) = nexttile( t );
 line(ax(2), rst_reg_dt(:,4), inv_dr,...
     'Marker', '.', 'Color', 'k', 'LineStyle', 'none', 'MarkerSize', 16 )
 ytickangle( ax(2), 90 )
 ylabel( ax(2), '_{(SWM,SWF,RS,WA)}\leftarrowPC2\rightarrow_{(N,S,NWM,NWF)}' )
-yline( ax(2), 0, 'k-' )
+yline( ax(2), 0, 'k--' )
 xlabel( ax(2), 'Proportion of responsive units_{20 - 50 ms}')
+cleanAxis( ax(2) );
+set( ax, 'TickDir', 'out' )
+set( f, 'UserData', {coeff, rst_reg_dt, rsq_dt, rsq_dr, inv_dr} )
+
+%%
