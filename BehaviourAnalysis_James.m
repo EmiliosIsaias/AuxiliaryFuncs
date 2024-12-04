@@ -3,9 +3,9 @@
 %roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 % exp_path = ...
 %     fullfile( roller_path, "Batch2_ephys/MC/GADi18/211205_C_2450" );
-roller_path = fullfile("Z:\James\Practice Data\m7 (training)\");
-exp_path = ...
-    fullfile( roller_path, "behavior/" );
+exp_path = fullfile( "Z:\James\Learning Experiments\28-11-24_AM\m1" );
+% exp_path = ...
+%     fullfile( roller_path, "behavior/" );
 % Figure overwrite flag
 fowFlag = false;
 % Annonymus function
@@ -90,11 +90,16 @@ txb = ( (1:Ns)'.^[1,0] ) * mdlt;
 behNames = string( { behRes(1).Results.BehSigName } );
 
 %% Normalised amplitud by absolute maximum
-
-rollYL = "Roller speed [cm/s]";
-yLabels = [repmat("Angle [°]", 1, Nb-1), rollYL];
+rollYL = "";
+rsFlag = false;
+if contains( behNames, "Roller speed", "IgnoreCase", true)
+    rollYL = "Roller speed [cm/s]";
+    rsFlag = true;
+end
+yLabels = [repmat("Angle [°]", 1, Nb-rsFlag), rollYL];
 sym_flag = contains( behNames, "symmetry", "IgnoreCase", true );
 yLabels(sym_flag) = "Symmetry [a.u.]";
+yLabels(~strlength(yLabels)) = [];
 cbLabels = strings(Nb, 2);
 cbLabels([1,3],:) = repmat(["Retract", "Protract"],2,1);
 cbLabels([2,4,5],:) = repmat(["Closed", "Opened"],3,1);
@@ -107,12 +112,15 @@ lowBound = screen_size(4)*1/5;
 
 possCols = [2,3,5];
 Ncols = possCols( find( mod( Nb, possCols ) == 0, 1, 'first' ) );
-Nrows = Nb / Ncols;
+if isempty( Ncols )
+    Ncols = 2;
+end
+Nrows = ceil( Nb / Ncols );
 
-newAx = @(f) subplot( Nrows, Ncols, ix, "NextPlot", "add", "Parent", f );
+% newAx = @(f) subplot( Nrows, Ncols, ix, "NextPlot", "add", "Parent", f );
 
-createtiles = @(f) tiledlayout( f, Nrows, Ncols, ...
-    'TileSpacing', 'Compact', 'Padding', 'tight');
+% createtiles = @(f) tiledlayout( f, Nrows, Ncols, ...
+    % 'TileSpacing', 'Compact', 'Padding', 'tight');
 
 isendrow = @(ix) ( (ix/Ncols) + 1) > Nrows;
 
@@ -121,7 +129,7 @@ newFigure = @(x,y,fn) figure( "Color", "w", "Position", ...
 
 fig = newFigure(0, lowBound, "");
 
-t = createtiles( fig );
+t = createtiles( fig, Nrows, Ncols );
 for cbi = 1:Nb
     ax = nexttile(t);
     auxStack = squeeze( behData.Data(:,:,cbi) )';
