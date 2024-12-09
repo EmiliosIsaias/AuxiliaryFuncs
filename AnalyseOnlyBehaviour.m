@@ -1,9 +1,9 @@
 %% Analysing behaviour alone
-
+% "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys\MC\WTg65\221114_C_2370\ephys_E1"
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 exp_path = ...
-    fullfile( roller_path, "Batch19_ephys", "BC", "GADi46", "240423_F+C_2350" );
-
+    fullfile( roller_path, "Batch10_ephys\MC\WTg65\221114_C_2370" );
+%%
 % Figure overwrite flag
 fowFlag = false;
 
@@ -46,7 +46,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = [3,5];
+consCond = [3,4];
 Nccond = length( consCond );
 prmSubs = nchoosek( 1:Nccond, 2 );
 
@@ -76,7 +76,6 @@ txb = ( (1:Ns)'.^[1,0] ) * mdlt;
 behNames = string( { behRes(1).Results.BehSigName } );
 
 %% Normalised amplitud by absolute maximum
-
 rollYL = "Roller speed [cm/s]";
 yLabels = [repmat("Angle [°]", 1, Nb-1), rollYL];
 sym_flag = contains( behNames, "symmetry", "IgnoreCase", true );
