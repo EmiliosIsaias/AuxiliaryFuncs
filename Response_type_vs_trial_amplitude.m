@@ -1,7 +1,7 @@
 expandName = @(x) fullfile( x.folder, x.name );
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 owfFlag = false;
-m = 1e-3; k = 1e3; 
+m = 1e-3; k = 1e3;
 fnOpts = {'UniformOutput', false};
 %%
 distPercent = 0.3;
@@ -33,20 +33,22 @@ Nuinit = cumsum( [1; Nu(1:end-1) ] );
 Nuend = cumsum( Nu );
 PSTHall_mu = zeros( 700, sum( Nu ) );
 brAll = [];
+PSTHall = cell( numel( aePaths ), 1 );
 %%
 for ce = 1:numel( aePaths )
     data_dir = fullfile( roller_path, aePaths(ce) );
-    % condStruct = load( expandName( dir( fullfile( data_dir, "*\*analysis.mat" ) ) ), ...
-        % afVars2load{:} );
+    % condStruct = load( expandName( dir( fullfile( data_dir, "*\*analysis.mat" ) ) ), afVars2load{:} );
     rstPath = dir( fullfile( data_dir, "*\*RW20.00-200.00*RelSpkTms.mat" ) );
-    brPath = dir( fullfile( data_dir, "*\Simple summary.mat" ) );
-    brVars2load = 'summStruct';
+    brPath = dir( fullfile( data_dir, "*\BehaviourResult*.mat" ) );
+    brVars2load = 'behRes';
     if isempty( brPath )
-        brPath = dir( fullfile( data_dir, "*\BehaviourResult*.mat" ) );
-        brVars2load = 'behRes';
+        brPath = dir( fullfile( data_dir, "*\Simple summary.mat" ) );
+        brVars2load = 'summStruct';
     end
     brStruct = load( expandName( brPath ), brVars2load );
-    brAll = cat( 1, brAll, brStruct.(brVars2load) );
+    behRes = brStruct.(brVars2load);
+    ctrlSub = ismember( string( {behRes.ConditionName} ), 'Control Puff' );
+    brAll = cat( 1, brAll, behRes(ctrlSub) );
     if ~isempty(rstPath) || numel( rstPath ) == 1
         rstCont = load( expandName( rstPath ), rstVars2load{:} );
     else
@@ -65,11 +67,12 @@ for ce = 1:numel( aePaths )
     a = Nuinit(ce); b = Nuend(ce);
     idx = a:b;
     PSTHall_mu(:,idx) = squeeze( mean( PSTH{1}, 1 ) );
+    PSTHall(ce) = PSTH(1);
 end
 rl_mu = arrayfun(@(x) mean( zscore( PSTHall_mu(:,rtm==x) ), 2 ), ...
     unique(rtm), fnOpts{:} );
 rl_mu = cat( 2, rl_mu{:} );
-
+ai_pt = arrayfun(@(s) getAIperTrial( s ), brAll, fnOpts{:} );
 %%
 [coeff, score, ~, ~, explained] = pca( zscore( ...
     PSTHall_mu(my_xor( trial_tx < [0,350]*m),:) ) );
@@ -90,5 +93,3 @@ cellcat = @(d,x) cat( d, x{:} );
 
 respFlags = cellcat( 2, getBoolWindows( respWins ) );
 sponFlags = cellcat( 2, getBoolWindows( sponWins ) );
-
-
