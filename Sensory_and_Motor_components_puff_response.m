@@ -1,7 +1,7 @@
 expandName = @(x) fullfile( x.folder, x.name );
 roller_path = fullfile( "Z:\Emilio\SuperiorColliculusExperiments\Roller" );
-% Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys\MC\WTg64\221111_C+PTX10microM_1900
-data_dir = fullfile( roller_path, 'Batch10_ephys\MC\WTg64\221111_C+PTX10microM_1900' );
+% Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch1_ephys\BC\GADi48\210708_C
+data_dir = fullfile( roller_path, 'Batch1_ephys\BC\GADi48\210708_C' );
 owfFlag = false;
 m = 1e-3; k = 1e3; 
 fnOpts = {'UniformOutput', false};
