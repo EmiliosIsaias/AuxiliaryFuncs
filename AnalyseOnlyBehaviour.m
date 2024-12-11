@@ -46,7 +46,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = [3,4];
+consCond = [3,5];
 Nccond = length( consCond );
 prmSubs = nchoosek( 1:Nccond, 2 );
 
