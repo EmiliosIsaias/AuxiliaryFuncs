@@ -8,8 +8,14 @@ fnOpts = {'UniformOutput', false};
 %%
 load( expandName( dir( fullfile( data_dir, "*\*analysis.mat" ) ) ), ...
     "Conditions", "fs" )
-load( expandName( dir( fullfile( data_dir, "*\*RW20.00-200.00*RelSpkTms.mat" ) ) ), ...
-    'relativeSpkTmsStruct', 'configStructure' )
+rstPath = dir( fullfile( data_dir, "*\*RW20.00-200.00*RelSpkTms.mat" ) );
+if ~isempty(rstPath) || numel( rstPath ) == 1
+    load( expandName( rstPath ), 'relativeSpkTmsStruct', 'configStructure' )
+else
+    fprintf(1, 'Either empty or more than 1 file found!\n');
+    disp( {rstPath.name} )
+    return
+end
 figure_path = expandName( dir( fullfile( data_dir, "*\Figur*" ) ) );
 %% PSTH and PCA
 [PSTH, trial_tx, Na] = getPSTH_perU_perT( relativeSpkTmsStruct, configStructure );
