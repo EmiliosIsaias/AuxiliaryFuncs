@@ -1,8 +1,11 @@
 expandName = @(x) fullfile( x.folder, x.name );
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
+figure_path = fullfile( roller_path, 'PoolFigures' );
 owfFlag = false;
 m = 1e-3; k = 1e3;
 fnOpts = {'UniformOutput', false};
+cellcat = @(x,d) cat( d, x{:} );
+tocol = @(x) x(:);
 %%
 distPercent = 0.25;
 pePaths = ["Batch12_ephys.e\MC\vGlut1\221206_C+F_2100",...
@@ -20,6 +23,7 @@ vgePaths = ["Batch18_ephys\MC\GADi41\240213_F+C_2450", ...
     "Batch8_ephys\MC\GADe55\220825_C+F_DV1750", ...
     "Batch7_ephys\MC\GADi52\220809_C+F_1900"];
 aePaths = cat( 1, pePaths', vgePaths' );
+Nexp = numel( aePaths );
 rstVars2load = {'relativeSpkTmsStruct', 'configStructure'};
 afVars2load = {'Conditions', 'fs'};
 %%
@@ -35,7 +39,7 @@ PSTHall_mu = zeros( 700, sum( Nu ) );
 brAll = [];
 PSTHall = cell( numel( aePaths ), 1 );
 %%
-for ce = 1:numel( aePaths )
+for ce = 1:Nexp
     data_dir = fullfile( roller_path, aePaths(ce) );
     % condStruct = load( expandName( dir( fullfile( data_dir, "*\*analysis.mat" ) ) ), afVars2load{:} );
     rstPath = dir( fullfile( data_dir, "*\*RW20.00-200.00*RelSpkTms.mat" ) );
@@ -90,14 +94,13 @@ respWins = [20,200; % Whole window
 sponWins = -flip( respWins, 2 );
 getBoolWindows = @(w) arrayfun(@(x) my_xor( trial_tx > w(x,:) ), ...
     1:size( w, 1 ), fnOpts{:} );
-cellcat = @(d,x) cat( d, x{:} );
 
 respFlags = cellcat( 2, getBoolWindows( respWins ) );
 sponFlags = cellcat( 2, getBoolWindows( sponWins ) );
 %%
 % Response validation
 ruFlags = false( sum( Nu ), 3 );
-for cp = 1:numel(PSTHall)
+for cp = 1:Nexp
     auxP = false( Nu(cp), 3 );
     for cu = 1:Nu(cp)
         for cr = 1:size( respWins, 1 )
@@ -108,6 +111,7 @@ for cp = 1:numel(PSTHall)
     end
     ruFlags(Nuinit(cp):Nuend(cp),:) = auxP;
 end
+clearvars auxP cp cu cr;
 
 %%
 
