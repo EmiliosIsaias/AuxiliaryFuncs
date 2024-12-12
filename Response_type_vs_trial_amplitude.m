@@ -109,4 +109,103 @@ for cp = 1:numel(PSTHall)
     ruFlags(Nuinit(cp):Nuend(cp),:) = auxP;
 end
 
-%% 
+%%
+
+[~, peak_resp] = max( rl_mu(respFlags(:,1), : ) - ...
+    median( rl_mu(sponFlags(:,1),:) ), [], 1 );
+elFlags = arrayfun( @(r) my_xor( k*respWins(1,1) + peak_resp(:) > ...
+    respWins(r,:)*k ), [2,3], fnOpts{:} );
+elFlags = cat( 2, elFlags{:} );
+sponZSum = cellcat( arrayfun(@(r) sum( rl_mu(sponFlags(:,r),:) )', ...
+    1:3, fnOpts{:} ), 2 );
+respZSum = cellcat( arrayfun(@(r) sum( rl_mu(respFlags(:,r),:) )', ...
+    1:3, fnOpts{:} ), 2 );
+
+ctf = sqrt( (sponZSum(:,2:3) - respZSum(:,2:3)).^2 );
+y2 = pdist( ctf, "cosine" );
+z2 = linkage( y2, "complete" );
+ctm = cluster( z2, 'cutoff', max(z2(:,3))*distPercent, ...
+    'criterion', 'distance');
+Ncl2 = max( unique( ctm ) );
+%%
+Nt_pe = cellfun('size', PSTHall, 1);
+eelVals = zeros( sum( Nt_pe ), Ncl2 );
+for cctm = 1:Ncl2
+    init = 1;
+    crtm = find( ctm == cctm );
+    Nu_flag = any(rtm == crtm', 2);
+    for cp = 1:Nexp
+        eelVals(init:sum(Nt_pe(1:cp)), cctm) = ...
+            mean( PSTHall{cp}(:, respFlags(:,1), ...
+            Nu_flag(Nuinit(cp):Nuend(cp))), [2, 3] );
+        init = init + Nt_pe(cp);
+    end
+end
+expID = cellcat(arrayfun(@(x) x+ones(Nt_pe(x+1),1), 0:(numel(Nt_pe)-1), ...
+    fnOpts{:} ), 1 );
+%%
+clrMap = ember( Nexp );
+titls = ["Early", "Late", "Early only"];
+rsPop = zeros( Nexp, Ncl2 );
+for cctm = 1:Ncl2
+    f = figure("Color", "w"); t = createtiles(f, 1, 1); ax = nexttile(t);
+    axOpts = cleanAxis(ax); hold(ax, "on" );
+    arrayfun(@(x) scatter(ax, zscore(eelVals(expID == x, cctm)), ...
+        zscore( ai_pt{x} ), 32, clrMap(x,:), "filled", "o", ...
+        "MarkerEdgeColor", clrMap(end-x+1,:), 'MarkerFaceAlpha', 0.7 ), ...
+        1:Nexp ); title(ax, titls(cctm) )
+    xlabel(ax, 'Lower \leftarrow SC activity \rightarrow Higher')
+    ylabel(ax, 'Lower \leftarrow Startle response \rightarrow Higher')
+    set( ax, 'TickDir', 'out' )
+    lmObjs = arrayfun(@(x) fitlm( zscore(eelVals(expID == x, cctm)), ... 
+        zscore( ai_pt{x} ), 'poly1' ), 1:Nexp, fnOpts{:} );
+    rsPop(:,cctm) = cellfun(@(x) x.Rsquared.Ordinary, lmObjs );
+    rfName = sprintf("%s activity vs startle", titls(cctm) );
+    rfPath = fullfile( figure_path, rfName );
+    if ~exist( rfPath + ".fig", "file" )
+        saveFigure( f, rfPath, true, owfFlag )
+    end
+end
+%%
+f = figure("Color", "w"); t = createtiles(f,1,1); ax = nexttile(t); 
+boxchart(ax, rsPop, "Notch", "on","BoxFaceColor","k", "MarkerStyle","none");
+hold( ax, "on" )
+swarmchart( ax, tocol( ones( size( rsPop, 1), 1) * (1:3) ), rsPop(:), ...
+    'black','filled','o');
+line( ax, (1:3)' * ones( 1, size( rsPop, 1) ), rsPop', 'Color', 'k', ...
+    'LineWidth', 0.5 )
+set( ax, 'TickDir', 'out' )
+xticklabels( ax, titls )
+ylabel(ax,'R²')
+title(ax, 'R² for SC activity vs startle response')
+pfName = "R² for SC activity vs startle response";
+pfPath = fullfile( figure_path, pfName );
+if ~exist( pfPath + ".fig", "file" )
+    saveFigure( f, pfPath, true, owfFlag )
+end
+%%
+f = figure('Color', 'w'); t = createtiles( f, Nrows, Ncols);
+ax = gobjects( max( unique( rtm ) ), 1 );
+clrMap = ember( Ncl );
+for cm = unique( rtm )'
+    ax(cm) = nexttile( t ); hold( ax(cm), 'on' )
+    line( ax(cm), trial_tx*k, rl_mu(:,cm), 'Color', clrMap(cm,:), 'LineWidth', 2 )
+    % line( ax(cm), k*trial_tx, movsum(rl_mu(:,cm), [10,0] ), ...
+    %     'Color', clrMap(cm,:) )
+    title( ax(cm), sprintf('Component %d, Members %d', cm, sum( rtm == cm ) ) )
+    if ceil( cm / Ncols ) == 1
+        disappearAxis( ax(cm), 'XAxis' );
+    end
+    if mod( cm, Ncols ) == 1
+        ylabel(ax(cm), 'Z-score' )
+    end
+end
+xlabel( ax, 'Time [ms]' )
+linkaxes( ax, 'x' ); set( ax, 'TickDir', 'out' ); ytickangle(ax, 90)
+xlim(ax(end), [-100, 350] )
+phName = "PSTH PCA Classified";
+phPath = fullfile( figure_path, phName );
+if ~exist( phPath + ".fig", "file" )
+    saveFigure( f, phPath, true, owfFlag )
+end
+%%
