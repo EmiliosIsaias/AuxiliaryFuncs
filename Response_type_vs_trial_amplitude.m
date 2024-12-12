@@ -4,7 +4,7 @@ owfFlag = false;
 m = 1e-3; k = 1e3;
 fnOpts = {'UniformOutput', false};
 %%
-distPercent = 0.3;
+distPercent = 0.25;
 pePaths = ["Batch12_ephys.e\MC\vGlut1\221206_C+F_2100",...
     "Batch11_ephys.MC\ChR2\Rb69\221128_F+C_2370", ...
     "Batch17_ephys.MC\eOPN3\Rb27\231103_C_2500", ...
@@ -69,9 +69,8 @@ for ce = 1:numel( aePaths )
     PSTHall_mu(:,idx) = squeeze( mean( PSTH{1}, 1 ) );
     PSTHall(ce) = PSTH(1);
 end
-rl_mu = arrayfun(@(x) mean( zscore( PSTHall_mu(:,rtm==x) ), 2 ), ...
-    unique(rtm), fnOpts{:} );
-rl_mu = cat( 2, rl_mu{:} );
+clearvars PSTH brStruct ctrlSub rstStruct confStruct brPath brVars2load ...
+    rstCont a b idx;
 ai_pt = arrayfun(@(s) getAIperTrial( s ), brAll, fnOpts{:} );
 %%
 [coeff, score, ~, ~, explained] = pca( zscore( ...
@@ -81,7 +80,9 @@ y = pdist( coeff(:,1:3), 'euclidean' );
 z = linkage( y, 'ward' );
 rtm = cluster( z, 'cutoff', max(z(:,3))*distPercent, 'criterion', 'distance' );
 Ncl = max( unique( rtm ) );
-
+rl_mu = arrayfun(@(x) mean( zscore( PSTHall_mu(:,rtm==x) ), 2 ), ...
+    unique(rtm), fnOpts{:} );
+rl_mu = cat( 2, rl_mu{:} );
 %%
 respWins = [20,200; % Whole window
     20,50;          % sensory window
