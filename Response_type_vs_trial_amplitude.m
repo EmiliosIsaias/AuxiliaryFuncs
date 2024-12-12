@@ -93,3 +93,19 @@ cellcat = @(d,x) cat( d, x{:} );
 
 respFlags = cellcat( 2, getBoolWindows( respWins ) );
 sponFlags = cellcat( 2, getBoolWindows( sponWins ) );
+%%
+% Response validation
+ruFlags = false( sum( Nu ), 3 );
+for cp = 1:numel(PSTHall)
+    auxP = false( Nu(cp), 3 );
+    for cu = 1:Nu(cp)
+        for cr = 1:size( respWins, 1 )
+            d1 = squeeze( sum( PSTHall{cp}(:,sponFlags(:,cr),cu), 2 ) );
+            d2 = squeeze( sum( PSTHall{cp}(:,respFlags(:,cr),cu), 2 ) );
+            [~,auxP(cu,cr)] = poisson_means_etest( d1, d2, 0.05 );
+        end
+    end
+    ruFlags(Nuinit(cp):Nuend(cp),:) = auxP;
+end
+
+%% 
