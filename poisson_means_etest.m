@@ -27,7 +27,7 @@ lambda2 = poissfit( data2 );
 
 z = ( lambda1 - lambda2 ) / sqrt( (lambda1/n1) + (lambda2/n2) );
 
-p_value = 2 * (1 - normcdf(z));
+p_value = 2 * (1 - normcdf( abs( z ) ));
 h = p_value < alpha;
 
 end
