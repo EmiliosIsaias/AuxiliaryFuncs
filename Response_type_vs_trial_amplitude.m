@@ -141,13 +141,13 @@ z2 = linkage( y2, "complete" );
 ctm = cluster( z2, 'cutoff', max(z2(:,3))*distPercent, ...
     'criterion', 'distance');
 Ncl2 = max( unique( ctm ) );
-%%
+%% Grouping different neural response types
 Nt_pe = cellfun('size', PSTHall, 1);
 eelVals = zeros( sum( Nt_pe ), Ncl2 );
 for cctm = 1:Ncl2
     init = 1;
     crtm = find( ctm == cctm );
-    Nu_flag = any(rtm == crtm', 2);
+    Nu_flag = any( rtm == crtm', 2);
     for cp = 1:Nexp
         eelVals(init:sum(Nt_pe(1:cp)), cctm) = ...
             mean( PSTHall{cp}(:, respFlags(:,1), ...
@@ -163,7 +163,7 @@ titls = ["Early", "Late", "Early only"];
 rsPop = zeros( Nexp, Ncl );
 for cctm = 1:Ncl
     f = figure("Color", "w"); t = createtiles(f, 1, 1); ax = nexttile(t);
-    axOpts = cleanAxis(ax); hold(ax, "on" );
+    cleanAxis(ax); hold(ax, "on" );
     arrayfun(@(x) scatter(ax, zscore(eelVals(expID == x, cctm)), ...
         zscore( ai_pt{x} ), 32, clrMap(x,:), "filled", "o", ...
         "MarkerEdgeColor", clrMap(end-x+1,:), 'MarkerFaceAlpha', 0.7 ), ...
