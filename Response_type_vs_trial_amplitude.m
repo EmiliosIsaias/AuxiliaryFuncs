@@ -105,8 +105,8 @@ sponWins = -flip( respWins, 2 );
 getBoolWindows = @(w) arrayfun(@(x) my_xor( trial_tx > w(x,:) ), ...
     1:size( w, 1 ), fnOpts{:} );
 
-respFlags = cellcat( 2, getBoolWindows( respWins ) );
-sponFlags = cellcat( 2, getBoolWindows( sponWins ) );
+respFlags = cellcat( getBoolWindows( respWins ), 2 );
+sponFlags = cellcat( getBoolWindows( sponWins ), 2 );
 %%
 % Response validation
 ruFlags = false( sum( Nu ), 3 );
