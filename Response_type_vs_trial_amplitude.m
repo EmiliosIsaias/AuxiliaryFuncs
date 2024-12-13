@@ -160,8 +160,8 @@ expID = cellcat(arrayfun(@(x) x+ones(Nt_pe(x+1),1), 0:(numel(Nt_pe)-1), ...
 %%
 clrMap = ember( Nexp );
 titls = ["Early", "Late", "Early only"];
-rsPop = zeros( Nexp, Ncl2 );
-for cctm = 1:Ncl2
+rsPop = zeros( Nexp, Ncl );
+for cctm = 1:Ncl
     f = figure("Color", "w"); t = createtiles(f, 1, 1); ax = nexttile(t);
     axOpts = cleanAxis(ax); hold(ax, "on" );
     arrayfun(@(x) scatter(ax, zscore(eelVals(expID == x, cctm)), ...
@@ -180,6 +180,87 @@ for cctm = 1:Ncl2
         saveFigure( f, rfPath, true, owfFlag )
     end
 end
+%% Not grouping and testing the effect of individual response types
+Nt_pe = cellfun('size', PSTHall, 1);
+eelVals = zeros( sum( Nt_pe ), Ncl );
+for cctm = 1:Ncl
+    Nu_flag = rtm == cctm;
+    init = 1;
+    for cp = 1:Nexp
+        eelVals(init:sum(Nt_pe(1:cp)), cctm) = ...
+            mean( PSTHall{cp}(:, respFlags(:,1), ...
+            Nu_flag(Nuinit(cp):Nuend(cp))), [2, 3] );
+        init = init + Nt_pe(cp);
+    end
+end
+expID = cellcat(arrayfun(@(x) x+ones(Nt_pe(x+1),1), 0:(numel(Nt_pe)-1), ...
+    fnOpts{:} ), 1 );
+%% All classes in one figure
+clrMap = ember( Ncl );
+f = figure("Color", "w"); t = createtiles(f, 1, 1); ax = nexttile(t);
+axOpts = cleanAxis(ax); hold(ax, "on" );
+
+arrayfun(@(c) scatter(ax, zscore(eelVals(:, c)), ...
+    zscore( cellcat( ai_pt, 2 ) ), 32, clrMap(c,:), "filled", "o", ...
+    "MarkerEdgeColor", clrMap(end-c+1,:), 'MarkerFaceAlpha', 0.7 ), 1:Ncl );
+titulo = "Response type vs startle response";
+title(ax, titulo )
+xlabel(ax, 'Lower \leftarrow SC activity \rightarrow Higher')
+ylabel(ax, 'Lower \leftarrow Startle response \rightarrow Higher')
+set( ax, 'TickDir', 'out' )
+legend( ax, "Class " + string(1:Ncl)', axOpts{:}, 'Location', 'best', ...
+    'NumColumns', Ncols);
+rfName = titulo;
+rfPath = fullfile( figure_path, rfName );
+if ~exist( rfPath + ".fig", "file" )
+    saveFigure( f, rfPath, true, owfFlag )
+end
+
+%% One class per figure
+f = figure("Color", "w"); t = createtiles( f, Nrows, Ncols );
+ax = gobjects( Nrows, Ncols );
+for cc = 1:Ncl
+    [c, r] = ind2sub( [Ncols, Nrows], cc );
+    ax(r,c) = nexttile(t); cleanAxis(ax(r,c)); hold( ax(r,c), "on"	)
+    arrayfun(@(e) scatter( ax(r,c), zscore( eelVals(expID==e,cc) ), ...
+        zscore( ai_pt{e} ), 'o', 'MarkerFaceColor', 0.15*ones(1,3), ...
+        'MarkerEdgeColor', 'none', 'MarkerFaceAlpha', 0.5 ), 1:Nexp )
+    titulo = sprintf("Class %d (Neurons %d) vs startle response", cc, sum(rtm==cc) );
+    title(ax(r,c), titulo )
+    xlabel( ax(r,c), 'Lower \leftarrow SC activity \rightarrow Higher')
+    ylabel( ax(r,c), 'Lower \leftarrow Amp Index \rightarrow Higher')
+    yline( ax(r,c), 0, '--', 'Color', 0.5*ones(1,3) )
+    xline( ax(r,c), 0, '--', 'Color', 0.5*ones(1,3) )
+    set( ax(r,c), 'TickDir', 'out' )
+    if r ~= Nrows
+        disappearAxis( ax(r,c), 'XAxis' )
+    end
+    if c ~= 1
+        disappearAxis( ax(r,c), 'YAxis' )
+    end
+end
+title(t, sprintf('%d Experiments', Nexp ) )
+linkaxes( ax, 'xy')
+
+cfName = 'Classes activity vs startle response';
+cfPath = fullfile( figure_path, cfName );
+if ~exist( cfPath + ".fig", "file" )
+    saveFigure( f, cfPath, true, owfFlag )
+end
+%% R² values
+
+lmObjs = arrayfun(@(e) arrayfun(@(c) fitlm( zscore(eelVals(expID == e, c)), ...
+    zscore(  ai_pt{e} ), 'poly1' ), 1:Ncl, fnOpts{:} ), 1:Nexp, fnOpts{:} );
+rsPop = cellcat( cellfun(@(y) cellfun(@(x) x.Rsquared.Ordinary, y ), ...
+    lmObjs, fnOpts{:} ), 1 );
+%% Plot R² values
+f = figure("Color", "w"); t = createtiles( f, 1, 1 );
+ax = nexttile(t);
+boxchart( ax, rsPop, 'Notch', 'on', 'BoxFaceColor', 'k', ...
+    'MarkerStyle', 'none' );
+xlabel(ax, 'Response types'); ylabel(ax, 'R²' );
+hold( ax, "on" ); line( ax, ones( size( rsPop, 2 ), 1 ) * (1:14), rsPop', ...
+    'Color', 0.15*ones(1,3), 'Linewidth', 1/3)
 %%
 f = figure("Color", "w"); t = createtiles(f,1,1); ax = nexttile(t); 
 boxchart(ax, rsPop, "Notch", "on","BoxFaceColor","k", "MarkerStyle","none");
