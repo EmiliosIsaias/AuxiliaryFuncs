@@ -87,6 +87,16 @@ Ncl = max( unique( rtm ) );
 rl_mu = arrayfun(@(x) mean( zscore( PSTHall_mu(:,rtm==x) ), 2 ), ...
     unique(rtm), fnOpts{:} );
 rl_mu = cat( 2, rl_mu{:} );
+
+possCols = [2,3,5]; 
+divCol = find( mod(Ncl,possCols) == 0, 1, "first" );
+if isempty(divCol)
+    divCol = ceil( sqrt( Ncl ) );
+    Ncols = divCol;
+else
+    Ncols = possCols( divCol );
+end
+Nrows = ceil( Ncl/Ncols );
 %%
 respWins = [20,200; % Whole window
     20,50;          % sensory window
