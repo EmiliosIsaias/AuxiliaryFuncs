@@ -76,7 +76,28 @@ end
 clearvars PSTH brStruct ctrlSub rstStruct confStruct brPath brVars2load ...
     rstCont a b idx;
 ai_pt = arrayfun(@(s) getAIperTrial( s ), brAll, fnOpts{:} );
-%%
+
+%% Sliding window analysis for behaviour correlation
+% Idea is to slide a time window per unit per trial for getting an R²
+slid_win_length = 20*m; time_slide = 5*m;
+time_init = -50*m; time_stop = 400*m;
+Nrs = (time_stop - time_init - slid_win_length) / time_slide;
+r_squared = cell( Nexp, 1 );
+parfor cexp = 1:Nexp
+    r_squared{cexp} =  zeros( Nu(cexp), Nrs );
+    for cu = 1:Nu(cexp)
+        cw = time_init + [0, slid_win_length];
+        aux_rs = zeros( 1, Nrs ); ci = 1;
+        while cw(2) <= time_stop
+            act_mu = mean( PSTHall{cexp}(:, my_xor( trial_tx < cw ), cu ), 2 );
+            aux_mdl = fitlm( zscore( act_mu )', zscore( ai_pt{cexp} )', 'poly1' );
+            aux_rs(ci) = aux_mdl.Rsquared.Ordinary;
+            cw = cw + time_slide; ci = ci + 1;
+        end
+        r_squared{cexp}(cu,:) = aux_rs;
+    end
+end
+%% PCA for response type clustering
 [coeff, score, ~, ~, explained] = pca( zscore( ...
     PSTHall_mu(my_xor( trial_tx < [0,350]*m),:) ) );
 
