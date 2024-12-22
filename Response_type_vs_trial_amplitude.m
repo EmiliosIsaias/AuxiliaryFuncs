@@ -90,8 +90,11 @@ parfor cexp = 1:Nexp
         aux_rs = zeros( 1, Nrs ); ci = 1;
         while cw(2) <= time_stop
             act_mu = mean( PSTHall{cexp}(:, my_xor( trial_tx < cw ), cu ), 2 );
-            aux_mdl = fitlm( zscore( act_mu )', zscore( ai_pt{cexp} )', 'poly1' );
-            aux_rs(ci) = aux_mdl.Rsquared.Ordinary;
+            if ( sum( act_mu == 0 ) / numel(act_mu ) ) < 0.75
+                aux_mdl = fitlm( zscore( act_mu )', zscore( ai_pt{cexp} )', 'poly1' );
+                aux_rs(ci) = aux_mdl.Rsquared.Ordinary;
+            % else, aux_rs(ci) = 0;
+            end
             cw = cw + time_slide; ci = ci + 1;
         end
         r_squared{cexp}(cu,:) = aux_rs;
