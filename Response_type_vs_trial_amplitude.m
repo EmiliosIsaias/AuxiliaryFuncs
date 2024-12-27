@@ -77,6 +77,34 @@ clearvars PSTH brStruct ctrlSub rstStruct confStruct brPath brVars2load ...
     rstCont a b idx;
 ai_pt = arrayfun(@(s) getAIperTrial( s ), brAll, fnOpts{:} );
 
+%% Easy analysis
+rs_whole_exp = zeros( Nexp, 2 );
+for cexp = 1:Nexp
+    x = zscore( mean( PSTHall{cexp}(:, my_xor( trial_tx < [20, 50]*m ), : ), [2,3] ) );
+    y = zscore( mean( PSTHall{cexp}(:, my_xor( trial_tx < [50, 200]*m ), : ), [2,3] ) );
+    z = zscore( ai_pt{cexp} )';
+    f = figure("Color", "w" ); t = createtiles( f, 4, 2 );
+    ax(1) = nexttile( t );
+    aux_sens = fitlm( x, z, 'poly1' );
+    plot( ax(1), aux_sens );
+    xlabel( ax(1), '20-50 ms'); ylabel( ax(1), 'Startleness' )
+    ax(2) = nexttile( t );
+    aux_motr = fitlm( y, z, 'poly1' );
+    plot( ax(2), aux_motr );
+    xlabel( ax(2), '50-200 ms'); ylabel( ax(2), 'Startleness' )
+    lgObjs = findobj(f,  'Type', 'Legend' );
+    set( lgObjs, 'Box', 'off' )
+    ax(3) = nexttile( t, [2,2] );
+    plot3( ax(3), x, y, z, 'k.' );
+    xlabel( ax(3), sprintf( '20-50 ms %.3f R²', aux_sens.Rsquared.Ordinary ) );
+    ylabel( ax(3), sprintf( '50-200 ms %.3f R²', aux_motr.Rsquared.Ordinary ) );
+    zlabel( ax(3), 'Startleness' ); axis( ax(3), 'square' )
+    title( t, sprintf( 'Experiment %d', cexp ) )
+    cleanAxis( ax );
+    grid( ax(3), "on" );
+    rs_whole_exp(cexp, :) = [aux_sens.Rsquared.Ordinary, ...
+        aux_motr.Rsquared.Ordinary];
+end
 %% Sliding window analysis for behaviour correlation
 % Idea is to slide a time window per unit per trial for getting an R²
 slid_win_length = 20*m; time_slide = 5*m;
