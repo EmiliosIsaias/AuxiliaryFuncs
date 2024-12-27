@@ -183,7 +183,7 @@ rl_mu = arrayfun(@(x) mean( zscore( PSTHall_mu(:,rtm==x) ), 2 ), ...
     unique(rtm), fnOpts{:} );
 rl_mu = cat( 2, rl_mu{:} );
 
-possCols = [2,3,5]; 
+possCols = [2,3,5];
 divCol = find( mod(Ncl,possCols) == 0, 1, "first" );
 if isempty(divCol)
     divCol = ceil( sqrt( Ncl ) );
@@ -266,7 +266,7 @@ for cctm = 1:Ncl
     xlabel(ax, 'Lower \leftarrow SC activity \rightarrow Higher')
     ylabel(ax, 'Lower \leftarrow Startle response \rightarrow Higher')
     set( ax, 'TickDir', 'out' )
-    lmObjs = arrayfun(@(x) fitlm( zscore(eelVals(expID == x, cctm)), ... 
+    lmObjs = arrayfun(@(x) fitlm( zscore(eelVals(expID == x, cctm)), ...
         zscore( ai_pt{x} ), 'poly1' ), 1:Nexp, fnOpts{:} );
     rsPop(:,cctm) = cellfun(@(x) x.Rsquared.Ordinary, lmObjs );
     rfName = sprintf("%s activity vs startle", titls(cctm) );
@@ -357,7 +357,7 @@ xlabel(ax, 'Response types'); ylabel(ax, 'R²' );
 hold( ax, "on" ); line( ax, ones( size( rsPop, 2 ), 1 ) * (1:14), rsPop', ...
     'Color', 0.15*ones(1,3), 'Linewidth', 1/3)
 %%
-f = figure("Color", "w"); t = createtiles(f,1,1); ax = nexttile(t); 
+f = figure("Color", "w"); t = createtiles(f,1,1); ax = nexttile(t);
 boxchart(ax, rsPop, "Notch", "on","BoxFaceColor","k", "MarkerStyle","none");
 hold( ax, "on" )
 swarmchart( ax, tocol( ones( size( rsPop, 1), 1) * (1:3) ), rsPop(:), ...
