@@ -132,7 +132,25 @@ parfor cexp = 1:Nexp
 end
 r_squared_cat = cat( 1, r_squared{:} );
 
-%% Organising PSTHs 
+%% Organising PSTHs by maximum R²
+rsMdl = fit_poly( [1,Nrs], [time_init, time_stop - slid_win_length], 1 );
+rsq_tx = ( (1:Nrs)' .^ [1,0] ) * rsMdl;
+
+[mx_per_unit, ~] = max( r_squared_cat, [], 2 );
+[~, rsq_mx_unit] = sort( mx_per_unit, "descend" );
+f = figure("Color", "w" ); t = createtiles( f, 1, 2 );
+ax(1) = nexttile(t); imagesc( ax(1), rsq_tx * k, [], ...
+    r_squared_cat( rsq_mx_unit, :) );
+cb(1) = colorbar( ax(1), "northoutside", "Box", "off", ...
+    "TickDirection", "out" );
+ax(2) = nexttile(t); imagesc( ax(2), trial_tx * k, [], ...
+    ( PSTHall_mu(:, rsq_mx_unit) ./ max( PSTHall_mu(:, rsq_mx_unit) ) )' );
+cleanAxis( ax );
+colormap( inferno ); set( ax, 'tickdir', 'out' );
+ylabel( ax(1), 'Units' ); disappearAxis(ax(2), 'YAxis' );
+xlabel( ax,'Time [ms]' ); ytickangle(ax, 90 )
+linkaxes( ax, 'xy' ); xlim( ax(1), k*[time_init, time_stop - slid_win_length])
+%% Organising PSTHs by maximum R² and it's latency
 rsMdl = fit_poly( [1,Nrs], [time_init, time_stop - slid_win_length], 1 );
 rsq_tx = ( (1:Nrs)' .^ [1,0] ) * rsMdl;
 
