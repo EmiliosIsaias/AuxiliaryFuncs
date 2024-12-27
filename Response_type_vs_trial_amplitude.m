@@ -158,19 +158,18 @@ rsq_tx = ( (1:Nrs)' .^ [1,0] ) * rsMdl;
 [~, rsq_mx_unit] = sort( mx_per_unit, "descend" );
 [~, final_ord] = sortrows( [time_max, mx_per_unit], [1, 2], ...
     {'ascend', 'descend'} );
-f = figure("Color", "w" ); t = createtiles( f, 1, 2 ); 
+f = figure("Color", "w" ); t = createtiles( f, 1, 2 );
 ax(1) = nexttile(t); imagesc( ax(1), rsq_tx * k, [], ...
     r_squared_cat( final_ord, :) );
-axOpts = cleanAxis( ax(1) );
-cb(1) = colorbar( ax(1), "northoutside", axOpts{:} );
+cb(1) = colorbar( ax(1), "northoutside", "Box", "off", ...
+    "TickDirection", "out" );
 ax(2) = nexttile(t); imagesc( ax(2), trial_tx * k, [], ...
     zscore( PSTHall_mu(:, final_ord), 0, 1 )' );
-cb(2) = colorbar( ax(2), "northoutside", axOpts{:} );
-cleanAxis( ax(2) );
-colormap( inferno ); set( ax, 'tickdir', 'out' ); 
+cleanAxis( ax );
+colormap( inferno ); set( ax, 'tickdir', 'out' );
 ylabel( ax(1), 'Units' ); disappearAxis(ax(2), 'YAxis' );
 xlabel( ax,'Time [ms]' ); ytickangle(ax, 90 )
-linkaxes( ax, 'xy' ); xlim( ax(1), [time_init, time_stop - slid_win_length])
+linkaxes( ax, 'xy' ); xlim( ax(1), k*[time_init, time_stop - slid_win_length])
 
 %% PCA for response type clustering
 [coeff, score, ~, ~, explained] = pca( zscore( ...
