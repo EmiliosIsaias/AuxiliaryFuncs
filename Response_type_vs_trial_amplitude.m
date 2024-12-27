@@ -111,17 +111,19 @@ slid_win_length = 20*m; time_slide = 5*m;
 time_init = -50*m; time_stop = 400*m;
 Nrs = (time_stop - time_init - slid_win_length) / time_slide;
 r_squared = cell( Nexp, 1 );
+Nt = cellfun( "size", PSTHall, 1 );
 parfor cexp = 1:Nexp
     r_squared{cexp} =  zeros( Nu(cexp), Nrs );
     for cu = 1:Nu(cexp)
         cw = time_init + [0, slid_win_length];
         aux_rs = zeros( 1, Nrs ); ci = 1;
+        aux_trial = cellcat( arrayfun(@(t) conv( PSTHall{cexp}(t, :, cu ), ...
+            gausswin( 5 ), "same" ), 1:Nt(cexp), fnOpts{:} ), 1 );
         while cw(2) <= time_stop
-            act_mu = mean( PSTHall{cexp}(:, my_xor( trial_tx < cw ), cu ), 2 );
-            if ( sum( act_mu == 0 ) / numel(act_mu ) ) < 0.75
+            act_mu = mean( aux_trial(:, my_xor( trial_tx < cw ) ) , 2 );
+            if ( sum( act_mu == 0 ) / numel(act_mu ) ) < 0.4
                 aux_mdl = fitlm( zscore( act_mu )', zscore( ai_pt{cexp} )', 'poly1' );
                 aux_rs(ci) = aux_mdl.Rsquared.Ordinary;
-            % else, aux_rs(ci) = 0;
             end
             cw = cw + time_slide; ci = ci + 1;
         end
