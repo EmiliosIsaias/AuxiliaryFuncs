@@ -55,7 +55,7 @@ if isempty( vidTx )
 end
 
 if ~isempty(fsf_path)
-    fs_ephys = load( expandPath( fsf_path ), "fs" ); 
+    fs_ephys = load( expandPath( fsf_path ), "fs" );
     fs_ephys = fs_ephys.fs;
 end
 
@@ -98,7 +98,7 @@ laser_flag = ~cellfun(@isempty, testSubs);
 
 lsrInt = cell( numel( vidObj ), 1 );
 for cvid = find( laser_flag(:)' )
-%parfor cvid = 1:numel( vidObj )
+    %parfor cvid = 1:numel( vidObj )
     lsrInt{cvid} = getLaserIntensitySignalFromVideo(vidObj{cvid}, ...
         dlcTables{cvid});
 end
