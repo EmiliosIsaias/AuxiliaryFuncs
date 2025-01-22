@@ -2,7 +2,7 @@
 % "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch10_ephys\MC\WTg65\221114_C_2370\ephys_E1"
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 exp_path = ...
-    fullfile( roller_path, "Batch10_ephys\MC\WTg65\221114_C_2370" );
+    fullfile( roller_path, "Batch20_ephys.MC/MC/WT2/241210_C+F_2624" );
 %%
 % Figure overwrite flag
 fowFlag = false;
@@ -46,7 +46,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = [3,5];
+consCond = [3,5:10];
 Nccond = length( consCond );
 prmSubs = nchoosek( 1:Nccond, 2 );
 
