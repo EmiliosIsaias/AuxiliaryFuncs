@@ -95,10 +95,12 @@ for cexp = 1:Nexp
     lgObjs = findobj(f,  'Type', 'Legend' );
     set( lgObjs, 'Box', 'off' )
     ax(3) = nexttile( t, [2,2] );
-    plot3( ax(3), x, y, z, 'k.' );
+    aux_sm_mdl = fitlm( [x, y], z, "linear" );
+    plot( ax(3), aux_sm_mdl );
     xlabel( ax(3), sprintf( '20-50 ms %.3f R²', aux_sens.Rsquared.Ordinary ) );
     ylabel( ax(3), sprintf( '50-200 ms %.3f R²', aux_motr.Rsquared.Ordinary ) );
-    zlabel( ax(3), 'Startleness' ); axis( ax(3), 'square' )
+    zlabel( ax(3), 'Startleness' );
+    title( ax(3), sprintf("R² %.3f", aux_sm_mdl.Rsquared.Ordinary ) )
     title( t, sprintf( 'Experiment %d', cexp ) )
     cleanAxis( ax );
     grid( ax(3), "on" );
@@ -272,7 +274,7 @@ for cctm = 1:Ncl
     rfName = sprintf("%s activity vs startle", titls(cctm) );
     rfPath = fullfile( figure_path, rfName );
     if ~exist( rfPath + ".fig", "file" )
-        saveFigure( f, rfPath, true, owfFlag )
+        % saveFigure( f, rfPath, true, owfFlag )
     end
 end
 %% Not grouping and testing the effect of individual response types
