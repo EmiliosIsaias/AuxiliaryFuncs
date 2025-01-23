@@ -64,7 +64,7 @@ consCondNames = string( { Conditions( consCond ).name  } );
     "ResponseWindow", [25, 350] * m, ...
     "ViewingWindow", [-450, 500] * m, ...
     "figOverWrite", fowFlag );
-
+%%
 if ldFlag
     load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
 end
@@ -366,7 +366,11 @@ clearvars ax figs
 %% Amplitude index and trial proportion
 
 if ~exist( "fr", "var" ) && ldFlag
-    load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
+    try
+        load( expandPath( dir( fullfile( beh_path, "RollerSpeed*.mat" ) ) ), "fr")
+    catch
+        load( fullfile( beh_path, 'RollerFrameRate.mat' ), 'fr' )
+    end
     ldFlag = false;
 end
 

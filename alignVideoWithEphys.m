@@ -1,17 +1,31 @@
-function [mean_delay, lsrInt] = alignVideoWithEphys( lsrInt, trig, fs, beh_path )
+function [mean_delay, lsrInt, fr] = alignVideoWithEphys( lsrInt, trig, fs, beh_path )
 
 expandPath = @(x) fullfile( x.folder, x.name);
 fnOpts = {'UniformOutput', false};
 
+
 % tf_paths = dir( fullfile( beh_path, "TriggerSignals*.bin") );
 % fsf_path = dir( fullfile( exp_path, "ephys*", "*_sampling_frequency.mat") );
 rs_path = dir( fullfile( beh_path, "RollerSpeed*.mat" ) );
-load( expandPath( rs_path ), "fr" )
+if isempty(rs_path)
+    readCSV = @(x) readtable(x, "Delimiter", ",");
+    flfa = @(x) fullfile(x.folder, x.name);
+    search4This = @(x) dir(fullfile(beh_path, x));
+    fFiles = search4This("FrameID*.csv");
+
+    vidTx = arrayfun(@(x) readCSV(flfa(x)), fFiles, fnOpts{:});
+    vidTx = cellfun(@(x) x.Var2/1e9, vidTx, fnOpts{:}); % nanoseconds
+    estFr = cellfun(@(x) median( 1 ./ diff(x) ), vidTx);
+    fr = mean( estFr );
+    % save( expandPath(rs_path), "fr" )
+else
+    load( expandPath( rs_path ), "fr" )
+end
 
 
 % fIDs = arrayfun(@(x) fopen( expandPath( x ), "r" ), tf_paths );
 % trig = arrayfun(@(x) fread( x, [2, inf], "uint16=>uint16" ), fIDs , ...
-    % fnOpts{:} );
+% fnOpts{:} );
 trig = cellfun(@(x) x', trig, fnOpts{:} );
 % [~] = arrayfun(@(x) fclose( x ), fIDs );
 
