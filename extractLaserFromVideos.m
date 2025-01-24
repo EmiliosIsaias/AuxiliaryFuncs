@@ -78,8 +78,14 @@ else
 end
 
 video_paths = dir( pathHere( "roller*.avi" ) );
-vidObj = arrayfun(@(x) VideoReader( expandPath( x ) ), ...
-    video_paths, fnOpts{:} );
+hpcFlag = false;
+if ~strcmpi( computer, 'PCWIN64' )
+    vidObj = arrayfun(@(x) VideoReader( expandPath( x ) ), ...
+        video_paths, fnOpts{:} );
+else
+    fprintf(1, 'Will not extract laser from video...\n')
+    hpcFlag = true;
+end
 
 Ns_intan = [tf_paths.bytes]' ./ 4; % 2 signals x 2 bytes per sample.
 Texp_ephys = Ns_intan ./ fs_ephys;
@@ -96,13 +102,14 @@ testObj = cellfun(@(c) StepWaveform(c(2,:), fs_ephys, ...
 testSubs = arrayfun(@(x) x.subTriggers, testObj, fnOpts{:} );
 laser_flag = ~cellfun(@isempty, testSubs);
 
-lsrInt = cell( numel( vidObj ), 1 );
-for cvid = find( laser_flag(:)' )
-    %parfor cvid = 1:numel( vidObj )
-    lsrInt{cvid} = getLaserIntensitySignalFromVideo(vidObj{cvid}, ...
-        dlcTables{cvid});
+lsrInt = cell( numel( video_paths ), 1 );
+if ~hpcFlag
+    for cvid = find( laser_flag(:)' )
+        %parfor cvid = 1:numel( vidObj )
+        lsrInt{cvid} = getLaserIntensitySignalFromVideo(vidObj{cvid}, ...
+            dlcTables{cvid});
+    end
 end
-
 save( out_path, varsInFile{:} )
 
 end
