@@ -79,7 +79,7 @@ end
 
 video_paths = dir( pathHere( "roller*.avi" ) );
 hpcFlag = false;
-if ~strcmpi( computer, 'PCWIN64' )
+if strcmpi( computer, 'PCWIN64' )
     vidObj = arrayfun(@(x) VideoReader( expandPath( x ) ), ...
         video_paths, fnOpts{:} );
 else
