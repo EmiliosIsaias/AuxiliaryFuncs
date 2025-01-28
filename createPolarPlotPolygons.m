@@ -4,8 +4,8 @@ function [f, z_axis, poly_coords] = createPolarPlotPolygons( ai )
 %   [f, z_axis, poly_coords] = createPolarPlotPolygons( ai )
 
 figOpts = checkSystem4Figures();
-createtiles = @(f,r,c) tiledlayout( f, r, c, ...
-    'TileSpacing', 'Compact', 'Padding', 'tight');
+% createtiles = @(f,r,c) tiledlayout( f, r, c, ...
+%     'TileSpacing', 'Compact', 'Padding', 'tight');
 [Nb, ~] = size( ai );
 
 radAxis = (0:Nb-1)*(2*pi/Nb);
