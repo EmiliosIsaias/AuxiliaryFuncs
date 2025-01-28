@@ -152,6 +152,47 @@ colormap( inferno ); set( ax, 'tickdir', 'out' );
 ylabel( ax(1), 'Units' ); disappearAxis(ax(2), 'YAxis' );
 xlabel( ax,'Time [ms]' ); ytickangle(ax, 90 )
 linkaxes( ax, 'xy' ); xlim( ax(1), k*[time_init, time_stop - slid_win_length])
+
+%% Time resolved boxplots for all experiments
+for td = [5,10,15,20,25,30]
+    slid_win_length = td*m; time_slide = td*m;
+    time_init = -160*m; time_stop = 400*m;
+    Nrs = floor( (time_stop - time_init - slid_win_length) / time_slide );
+    r_squared_pexp = zeros( Nexp, Nrs );
+    for cexp = 1:Nexp
+        cw = time_init + [0, slid_win_length];
+        for ci = 1:Nrs
+            act_mu = mean( PSTHall{cexp}(:, my_xor( trial_tx < cw ),: ) , [2,3] );
+            aux_mdl = fitlm( zscore( act_mu )', zscore( ai_pt{cexp} )', 'poly1' );
+            r_squared_pexp(cexp,ci) = aux_mdl.Rsquared.Ordinary;
+            cw = cw + time_slide;
+        end
+    end
+    aux_mdl = fit_poly( [1, Nrs], [time_init, time_stop - slid_win_length] + [1,-1] * slid_win_length/2, 1);
+    b_tx = ( ( 1:Nrs )'.^[1,0] ) * aux_mdl;
+    % r_squared_cat = cat( 1, r_squared_pexp{:} );
+    %% Plotting results
+    bxOpts = {'JitterOutliers', 'on', 'MarkerStyle', '.', 'MarkerColor', 'k',...
+        'BoxFaceColor', 'k', 'BoxWidth', k*(time_slide)/2, ...
+        'Notch', 'off' };
+
+    f = figure('Color', 'w'); t = createtiles(f, 1, 1); ax = nexttile( t );
+    boxchart(ax, tocol( ones(Nexp,1)*b_tx' * k), ...
+        tocol(r_squared_pexp), bxOpts{:} )
+    hold( ax, 'on');
+    line(ax, k*b_tx, median( r_squared_pexp, 1 ), 'Color', 'k', 'LineWidth', 2 )
+    xline( ax, [0,50,200], 'r--')
+    xlabel( ax, 'Time [ms]' )
+    xlim( ax, k*(b_tx([1,end]) + [-1;1]*slid_win_length/2) )
+    set( ax, 'TickDir', 'out' )
+    ytickangle( ax, 90 )
+    ylabel( ax, 'R² per window' )
+    cleanAxis( ax );
+    title( ax, sprintf('Time-resolved_{%d ms} R² population (per experiment)', td ) )
+    [p, tbl, stats] = kruskalwallis( r_squared_pexp, string( b_tx(:) * k ) );
+    figure; tbl2 = multcompare( stats );
+    sum(tbl2(:,end) < 0.05 )
+end
 %% Organising PSTHs by maximum R² and it's latency
 rsMdl = fit_poly( [1,Nrs], [time_init, time_stop - slid_win_length], 1 );
 rsq_tx = ( (1:Nrs)' .^ [1,0] ) * rsMdl;
