@@ -20,6 +20,7 @@ if size( clrMap, 1 ) ~= size( poly_coords, 2 )
     fprintf(1, 'The colormap and the number of polygons given do not match\n')
     fprintf(1, 'colormap: %d , polygons: %d', size( clrMap, 1 ), ...
         size( poly_coords, 2 ) )
+    clrMap = lines( size( poly_coords, 2 ) );
 end
 %% Function
 ax = findobj( f, 'Type', 'axes' );
