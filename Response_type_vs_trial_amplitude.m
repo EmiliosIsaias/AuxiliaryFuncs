@@ -120,7 +120,7 @@ parfor cexp = 1:Nexp
         cw = time_init + [0, slid_win_length];
         aux_rs = zeros( 1, Nrs ); ci = 1;
         aux_trial = cellcat( arrayfun(@(t) conv( PSTHall{cexp}(t, :, cu ), ...
-            gausswin( 5 ), "same" ), 1:Nt(cexp), fnOpts{:} ), 1 );
+            gausswin( 5 ), "same" ), 1:Nt(cexp), 'UniformOutput', false ), 1 );
         while cw(2) <= time_stop
             act_mu = mean( aux_trial(:, my_xor( trial_tx < cw ) ) , 2 );
             if ( sum( act_mu == 0 ) / numel(act_mu ) ) < 0.4
