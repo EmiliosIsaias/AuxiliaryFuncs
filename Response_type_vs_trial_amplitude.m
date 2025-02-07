@@ -179,22 +179,32 @@ r_squared_cat = cat( 1, r_squared{:} );
 %% Organising PSTHs by maximum R²
 rsMdl = fit_poly( [1,Nrs], [time_init, time_stop - slid_win_length], 1 );
 rsq_tx = ( (1:Nrs)' .^ [1,0] ) * rsMdl;
-
-[mx_per_unit, ~] = max( r_squared_cat, [], 2 );
-[~, rsq_mx_unit] = sort( mx_per_unit, "descend" );
-f = figure("Color", "w" ); t = createtiles( f, 1, 2 );
-ax(1) = nexttile(t); imagesc( ax(1), rsq_tx * k, [], ...
+%%
+r_max_all = max( r_squared_cat, [], 2 );
+[~, rsq_mx_unit] = sort( r_max_all, "descend" );
+f = figure("Color", "w" ); t = createtiles( f, 1, 7 );
+ax(1) = nexttile(t, [1,3]); imagesc( ax(1), rsq_tx * k, [], ...
     r_squared_cat( rsq_mx_unit, :) );
 cb = colorbar( ax(1), "northoutside", "Box", "off", ...
     "TickDirection", "out" );
-ax(2) = nexttile(t); imagesc( ax(2), trial_tx * k, [], ...
+cb.Label.String = "R²";
+ax(2) = nexttile(t,[1,3]); imagesc( ax(2), trial_tx * k, [], ...
     ( PSTHall_mu(:, rsq_mx_unit) ./ max( PSTHall_mu(:, rsq_mx_unit) ) )' );
+title(ax(2), 'Single unit PSTHs ordered by descending R²')
+mgn_max_all = max( PSTHall_mu( my_xor( trial_tx < [20,200]*m ), rsq_mx_unit ) );
+ax(3) = nexttile( t ); line( ax(3), mgn_max_all, 1:sum(Nu), 'Color', 'k' );
+set( get( ax(3), 'YAxis' ), 'Direction', 'reverse' )
 cleanAxis( ax );
 colormap( inferno ); set( ax, 'tickdir', 'out' );
-ylabel( ax(1), 'Units' ); disappearAxis(ax(2), 'YAxis' );
-xlabel( ax,'Time [ms]' ); ytickangle(ax, 90 )
-linkaxes( ax, 'xy' ); xlim( ax(1), k*[time_init, time_stop - slid_win_length])
-
+ylabel( ax(1), 'Units' ); arrayfun(@(x) disappearAxis(x, 'YAxis' ), ax(2:end) );
+xlabel( ax(1:2),'Time [ms]' ); ytickangle(ax, 90 )
+xlabel( ax(3), 'Spikes/bin')
+linkaxes( ax(1:2), 'xy' ); linkaxes( ax([1,3]), 'y' )
+xlim( ax(1), k*[time_init, time_stop - slid_win_length])
+fz_sub = find( r_max_all(rsq_mx_unit) == 0, 1, "first" );
+arrayfun(@(x) yline( x, fz_sub, 'Color', 0.85*ones(1,3) ), ax(1:2) )
+yline( ax(3), fz_sub, 'Color', [0.0314, 0.1882, 0.4196] )
+ylim( ax, [0, sum(Nu)] + [1,-1]/2 )
 %% Time resolved boxplots for all experiments
 for td = [5,10,15,20,25,30]
     slid_win_length = td*m; time_slide = td*m;
