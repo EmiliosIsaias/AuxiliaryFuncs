@@ -6,6 +6,8 @@ m = 1e-3; k = 1e3;
 fnOpts = {'UniformOutput', false};
 cellcat = @(x,d) cat( d, x{:} );
 tocol = @(x) x(:);
+getMI = @(x,d) diff(x, 1, d) ./ ...
+    sum(x, d).*(sum(x,d)>0) + (1.*(sum(x,d)==0 | sum(x,d)< 1e-12));
 %%
 distPercent = 0.25;
 pePaths = ["Batch12_ephys.e\MC\vGlut1\221206_C+F_2100",...
@@ -38,12 +40,15 @@ Nuend = cumsum( Nu );
 PSTHall_mu = zeros( 700, sum( Nu ) );
 brAll = [];
 PSTHall = cell( numel( aePaths ), 1 );
-%%
+uSig = PSTHall; uID = PSTHall;
+uMod = PSTHall;
+uMI = PSTHall;
 for ce = 1:Nexp
     data_dir = fullfile( roller_path, aePaths(ce) );
     % condStruct = load( expandName( dir( fullfile( data_dir, "*\*analysis.mat" ) ) ), afVars2load{:} );
-    rstPath = dir( fullfile( data_dir, "*\*RW20.00-200.00*RelSpkTms.mat" ) );
-    brPath = dir( fullfile( data_dir, "*\BehaviourResult*.mat" ) );
+    rstPath = dir( fullfile( data_dir, "*", "*RW20.00-200.00*RelSpkTms.mat" ) );
+    brPath = dir( fullfile( data_dir, "*","BehaviourResult*.mat" ) );
+    mfPath = dir( fullfile( data_dir, "ephys*", "Results", "Res VW* RW20.00-200.00 ms SW*PuffAll.mat") );
     brVars2load = 'behRes';
     if isempty( brPath )
         brPath = dir( fullfile( data_dir, "*\Simple summary.mat" ) );
@@ -59,6 +64,41 @@ for ce = 1:Nexp
         fprintf(1, 'Either empty or more than 1 file found!\n');
         disp( {rstPath.name} )
         continue
+    end
+    mftype = 1;
+    mfVars2load = {'Results', 'gclID', 'Counts'};
+    if isempty( mfPath )
+        fprintf( 1, 'Res file not found!\n')
+        mfPath = dir( fullfile( data_dir, "ephys*", "Results", "Map*.mat") );
+        mfVars2load = {'keyCell', 'resMap'};
+        if isempty( mfPath )
+            fprintf( 1, 'Unable to load unit response information!\n')
+            disp( mfPath )
+            continue
+        end
+        mftype = 2;
+    end
+    mfStruct = load( expandName( mfPath ), mfVars2load{:} );
+    if mftype == 1
+        Results = mfStruct.Results; gclID = mfStruct.gclID;
+        Counts = mfStruct.Counts(1,:); Counts = mean( cat( 3, Counts{:} ), 2 );
+        configFlag = cellfun(@(x) ~isempty(x), regexp( {Results.Combination}, ...
+            '1\s1\ssignrank', 'ignorecase' ) );
+        uSig{ce} = Results(configFlag).Activity(1).Pvalues;
+        uMod{ce} = Results(configFlag).Activity(1).Direction;
+        uMI{ce} = getMI( Counts, 3 );
+        uID{ce} = gclID;
+    else
+        resMap = mfStruct.resMap; keyCell = mfStruct.keyCell;
+        configFlag = contains( keyCell(:,1), 'RW20.00-200.00' ) & ...
+            contains( keyCell(:,4), 'Control Puff' );
+        if sum( configFlag ) ~= 1
+            fprintf( 1, 'Cannot process this keycell... \n')
+            disp( keyCell )
+        end
+        uSig{ce} = resMap( keyCell{configFlag,:} );
+        uMod{ce} = zeros( Nu(ce), 1 ); uMI{ce} = uMod{ce};
+        uID{ce} = clInfo{ce}{clInfo{ce}.ActiveUnit==1, "cluster_id" };
     end
     rstStruct = rstCont.relativeSpkTmsStruct;
     confStruct = rstCont.configStructure;
