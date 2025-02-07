@@ -206,7 +206,7 @@ arrayfun(@(x) yline( x, fz_sub, 'Color', 0.85*ones(1,3) ), ax(1:2) )
 yline( ax(3), fz_sub, 'Color', [0.0314, 0.1882, 0.4196] )
 ylim( ax, [0, sum(Nu)] + [1,-1]/2 )
 %% Time resolved boxplots for all experiments
-for td = [5,10,15,20,25,30]
+for td = 30
     slid_win_length = td*m; time_slide = td*m;
     time_init = -160*m; time_stop = 400*m;
     Nrs = floor( (time_stop - time_init - slid_win_length) / time_slide );
@@ -220,7 +220,7 @@ for td = [5,10,15,20,25,30]
             cw = cw + time_slide;
         end
     end
-    aux_mdl = fit_poly( [1, Nrs], [time_init, time_stop - slid_win_length] + [1,-1] * slid_win_length/2, 1);
+    aux_mdl = fit_poly( [1, Nrs], [time_init, time_stop - slid_win_length], 1);
     b_tx = ( ( 1:Nrs )'.^[1,0] ) * aux_mdl;
     % r_squared_cat = cat( 1, r_squared_pexp{:} );
     %% Plotting results
@@ -244,6 +244,77 @@ for td = [5,10,15,20,25,30]
     [p, tbl, stats] = kruskalwallis( r_squared_pexp, string( b_tx(:) * k ) );
     figure; tbl2 = multcompare( stats );
     sum(tbl2(:,end) < 0.05 )
+end
+%% Population impact on regression
+r_max = cellfun(@(x) max( x, [], 2 ), r_squared, fnOpts{:} );
+r_max_all = cat(1, r_max{:} );
+time_flags = my_xor( trial_tx < [20,200]*m );
+r_squared_ppop = zeros( 11, Nexp );
+pop_ax = 0:0.1:1;
+for cexp = 1:Nexp
+    for cpop = pop_ax
+        act_mu = mean( PSTHall{cexp}(:, time_flags, ...
+            r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ) , [2,3] );
+        aux_mdl = fitlm( zscore( act_mu )', zscore( ai_pt{cexp} )', 'poly1' );
+        r_squared_ppop(round(10*cpop+1),cexp) = ...
+            aux_mdl.Rsquared.Ordinary;
+    end
+end
+% Plotting results
+f = figure("Color","w"); t = createtiles( f, 1, 1);
+ax = nexttile( t );
+boxchart( ax, r_squared_ppop', "BoxFaceColor", "k", "MarkerStyle", "." )
+set( ax, 'TickDir', 'out' ); cleanAxis( ax ); ytickangle( ax, 90 );
+ylabel( ax, 'R² by considered population')
+xlabel( ax, 'All cells \leftrightarrow Higher R² cells' )
+xticklabels( ax, pop_ax )
+title( ax, 'R² relationship to the considered population')
+%% R² histogram
+f = figure("Color", "w"); t = createtiles( f, 1, 1 );
+ax = nexttile( t ); histogram( r_max_all, "BinLimits", [0, 0.5], ...
+    "BinWidth", 0.01, "Normalization", "probability", "EdgeColor", "none", ...
+    "FaceAlpha", 1/3 )
+set( get( ax, 'YAxis'), 'Scale', 'log' ); xlim( ax, [0,0.5] ); cleanAxis( ax );
+set( ax, 'TickDir', 'out' ); ytickangle( ax, 90 ); yticklabels( ax, yticks( ax) )
+ylabel( ax, 'Density'); xlabel( ax, 'R²' )
+%% R², MI, & H
+mi_all = cat( 1, uMI{:} ); mi_all(isnan(mi_all))= 0;
+h_all = cat(1, h{:} );
+flag_groups = cat( 3,...
+    [r_max_all ~= 0, r_max_all == 0], ...
+ [mi_all > 0, mi_all <= 0], ...
+ [h_all(:,1), ~h_all(:,1)] );
+grp_tot = zeros( 8, 1 );
+grp_prc = zeros( 8, 3 );
+ci = 1;
+logLabels = {'R', 'M', 'H'}; signflags = ones(1,3);
+finalLabels = cell( 8 ,1 );
+for a = flag_groups(:,1:2,1)
+    for b = flag_groups(:,1:2,2)
+        for c = flag_groups(:,1:2,3)
+            grp_tot(ci) = sum( a & b & c );
+            grp_prc(ci,:) = grp_tot(ci) ./ sum([a,b,c],1);
+            finalLabels{ci} = join(logLabels);
+            ci = ci + 1;
+            logLabels{3} = sprintf('%c', logLabels{3} + 32*signflags(3));
+            signflags(3) = -1*signflags(3);
+        end
+        logLabels{2} = sprintf('%c', logLabels{2} + 32*signflags(2));
+        signflags(2) = -1*signflags(2);
+    end
+    logLabels{1} = sprintf('%c', logLabels{1} + 32*signflags(1));
+    signflags(1) = -1*signflags(1);
+end
+%% Easy population comparison
+r_squared_ppop2 = zeros( Nexp, 2 );
+for cexp = 1:Nexp
+    z_flag = r_max{cexp} == 0;
+    aux_mu = mean( PSTHall{cexp}(:, time_flags, : ), [2,3] );
+    aux_mdl = fitlm( zscore( aux_mu )', zscore( ai_pt{cexp} )', 'poly1' );
+    r_squared_ppop2(cexp,1) = aux_mdl.Rsquared.Ordinary;
+    aux_mu = mean( PSTHall{cexp}(:, time_flags, ~z_flag ), [2,3] );
+    aux_mdl = fitlm( zscore( aux_mu )', zscore( ai_pt{cexp} )', 'poly1' );
+    r_squared_ppop2(cexp,2) = aux_mdl.Rsquared.Ordinary;
 end
 %% Organising PSTHs by maximum R² and it's latency
 rsMdl = fit_poly( [1,Nrs], [time_init, time_stop - slid_win_length], 1 );
