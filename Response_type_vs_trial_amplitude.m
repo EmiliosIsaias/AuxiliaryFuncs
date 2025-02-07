@@ -30,11 +30,12 @@ Nexp = numel( aePaths );
 rstVars2load = {'relativeSpkTmsStruct', 'configStructure'};
 afVars2load = {'Conditions', 'fs'};
 %%
-vWin = [-300,400]*m;
+vWin = [-300, 400]*m;
 clInfo = arrayfun(@(x) getClusterInfo( expandName( ...
     dir( fullfile( roller_path, x, 'ephys*\cluster_info.tsv' ) ) ) ), ...
     aePaths, fnOpts{:} );
-%%
+%% Pooling ephys and behaviour
+% Initialising
 Nu = cellfun(@(x) sum( x.ActiveUnit ), clInfo );
 Nuinit = cumsum( [1; Nu(1:end-1) ] );
 Nuend = cumsum( Nu );
@@ -184,7 +185,7 @@ rsq_tx = ( (1:Nrs)' .^ [1,0] ) * rsMdl;
 f = figure("Color", "w" ); t = createtiles( f, 1, 2 );
 ax(1) = nexttile(t); imagesc( ax(1), rsq_tx * k, [], ...
     r_squared_cat( rsq_mx_unit, :) );
-cb(1) = colorbar( ax(1), "northoutside", "Box", "off", ...
+cb = colorbar( ax(1), "northoutside", "Box", "off", ...
     "TickDirection", "out" );
 ax(2) = nexttile(t); imagesc( ax(2), trial_tx * k, [], ...
     ( PSTHall_mu(:, rsq_mx_unit) ./ max( PSTHall_mu(:, rsq_mx_unit) ) )' );
