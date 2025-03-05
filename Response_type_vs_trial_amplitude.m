@@ -60,7 +60,7 @@ for ce = 1:Nexp
     behRes = brStruct.(brVars2load);
     ctrlSub = ismember( string( {behRes.ConditionName} ), 'Control Puff' );
     brAll = cat( 1, brAll, behRes(ctrlSub) );
-    if ~isempty(rstPath) || numel( rstPath ) == 1
+    if ~isempty(rstPath) || isscalar( rstPath )
         rstCont = load( expandName( rstPath ), rstVars2load{:} );
     else
         fprintf(1, 'Either empty or more than 1 file found!\n');
@@ -243,7 +243,7 @@ for td = 30
     title( ax, sprintf('Time-resolved_{%d ms} R² population (per experiment)', td ) )
     [p, tbl, stats] = kruskalwallis( r_squared_pexp, string( b_tx(:) * k ) );
     figure; tbl2 = multcompare( stats );
-    sum(tbl2(:,end) < 0.05 )
+    nnz(tbl2(:,end) < 0.05 )
 end
 %% Population impact on regression
 r_max = cellfun(@(x) max( x, [], 2 ), r_squared, fnOpts{:} );
