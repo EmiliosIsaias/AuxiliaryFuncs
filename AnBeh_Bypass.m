@@ -33,7 +33,7 @@ expandName = @(x) fullfile( x.folder, x.name );
 m = 1e-3; k = 1e3;
 %% Load regression file
 regFile = dir( fullfile( data_path, "Regression CW*.mat" ) );
-if ~isempty( regFile ) && numel( regFile ) == 1
+if ~isempty( regFile ) && isscalar( regFile )
     load( expandName( regFile ), 'DX', 'mdlAll_ind', 'params')
 else
     %TODO: Being able to select a regression for specific parameters
