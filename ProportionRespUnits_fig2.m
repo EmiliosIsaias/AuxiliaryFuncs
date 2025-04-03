@@ -9,8 +9,8 @@ roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
 % Responsive units in all experiments between 20 and 200 ms
 res_paths = dir( fullfile( roller_path, "Batch*", "*", "*", "*", "ephys*", ...
     "Results", "Res VW* ms RW20.00-200.00 ms* PuffAll.mat" ) );
-map_paths = dir( fullfile( roller_path, "Batch*", "*", "*", "*", ...
-    "ephys*", "Results", "Map *.mat" ) );
+% map_paths = dir( fullfile( roller_path, "Batch*", "*", "*", "*", ...
+%     "ephys*", "Results", "Map *.mat" ) );
 Nexp = size( res_paths, 1 );
 
 clInfo = cellfun(@(x) getClusterInfo( expandName( ...
@@ -20,8 +20,8 @@ clInfo = cellfun(@(x) getClusterInfo( expandName( ...
 rsVars2load = {'Results', 'gclID', 'Counts'};
 mfVars2load = {'keyCell', 'resMap'};
 %%
-map_res_flag = ismember({map_paths.folder}', {res_paths.folder}');
-mr_subs = find( map_res_flag );
+% map_res_flag = ismember({map_paths.folder}', {res_paths.folder}');
+% mr_subs = find( map_res_flag );
 
 [~, unq_subs] = unique( string( {res_paths(:).folder} ) );
 rp_flags = unq_subs == (1:Nexp);
@@ -38,7 +38,9 @@ uMod = uSig;
 uMI = uSig;
 %%
 for ce = rp_flags'
-    
+    if any(find(ce)==102)
+        fprintf(1,"What's wrong with this session?")
+    end
     nms = {res_paths(ce).name}';
     % View, response, spontaneous
     params = cellfun(@(x) str2double( x ), ...
@@ -64,7 +66,7 @@ for ce = rp_flags'
             if all(eq_flag)
                 [~, min_subs] = min( params(:,5:6), [], 1 );
                 ce = ce(min_subs(1)); %#ok<*FXSET>
-                params = params(min_subs(1));
+                params = params(min_subs(1),:);
                 nms = nms(min_subs(1));
                 sel = min_subs(1);
             else
@@ -83,7 +85,7 @@ for ce = rp_flags'
     Ncond = numel( Conditions );
     p_cond = contains( string({Conditions.name}'), 'control puff', 'IgnoreCase', true );
 
-    mpPath = expandName( map_paths(mr_subs(ce)) );
+    mpPath = expandName( dir( fullfile( res_paths(ce).folder, "Map *.mat" ) ) );
     mfStruct = load( mpPath, mfVars2load{:} );
     resMap = mfStruct.resMap; keyCell = mfStruct.keyCell;
 
@@ -91,10 +93,13 @@ for ce = rp_flags'
     rsStruct = load( rsPath, rsVars2load{:} );
     Results = rsStruct.Results; gclID = rsStruct.gclID;
     disp( keyCell(:,4) )
-
+    if numel(params)==6
     configFlag = contains( keyCell(:,1), 'RW20.00-200.00' ) & ...
         contains( keyCell(:,4), 'Control Puff' ) & ...
         contains( keyCell(:,2), sprintf( 'SW%.2f-%.2f', params(5:6) ) );
+    else
+        fprintf(1, 'What?!\n')
+    end
     if nnz(configFlag) > 1 && isscalar(ce)
         configFlag = find( configFlag );
         configFlag = configFlag(sel);
@@ -108,15 +113,16 @@ for ce = rp_flags'
 
 
     if isempty(soe_sub) 
-        if Ncond > 5
-            if find( p_cond ) / Ncond < 0.5
+        if Ncond >= 5
+            if ( find( p_cond ) / Ncond) < 0.5 || find( p_cond ) == 3
                 Counts = rsStruct.Counts(1,:);
                 configFlag = cellfun(@(x) ~isempty(x), regexp( {Results.Combination}, ...
-                '1\s1\ssignrank', 'ignorecase' ) );
+                    '1\s1\ssignrank', 'ignorecase' ) );
             else
                 Counts = rsStruct.Counts(end,:);
                 configFlag = numel(Results);
             end
+
         end
     else
         if soe_sub{1} == 1
