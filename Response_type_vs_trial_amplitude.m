@@ -60,12 +60,56 @@ for ce = 1:Nexp
     behRes = brStruct.(brVars2load);
     ctrlSub = ismember( string( {behRes.ConditionName} ), 'Control Puff' );
     brAll = cat( 1, brAll, behRes(ctrlSub) );
-    if ~isempty(rstPath) || isscalar( rstPath )
-        rstCont = load( expandName( rstPath ), rstVars2load{:} );
-    else
-        fprintf(1, 'Either empty or more than 1 file found!\n');
-        disp( {rstPath.name} )
-        continue
+    if ~isscalar( rstPath )
+        nms = {rstPath.name}';
+        % Response, spontaneous, view
+        params = cellfun(@(x) str2double( x ), ...
+            cellcat( cellfun(@(y) regexp( y, '\d+\.\d+', 'match' ), ...
+            nms, fnOpts{:} ), 1 ) );
+        params = params .* -[-1,-1,1,1,1,-1];
+        min_subs = [];
+        sel = 1;
+        if numel( nms ) > 1
+            params_diff = diff( params, 1, 1 );
+            if ~nnz( params_diff(3:end) )
+                % Equivalent results
+                %ce = find( ce, 1, "first" );
+                params = params(1,:);
+                nms = nms(1);
+            else
+                % Spontaneous window messed up. Selecting the furthest and
+                % equal to response window's length.
+                % ce = find( ce );
+                rWins = diff( params(:,1:2), 1, 2 );
+                sWins = diff( params(:,3:4), 1, 2 );
+                eq_flag = sWins == max( rWins );
+                if all(eq_flag)
+                    [~, min_subs] = min( params(:,3:4), [], 1 );
+                    % ce = ce(min_subs(1)); %#ok<*FXSET>
+                    params = params(min_subs(1),:);
+                    nms = nms(min_subs(1));
+                    sel = min_subs(1);
+                else
+                    % ce = ce(eq_flag);
+                    params = params(eq_flag);
+                    nms = nms(eq_flag);
+                    sel = nms(eq_flag);
+                end
+            end
+        end
+        rstPath = rstPath(sel);
+    end
+    rstCont = load( expandName( rstPath ), rstVars2load{:} );
+    if ~isscalar(mfPath)
+        mfNms = {mfPath.name}';
+        mfSel = contains( mfNms, sprintf( 'VW%.2f-%.2f', params(:,5:6) ) ) & ...
+            contains( mfNms, sprintf( 'RW%.2f-%.2f', params(:,1:2) ) ) & ...
+            contains( mfNms, sprintf( 'SW%.2f-%.2f', params(:,3:4) ) );
+        if nnz(mfSel)==1
+            mfPath = mfPath(mfSel);
+        else
+            fprintf(1, 'Big problems!\n')
+        end
     end
     mftype = 1;
     mfVars2load = {'Results', 'gclID', 'Counts'};
@@ -249,19 +293,24 @@ end
 r_max = cellfun(@(x) max( x, [], 2 ), r_squared, fnOpts{:} );
 r_max_all = cat(1, r_max{:} );
 time_flags = my_xor( trial_tx < [20,200]*m );
-pop_ax = 0:0.1:0.9;
+% pop_ax = 0:0.1:0.9;
+pop_ax = 1:-0.1:0.1;
 r_squared_ppop = zeros( numel( pop_ax ), Nexp );
 for cexp = 1:Nexp
     for cpop = pop_ax
         % act_mu = mean( zscore( PSTHall{cexp}(:, time_flags, ...
         %     r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ) ), [2,3] );
         act_mu = mean( PSTHall{cexp}(:, time_flags, ...
-            r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ), [2,3] );
+            r_max{cexp} <= ( max( r_max{cexp} ) * cpop ) ), [2,3] );
+         % act_mu = mean( PSTHall{cexp}(:, time_flags, ...
+         %    r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ), [2,3] );
         % PSTHtest = PSTHall{cexp}./max(PSTHall{cexp}, [], [2,3] );
         % act_mu = mean( zscore( PSTHtest(:, time_flags, ...
         %     r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ) ), [2,3] );
         aux_mdl = fitlm( zscore( act_mu )', zscore( ai_pt{cexp} )', 'poly1' );
-        r_squared_ppop(round(10*cpop+1),cexp) = ...
+        % r_squared_ppop(round(10*cpop+1),cexp) = ...
+        %     aux_mdl.Rsquared.Ordinary;
+        r_squared_ppop(round(-10*cpop+11),cexp) = ...
             aux_mdl.Rsquared.Ordinary;
     end
 end
@@ -271,8 +320,8 @@ ax = nexttile( t );
 boxchart( ax, r_squared_ppop', "BoxFaceColor", "k", "MarkerStyle", ".", "Notch", "off" )
 set( ax, 'TickDir', 'out' ); cleanAxis( ax ); ytickangle( ax, 90 );
 ylabel( ax, 'R² by considered population')
-xlabel( ax, 'All cells \leftrightarrow Higher R² cells [%]' )
-xticklabels( ax, 100*(1-pop_ax) )
+xlabel( ax, 'All cells \leftrightarrow Lower R² cells [%]' )
+xticklabels( ax, 100*(pop_ax) )
 title( ax, 'R² relationship to the considered population')
 %% R² histogram
 f = figure("Color", "w"); t = createtiles( f, 1, 1 );
@@ -324,8 +373,37 @@ end
 %% Organising PSTHs by maximum R² and it's latency
 rsMdl = fit_poly( [1,Nrs], [time_init, time_stop - slid_win_length], 1 );
 rsq_tx = ( (1:Nrs)' .^ [1,0] ) * rsMdl;
+[~, time_max] = max( r_squared_cat, [], 2 );
+[H, Xedge, Yedge] = histcounts2( r_max_all, k*rsq_tx( time_max ), ...
+    "BinWidth", [0.025, 10], "Normalization", "probability" );
+lH = log1p( H ); ctop = round( max( lH(2:end,2:end), [], "all" ), 2 );
+f = figure("Color", "w"); t = createtiles( f, 6, 6 ); ax(1) = nexttile( t, [5,1] );
+histogram( ax(1), k*rsq_tx( time_max), Yedge, ...
+    'Normalization', 'probability', 'EdgeColor', 'none', 'Orientation', 'horizontal')
+ax(2) = nexttile( t, [5,5] );
+histogram2( ax(2), 'XBinEdges', Xedge, 'YBinEdges', Yedge, ...
+    'BinCounts', lH, 'EdgeColor', 'none', 'FaceColor', 'flat' );
+colormap( ax(2), -gray + 1 ); clim( ax(2), [0,ctop] )
+axis( ax(2), 'xy' )
+aux_ax = nexttile( t, [1,1] ); set( aux_ax, 'Visible', 'off' )
+ax(3) = nexttile( t, [1,5] );
+histogram( ax(3), r_max_all, Xedge, ...
+    'Normalization', 'probability', 'EdgeColor', 'none')
+linkaxes( ax([1,2]), 'y' ); linkaxes( ax([2,3]), 'x' )
+cleanAxis( ax );
 
-[mx_per_unit, time_max] = max( r_squared_cat, [], 2 );
+title( t, 'Maximum R² and its latency per unit' )
+grid( ax(2), 'off' ); ax(2).View = [0, 90];
+axis( ax(2), [min(Xedge), max(Xedge), min(Yedge), max(Yedge)] )
+set( get( ax(2), 'XAxis' ), 'Visible', 'off' )
+set( get( ax(2), 'yAxis' ), 'Visible', 'off' )
+set( get( ax(1), 'Xaxis' ), 'Scale', 'log' )
+set( get( ax(3), 'Yaxis' ), 'Scale', 'log' )
+xlabel( ax(3) , 'Max R²' )
+ylabel( ax(1), 'Max R² latency [ms]' )
+set( get( ax(1), 'XAxis' ), 'Visible', 'off' )
+set( get( ax(3), 'YAxis' ), 'Visible', 'off' )
+%%
 [~, rsq_mx_unit] = sort( mx_per_unit, "descend" );
 [~, final_ord] = sortrows( [time_max, mx_per_unit], [1, 2], ...
     {'ascend', 'descend'} );
