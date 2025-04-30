@@ -9,7 +9,7 @@ fnOpts = {'UniformOutput', false};
 load( expandName( dir( fullfile( data_dir, "*\*analysis.mat" ) ) ), ...
     "Conditions", "fs" )
 rstPath = dir( fullfile( data_dir, "*\*RW20.00-200.00*RelSpkTms.mat" ) );
-if ~isempty(rstPath) || numel( rstPath ) == 1
+if ~isempty(rstPath) || isscalar( rstPath )
     load( expandName( rstPath ), 'relativeSpkTmsStruct', 'configStructure' )
 else
     fprintf(1, 'Either empty or more than 1 file found!\n');
