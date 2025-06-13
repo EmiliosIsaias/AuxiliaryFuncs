@@ -1,8 +1,8 @@
 %% Analysing behaviour alone
 % "Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\eOPN3\WT66\221201_C+mus_2000"
 roller_path = "Z:\Emilio\SuperiorColliculusExperiments\Roller";
-exp_path = ...
-    fullfile( roller_path, "Batch11_ephys.MC\eOPN3\WT66\221201_C+mus_2000" );
+exp_path = ... Z:\Emilio\SuperiorColliculusExperiments\Roller\Batch11_ephys.MC\ChR2\Rb69\221129_C+F+Mus_2000\ephys_E1
+    fullfile( roller_path, "Batch11_ephys.MC\ChR2\Rb69\221129_C+F+Mus_2000\" );
 %%
 % Figure overwrite flag
 fowFlag = false;
@@ -46,7 +46,7 @@ end
 
 %% Run independently
 % User input!!
-consCond = [3,4];
+consCond = [3,6];
 Nccond = length( consCond );
 prmSubs = nchoosek( 1:Nccond, 2 );
 
