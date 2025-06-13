@@ -850,3 +850,22 @@ for w = 1:2
 end
 arrayfun(@(x) set( x, 'Box', 'off', 'Color', 'none' ), get( gcf, 'Children' ) )
 arrayfun(@(x) xlim( x, [0,8]+0.5 ), get( gcf, 'Children' ) )
+
+%%
+input_mat = aux;
+nanidx = isnan( input_mat );
+%%
+aux = zeros( size( input_mat, 3 ), 2 );
+for cm = 1:size( input_mat, 3 )
+    aux(cm,:) = mean( input_mat( all( ~nanidx(:,:,cm), 2 ), :, cm ), 1, ...
+        "omitmissing" );
+end
+
+%%
+Nspm = arrayfun(@(m) numel(m.Sessions), mice );
+
+for cm = 1:numel( mice )
+    for cs = 1:Nspm(cm)
+        cat( 3, permute( mice(cm).Sessions(cs).DataTable.R_2_p_L{1}, [3,2,1] );
+    end
+end
