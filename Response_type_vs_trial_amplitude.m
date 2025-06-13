@@ -293,25 +293,25 @@ end
 r_max = cellfun(@(x) max( x, [], 2 ), r_squared, fnOpts{:} );
 r_max_all = cat(1, r_max{:} );
 time_flags = my_xor( trial_tx < [20,200]*m );
-% pop_ax = 0:0.1:0.9;
-pop_ax = 1:-0.1:0.1;
+pop_ax = 0:0.1:0.9;
+%pop_ax = 1:-0.1:0.1;
 r_squared_ppop = zeros( numel( pop_ax ), Nexp );
 for cexp = 1:Nexp
     for cpop = pop_ax
-        % act_mu = mean( zscore( PSTHall{cexp}(:, time_flags, ...
-        %     r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ) ), [2,3] );
-        act_mu = mean( PSTHall{cexp}(:, time_flags, ...
-            r_max{cexp} <= ( max( r_max{cexp} ) * cpop ) ), [2,3] );
+        act_mu = mean( zscore( PSTHall{cexp}(:, time_flags, ...
+            r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ) ), [2,3] );
+        % act_mu = mean( PSTHall{cexp}(:, time_flags, ...
+        %     r_max{cexp} <= ( max( r_max{cexp} ) * cpop ) ), [2,3] );
          % act_mu = mean( PSTHall{cexp}(:, time_flags, ...
          %    r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ), [2,3] );
         % PSTHtest = PSTHall{cexp}./max(PSTHall{cexp}, [], [2,3] );
         % act_mu = mean( zscore( PSTHtest(:, time_flags, ...
         %     r_max{cexp} >= ( max( r_max{cexp} ) * cpop ) ) ), [2,3] );
         aux_mdl = fitlm( zscore( act_mu )', zscore( ai_pt{cexp} )', 'poly1' );
-        % r_squared_ppop(round(10*cpop+1),cexp) = ...
-        %     aux_mdl.Rsquared.Ordinary;
-        r_squared_ppop(round(-10*cpop+11),cexp) = ...
+        r_squared_ppop(round(10*cpop+1),cexp) = ...
             aux_mdl.Rsquared.Ordinary;
+        % r_squared_ppop(round(-10*cpop+11),cexp) = ...
+        %     aux_mdl.Rsquared.Ordinary;
     end
 end
 % Plotting results
