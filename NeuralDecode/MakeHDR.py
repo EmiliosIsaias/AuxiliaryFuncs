@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 imgs_dir = pl.Path(r"C:\Users\Puercos\Pictures\2024\10\13-17 Trek Himalayas")
 pSub = 697
 rng = 2
-imgs_nm = ["/_MG_0{}.png".format(x) for x in range(pSub,pSub+rng)]
+imgs_nm = ["/_MG_{0:04d}.png".format(x) for x in range(pSub,pSub+rng)]
 #imgs_nm = ["/_MG_9209.png","/_MG_9210.png","/_MG_9211.png"]
 imgs_fn = [imgs_dir.as_posix() + im for im in imgs_nm]
 
