@@ -1,11 +1,11 @@
 %% Parameters
 fnOpts = {'UniformOutput', false};
 ccvv = @(x) cat(1,x{:});
-vw = [-1,5]*1e-2;
-bin_size = 1e-4;
+vw = [-10,55]*1e-2;
+bin_size = 1e-3;
 n_bins = round(diff(vw)/bin_size);
 tx_psth = ((1:n_bins)-0.5)*bin_size + vw(1);
-
+%%
 fullpath = @(x) fullfile(x.folder, x.name);
 fs_low = 500;
 [b,a] = butter(2,2*[0.2,20]/fs_low,'bandpass');
